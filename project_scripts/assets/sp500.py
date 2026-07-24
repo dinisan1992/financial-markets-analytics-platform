@@ -1,0 +1,462 @@
+from pathlib import Path
+import sys
+
+PROJECT_ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "config.py").exists())
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+import os
+import pandas as pd
+import mysql.connector
+import numpy as np
+
+from config import DB_CONFIG
+from asset_config import ASSETS
+
+from indicators import calcular_indicadores
+
+from risk_detection import identificar_possivel_manipulacao_forte
+
+from charts import gerar_dashboard
+
+
+# =========================
+# SETTINGS SP500
+# =========================
+CSV_PATH = ASSETS["SP500"]["csv_path"]
+
+TABLE_NAME = "sp500_analysis"
+
+# Se estiver False:
+# - calculates indicators in memory;
+# - gera chart;
+# - does NOT update indicators/manipulation flags in SQL.
+#
+# Se estiver True:
+# - calcula indicadores;
+# - updates indicadores no SQL;
+# - updates manipulation no SQL.
+UPDATE_SQL = False
+
+
+# =========================
+# CONNECT TO THE DATABASE
+# =========================
+def conectar_bd(config):
+    conn = mysql.connector.connect(**config)
+    cursor = conn.cursor()
+    return conn, cursor
+
+
+# =========================
+# CONVERTER VALORES PARA MYSQL
+# =========================
+def converter_valor_mysql(valor):
+    if pd.isna(valor):
+        return None
+
+    if isinstance(valor, pd.Timestamp):
+        return valor.strftime("%Y-%m-%d %H:%M:%S")
+
+    if isinstance(valor, np.generic):
+        return valor.item()
+
+    return valor
+
+
+# =========================
+# IMPORTAR CSV SP500
+# =========================
+def importar_csv_sp500(csv_path, conn, cursor):
+    if not os.path.exists(csv_path):
+        print("No CSV found, skipping import.")
+        return False
+
+    # =========================
+    # LER CSV
+    # =========================
+    df_csv = pd.read_csv(
+        csv_path,
+        sep=";",
+        encoding="utf-8-sig",
+        header=0
+    )
+
+    print("CSV carregado:")
+    print(df_csv.head())
+
+    required_cols = ["snapped_at", "price", "total_volume"]
+
+    for col in required_cols:
+        if col not in df_csv.columns:
+            print(f"❌ Required column '{col}' not found in the CSV.")
+            return False
+
+    # =========================
+    # LIMPAR PRICE
+    # =========================
+    df_csv["price"] = (
+        df_csv["price"]
+        .astype(str)
+        .str.replace(" ", "", regex=False)
+        .str.replace(",", "", regex=False)
+        .str.replace("-", "", regex=False)
+        .str.strip()
+    )
+
+    df_csv["price"] = pd.to_numeric(
+        df_csv["price"],
+        errors="coerce"
+    )
+
+    # =========================
+    # LIMPAR TOTAL_VOLUME
+    # =========================
+    df_csv["total_volume"] = (
+        df_csv["total_volume"]
+        .astype(str)
+        .str.replace(" ", "", regex=False)
+        .str.replace(",", "", regex=False)
+        .str.replace("-", "", regex=False)
+        .str.strip()
+    )
+
+    df_csv["total_volume"] = pd.to_numeric(
+        df_csv["total_volume"],
+        errors="coerce"
+    )
+
+    # =========================
+    # CONVERTER DATAS
+    # =========================
+    df_csv["snapped_at"] = pd.to_datetime(
+        df_csv["snapped_at"]
+        .astype(str)
+        .str.replace(",", "", regex=False)
+        .str.replace(" UTC", "", regex=False),
+        errors="coerce"
+    )
+
+    # =========================
+    # REMOVE INVALID ROWS
+    # =========================
+    df_csv = df_csv.dropna(
+        subset=["snapped_at", "price", "total_volume"]
+    ).reset_index(drop=True)
+
+    print(f"{len(df_csv)} rows valid after limpeza:")
+    print(df_csv.head())
+
+    if df_csv.empty:
+        print("No valid data to import.")
+        return False
+
+    # =========================
+    # FILTRAR NOVOS DADOS
+    # =========================
+    cursor.execute(f"SELECT snapped_at FROM {TABLE_NAME}")
+
+    datas_existentes = set(
+        pd.to_datetime(row[0])
+        for row in cursor.fetchall()
+    )
+
+    df_novos = df_csv[
+        ~df_csv["snapped_at"].isin(datas_existentes)
+    ].copy()
+
+    if df_novos.empty:
+        print("No new data to import.")
+        return False
+
+    # =========================
+    # INSERIR NOVOS DADOS
+    # =========================
+    insert_sql = f"""
+        INSERT INTO {TABLE_NAME}
+            (snapped_at, price, total_volume)
+        VALUES
+            (%s, %s, %s)
+    """
+
+    for _, row in df_novos.iterrows():
+        cursor.execute(
+            insert_sql,
+            (
+                row["snapped_at"].strftime("%Y-%m-%d %H:%M:%S"),
+                row["price"],
+                row["total_volume"]
+            )
+        )
+
+    conn.commit()
+
+    print(f"{len(df_novos)} new records inserted into the table {TABLE_NAME}.")
+
+    return True
+
+
+# =========================
+# ATUALIZAR INDICADORES SQL
+# =========================
+def update_indicadores_sp500_sql(df, cursor, conn):
+    """
+    Updates only existing legacy indicators in the sp500_analysis.
+
+    The new advanced indicators calculated in indicators.py
+    are NOT sent to SQL at this stage.
+    """
+
+    update_sql = f"""
+        UPDATE {TABLE_NAME} SET
+            rsi=%s,
+            ema_9=%s,
+            ema_12=%s,
+            ema_26=%s,
+            ema_50=%s,
+            ema_100=%s,
+            ema_200=%s,
+            volume_sma_9=%s,
+            bb_middle=%s,
+            bb_upper=%s,
+            bb_lower=%s,
+            stoch_rsi=%s,
+            macd=%s,
+            macd_signal=%s,
+            momentum_10=%s,
+            atr=%s,
+            adx=%s,
+            cci=%s,
+            obv=%s,
+            macd_percent=%s,
+            price_change_pct=%s
+        WHERE snapped_at=%s
+    """
+
+    for _, r in df.iterrows():
+        valores = [
+            r["rsi"],
+            r["ema_9"],
+            r["ema_12"],
+            r["ema_26"],
+            r["ema_50"],
+            r["ema_100"],
+            r["ema_200"],
+            r["volume_sma_9"],
+            r["bb_middle"],
+            r["bb_upper"],
+            r["bb_lower"],
+            r["stoch_rsi_k"],
+            r["macd"],
+            r["macd_signal"],
+            r["momentum_10"],
+            r["atr"],
+            r["adx"],
+            r["cci"],
+            r["obv"],
+            r["macd_percent"],
+            r["price_change_pct"],
+            r["snapped_at"]
+        ]
+
+        valores = [converter_valor_mysql(v) for v in valores]
+
+        cursor.execute(update_sql, valores)
+
+    conn.commit()
+
+    print("✅ SP500 indicators updated in the database.")
+
+
+# =========================
+# UPDATE MANIPULATION FLAGS IN SQL
+# =========================
+def update_manipulacao_sp500_sql(df, cursor, conn):
+    update_sql = f"""
+        UPDATE {TABLE_NAME}
+        SET manipulation=%s
+        WHERE snapped_at=%s
+    """
+
+    flags_df = df[df["manipulation"].notnull()].copy()
+
+    if flags_df.empty:
+        print("✅ No new manipulation flags to update.")
+        return
+
+    for _, row in flags_df.iterrows():
+        cursor.execute(
+            update_sql,
+            (
+                row["manipulation"],
+                converter_valor_mysql(row["snapped_at"])
+            )
+        )
+
+    conn.commit()
+
+    print(f"✅ {len(flags_df)} flags de manipulation SP500 updatesdas no SQL.")
+
+
+# =========================
+# MAIN FUNCTION
+# =========================
+def main():
+    conn = None
+    cursor = None
+
+    try:
+        # =========================
+        # CONNECTION
+        # =========================
+        conn, cursor = conectar_bd(DB_CONFIG)
+
+        # =========================
+        # CSV IMPORT
+        # =========================
+        novos_data_importados = importar_csv_sp500(
+            csv_path=CSV_PATH,
+            conn=conn,
+            cursor=cursor
+        )
+
+        # =========================
+        # LER DADOS MYSQL
+        # =========================
+        df = pd.read_sql(
+            f"""
+            SELECT
+                snapped_at,
+                price,
+                total_volume
+            FROM {TABLE_NAME}
+            ORDER BY snapped_at ASC
+            """,
+            conn
+        )
+
+        if df.empty:
+            print("❌ No data available para SP500.")
+            return
+
+        # =========================
+        # FORMATAR DATAS
+        # =========================
+        df["snapped_at"] = pd.to_datetime(
+            df["snapped_at"]
+            .astype(str)
+            .str.replace(" UTC", "", regex=False),
+            errors="coerce"
+        )
+
+        df = df.dropna(subset=["snapped_at"])
+
+        # =========================
+        # VOLUME
+        # =========================
+        df["volume"] = df["total_volume"]
+
+        # =========================
+        # CREATE SYNTHETIC CANDLESTICK
+        # =========================
+        df["open"] = df["price"].shift(1)
+
+        df["close"] = df["price"]
+
+        df["high"] = (
+            df[["open", "close"]]
+            .max(axis=1)
+            * 1.01
+        )
+
+        df["low"] = (
+            df[["open", "close"]]
+            .min(axis=1)
+            * 0.99
+        )
+
+        # Remove primeira linha com NaN no open
+        df = df.dropna().reset_index(drop=True)
+
+        if df.empty:
+            print("❌ Insufficient data after candle creation.")
+            return
+
+        # =========================
+        # CALCULAR INDICADORES
+        # =========================
+        df = calcular_indicadores(df)
+
+        # =========================
+        # DETECT MANIPULATION
+        # =========================
+        df["manipulation"] = None
+
+        flags = identificar_possivel_manipulacao_forte(df)
+
+        for data_flag, motivo in flags:
+            df.loc[
+                df["snapped_at"] == data_flag,
+                "manipulation"
+            ] = motivo
+
+        # =========================
+        # ATUALIZAR SQL OPCIONAL
+        # =========================
+        if UPDATE_SQL:
+            print("💾 UPDATE_SQL=True -> Updatesndo indicadores e flags no SQL...")
+
+            update_indicadores_sp500_sql(
+                df=df,
+                cursor=cursor,
+                conn=conn
+            )
+
+            update_manipulacao_sp500_sql(
+                df=df,
+                cursor=cursor,
+                conn=conn
+            )
+
+        else:
+            print("⏭️ UPDATE_SQL=False -> SQL not updated. Generating chart with data calculated in memory.")
+
+            if novos_data_importados:
+                print("⚠️ New data was imported, but indicators for those new records were not written to SQL yet.")
+                print("   Para gravar no SQL, muda UPDATE_SQL para True e volta a correr.")
+
+        # =========================
+        # DASHBOARD
+        # =========================
+        gerar_dashboard(df)
+
+        # =========================
+        # LOG
+        # =========================
+        if flags:
+            print("\n⚠️ Possible manipulation signals detected for SP500:")
+
+            for data, motivo in flags:
+                print(f"{data}: {motivo}")
+
+        else:
+            print("\n✅ No clear manipulation signal identified no SP500.")
+
+        print("✅ Processing SP500 completed.")
+
+    except Exception as e:
+        print(f"❌ Error during processing SP500: {e}")
+
+    finally:
+        if cursor is not None:
+            cursor.close()
+
+        if conn is not None:
+            conn.close()
+
+
+# =========================
+# EXECUTION
+# =========================
+if __name__ == "__main__":
+    main()
+

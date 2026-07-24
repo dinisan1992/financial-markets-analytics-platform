@@ -1,0 +1,110 @@
+# =========================
+# PYTHON
+# =========================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# =========================
+# VIRTUAL ENVIRONMENTS
+# =========================
+venv/
+.venv/
+env/
+
+# Virtual environment accidentally created in project root
+Lib/
+include/
+etc/
+Scripts/
+share/
+pyvenv.cfg
+
+# =========================
+# IDE
+# =========================
+.idea/
+.vscode/
+
+# =========================
+# JUPYTER
+# =========================
+.ipynb_checkpoints/
+
+# =========================
+# LOGS
+# =========================
+*.log
+logs/
+
+# =========================
+# ENVIRONMENT VARIABLES
+# =========================
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+
+# =========================
+# DATASETS
+# =========================
+*.csv
+*.xlsx
+*.xls
+
+# =========================
+# DATABASE EXPORTS
+# =========================
+*.db
+*.sqlite
+*.sql
+
+# =========================
+# EXPORTS / OUTPUTS
+# =========================
+exports/
+output/
+outputs/
+reports/
+
+# =========================
+# POWER BI
+# =========================
+*.pbix
+
+# =========================
+# OS FILES
+# =========================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# =========================
+# LARGE DATA FOLDERS
+# =========================
+data/
+new_market_data/
+
+# =========================
+# COMPRESSED FILES
+# =========================
+*.zip
+*.rar
+*.7z
+*.gz
+
+# =========================
+# PYTHON TEST / BUILD ARTIFACTS
+# =========================
+.pytest_cache/
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# =========================
+# ARCHIVE / OLD BACKUPS
+# =========================
+archive/

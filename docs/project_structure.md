@@ -1,0 +1,76 @@
+# Project Structure
+
+This document describes the current repository organization after the cleanup pass.
+
+## Root
+
+The root is reserved for entry points and shared modules:
+
+- `streamlit_app.py` - main Streamlit dashboard.
+- `analysis_launcher.py` - terminal menu for running analysis scripts.
+- `config.py` - paths, environment variables and database settings.
+- `asset_config.py` - market asset metadata and paths.
+- `macro_config.py` - FED macro indicator metadata.
+- `euro_series_config.py` - EURO macro series metadata.
+- `database.py` - BTC/core MySQL helpers.
+- `indicators.py` - technical indicator calculations.
+- `risk_detection.py` - heuristic suspicious behaviour flags.
+- `charts.py` - shared Plotly chart helpers.
+- `macro_data_loader.py` - FED macro/market loading helpers.
+- `euro_data_loader.py` - EURO macro/market loading helpers.
+- `README.md`, `PROJECT_STATUS.md`, `requirements.txt`, `.env.example`, `.gitignore`, `VERSION`.
+
+## Dashboard
+
+`dashboard/` contains modules used by `streamlit_app.py`:
+
+- `asset_charts.py`
+- `asset_indicators.py`
+- `correlation_charts.py`
+- `correlation_data.py`
+
+## Project Scripts
+
+Runnable scripts are organized under `project_scripts/`:
+
+- `project_scripts/assets/` - per-asset processing scripts and `run_all_assets.py`.
+- `project_scripts/analysis/` - selectors, market analysis, macro analysis, validation and reports.
+- `project_scripts/diagnostics/` - one-off diagnosis and cleanup scripts.
+
+Each moved script includes a small bootstrap that adds the repository root to `sys.path`, so imports such as `from config import ...` still work when the script is launched directly.
+
+## Tools
+
+`tools/` contains import/maintenance utilities:
+
+- `tools/fed/` - FED CSV import scripts.
+- `tools/eu/` - EURO/ECB CSV import scripts.
+- `tools/sql/` - SQL import utilities.
+- `tools/news/` - news/API import scripts.
+- `tools/legacy/` - old standalone import scripts kept for reference.
+
+## Data And Outputs
+
+The following folders are intentionally ignored by Git:
+
+- `data/`
+- `new_market_data/`
+- `outputs/`
+- `archive/`
+
+Generated root CSV reports were moved to `outputs/reports/`.
+Generated project tree text files were moved to `outputs/project_tree/`.
+
+## GitHub Safety
+
+The repository excludes private/local files:
+
+- `.env` and `.env.*`
+- `.streamlit/secrets.toml`
+- CSV/XLS datasets
+- SQL/database dumps
+- compressed backups
+- local virtual environments
+- generated reports and outputs
+
+Use `.env.example` as the public template and keep real credentials/API keys only in `.env`.

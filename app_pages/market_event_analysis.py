@@ -1,0 +1,323 @@
+from dataclasses import dataclass
+from datetime import date
+from typing import Callable
+
+import numpy as np
+import pandas as pd
+import streamlit as st
+
+
+CROSS_ASSET_RETURN_COLUMNS = [
+    "Return +1D %",
+    "Return +7D %",
+    "Return +30D %",
+    "Return +90D %",
+    "Return +180D %",
+    "Return +365D %",
+]
+
+
+@dataclass(frozen=True)
+class MarketEventAnalysisDeps:
+    render_date_range_selector: Callable
+    assets_config: dict
+    load_asset_events: Callable
+    load_asset_data: Callable
+    calculate_cross_asset_event_impact: Callable
+    build_event_impact_matrix: Callable
+    make_event_impact_heatmap: Callable
+    calculate_event_category_asset_summary: Callable
+    make_event_category_heatmap: Callable
+    calculate_risk_on_off_snapshot: Callable
+    dataframe_to_csv_bytes: Callable
+
+
+def render_market_event_analysis(deps: MarketEventAnalysisDeps):
+    st.title("Market Event Analysis")
+
+    st.markdown(
+        """
+        Cross-asset event study that measures how different markets reacted after historical events.
+        This module compares risk assets, defensive assets and macro-sensitive instruments.
+        """
+    )
+
+    selected_assets, start_date, end_date = _render_asset_date_controls(deps)
+    event_source, horizon_mode, selected_horizon, custom_horizon_days, max_events = _render_event_controls()
+
+    st.markdown("---")
+
+    if not selected_assets:
+        st.warning("Select at least one asset.")
+        return
+
+    events_df = _load_filtered_events(
+        deps=deps,
+        event_source=event_source,
+        start_date=start_date,
+        end_date=end_date,
+        max_events=max_events,
+    )
+
+    if events_df.empty:
+        st.info("No events available for the selected filters.")
+        return
+
+    if horizon_mode == "Preset":
+        analysis_horizons = (1, 7, 30, 90, 180, 365)
+    else:
+        analysis_horizons = tuple(
+            sorted(
+                set([1, 7, 30, 90, 180, 365, int(custom_horizon_days)])
+            )
+        )
+
+    cross_asset_df = deps.calculate_cross_asset_event_impact(
+        events_df=events_df,
+        asset_keys=selected_assets,
+        start_date=start_date,
+        end_date=end_date,
+        horizons=analysis_horizons,
+        assets_config=deps.assets_config,
+        load_asset_data_func=deps.load_asset_data,
+    )
+
+    if cross_asset_df.empty:
+        st.info("No cross-asset event impact data available.")
+        return
+
+    _render_summary(cross_asset_df, selected_horizon)
+    _render_tabs(deps, cross_asset_df, selected_horizon)
+
+
+def _render_asset_date_controls(deps: MarketEventAnalysisDeps):
+    default_assets = [
+        asset for asset in [
+            "SP500",
+            "NASDAQ100",
+            "DOWJONES",
+            "STOXX600",
+            "FTSE100",
+            "GOLD",
+            "DXY",
+            "VIX",
+            "US10Y",
+            "WTI_OIL",
+            "BRENT_OIL",
+            "BTC",
+        ]
+        if asset in deps.assets_config
+    ]
+
+    c1, c2 = st.columns([2, 2])
+
+    with c1:
+        selected_assets = st.multiselect(
+            "Assets",
+            options=list(deps.assets_config.keys()),
+            default=default_assets,
+            format_func=lambda key: f"{key} - {deps.assets_config[key].get('display_name', key)}",
+        )
+
+    with c2:
+        start_date, end_date = deps.render_date_range_selector(
+            default_start=date(2020, 1, 1),
+            default_end=date.today(),
+        )
+
+    return selected_assets, start_date, end_date
+
+
+def _render_event_controls():
+    c3, c4, c5 = st.columns([2, 2, 2])
+
+    with c3:
+        event_source = st.selectbox(
+            "Event Source",
+            [
+                "World Events",
+                "BTC Events",
+                "All Events",
+            ],
+            index=0,
+        )
+
+    with c4:
+        horizon_mode = st.selectbox(
+            "Return Horizon",
+            [
+                "Preset",
+                "Custom",
+            ],
+            index=0,
+        )
+
+        if horizon_mode == "Preset":
+            selected_horizon = st.selectbox(
+                "Preset Horizon",
+                CROSS_ASSET_RETURN_COLUMNS,
+                index=2,
+            )
+
+            custom_horizon_days = None
+        else:
+            custom_horizon_days = st.number_input(
+                "Custom Horizon Days",
+                min_value=1,
+                max_value=3650,
+                value=45,
+                step=1,
+            )
+
+            selected_horizon = f"Return +{int(custom_horizon_days)}D %"
+
+    with c5:
+        max_events = st.slider(
+            "Max Events",
+            min_value=5,
+            max_value=80,
+            value=30,
+            step=5,
+        )
+
+    return event_source, horizon_mode, selected_horizon, custom_horizon_days, max_events
+
+
+def _load_filtered_events(deps: MarketEventAnalysisDeps, event_source, start_date, end_date, max_events):
+    events_df = deps.load_asset_events(
+        start_date=start_date,
+        end_date=end_date,
+    )
+
+    if event_source == "World Events":
+        events_df = events_df[
+            events_df["event_source_table"] == "world_historical_events"
+        ].copy()
+    elif event_source == "BTC Events":
+        events_df = events_df[
+            events_df["event_source_table"] == "bitcoin_historical_events"
+        ].copy()
+
+    return events_df.sort_values("event_date").tail(max_events).reset_index(drop=True)
+
+
+def _render_summary(cross_asset_df, selected_horizon):
+    k1, k2, k3, k4 = st.columns(4)
+
+    with k1:
+        st.metric("Events", cross_asset_df["Event"].nunique())
+
+    with k2:
+        st.metric("Assets", cross_asset_df["Asset"].nunique())
+
+    with k3:
+        if selected_horizon in cross_asset_df.columns:
+            avg_return = pd.to_numeric(cross_asset_df[selected_horizon], errors="coerce").mean()
+        else:
+            avg_return = np.nan
+
+        st.metric(
+            f"Average {selected_horizon}",
+            f"{avg_return:,.2f}%" if pd.notna(avg_return) else "-",
+        )
+
+    with k4:
+        if selected_horizon in cross_asset_df.columns:
+            observations = pd.to_numeric(cross_asset_df[selected_horizon], errors="coerce").notna().sum()
+        else:
+            observations = 0
+
+        st.metric("Valid Observations", int(observations))
+
+    st.caption(
+        "Returns are calculated from the first available market date on or after each event date. "
+        "Custom horizons allow manual event-window testing. "
+        "The analysis is event-driven and does not predict future returns."
+    )
+
+
+def _render_tabs(deps: MarketEventAnalysisDeps, cross_asset_df, selected_horizon):
+    tab_matrix, tab_category, tab_risk, tab_data = st.tabs(
+        [
+            "Event Impact Matrix",
+            "Category Summary",
+            "Risk-On / Risk-Off",
+            "Data",
+        ]
+    )
+
+    with tab_matrix:
+        _render_matrix_tab(deps, cross_asset_df, selected_horizon)
+
+    with tab_category:
+        _render_category_tab(deps, cross_asset_df, selected_horizon)
+
+    with tab_risk:
+        _render_risk_tab(deps, cross_asset_df, selected_horizon)
+
+    with tab_data:
+        _render_data_tab(deps, cross_asset_df)
+
+
+def _render_matrix_tab(deps: MarketEventAnalysisDeps, cross_asset_df, selected_horizon):
+    matrix_df = deps.build_event_impact_matrix(
+        cross_asset_df=cross_asset_df,
+        return_col=selected_horizon,
+    )
+
+    heatmap_fig = deps.make_event_impact_heatmap(
+        matrix_df=matrix_df,
+        title=f"Cross-Asset Event Impact Matrix - {selected_horizon}",
+    )
+
+    if heatmap_fig is not None:
+        st.plotly_chart(heatmap_fig, width="stretch")
+
+    st.markdown("### Matrix Data")
+    st.dataframe(matrix_df, width="stretch")
+
+
+def _render_category_tab(deps: MarketEventAnalysisDeps, cross_asset_df, selected_horizon):
+    category_summary_df = deps.calculate_event_category_asset_summary(
+        cross_asset_df=cross_asset_df,
+        return_col=selected_horizon,
+    )
+
+    category_fig = deps.make_event_category_heatmap(category_summary_df)
+
+    if category_fig is not None:
+        st.plotly_chart(category_fig, width="stretch")
+
+    st.markdown("### Category / Asset Summary")
+    st.dataframe(category_summary_df, width="stretch")
+
+
+def _render_risk_tab(deps: MarketEventAnalysisDeps, cross_asset_df, selected_horizon):
+    risk_df = deps.calculate_risk_on_off_snapshot(
+        cross_asset_df=cross_asset_df,
+        return_col=selected_horizon,
+    )
+
+    st.markdown("### Risk-On / Risk-Off Event Read")
+    st.caption(
+        "Risk assets include equity indices and BTC when selected. "
+        "Defensive/macro assets include GOLD, DXY, US10Y and VIX when selected."
+    )
+
+    st.dataframe(risk_df, width="stretch")
+
+
+def _render_data_tab(deps: MarketEventAnalysisDeps, cross_asset_df):
+    st.markdown("### Full Cross-Asset Event Impact Table")
+    st.dataframe(cross_asset_df, width="stretch")
+
+    csv_data = deps.dataframe_to_csv_bytes(cross_asset_df)
+
+    if csv_data is not None:
+        st.download_button(
+            label="Download cross-asset event impact CSV",
+            data=csv_data,
+            file_name="cross_asset_event_impact_analysis.csv",
+            mime="text/csv",
+            width="stretch",
+        )
