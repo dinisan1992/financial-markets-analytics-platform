@@ -135,6 +135,14 @@ Improve reliability of the analytical data layer.
 - Added historically aware review for non-positive WTI observations
 - Added automatic archival of previous audit ZIP files
 
+### Completed v0.4.2 Improvements
+
+- Centralized normalization and dry-run planning for the four affected legacy CSV importers
+- Disabled automatic base imports and removed their direct `INSERT` paths
+- Classified every existing duplicate group as identical or conflicting using read-only SQL data
+- Confirmed 36,732 identical groups, zero conflicting groups and 210,364 surplus rows
+- Added six deterministic importer-safety tests, bringing the suite to 62 tests
+
 ---
 
 ## Phase 5 — FED Macro Layer

@@ -20,7 +20,7 @@ Functional local platform with:
 - Data quality and validation tools.
 - Automated syntax checks and unit tests through GitHub Actions.
 
-Current project version: **v0.4.1**
+Current project version: **v0.4.2**
 
 ## Main Analytical Capabilities
 
@@ -263,12 +263,13 @@ The default local database is `btc_data` on `localhost:3306`. SQL writes are dis
 
 ## Validation Snapshot
 
-The v0.4.1 validation includes:
+The v0.4.2 validation includes:
 
 - 9/9 Streamlit pages rendered without uncaught exceptions, including graceful database-offline handling.
-- 48 deterministic unit tests passed.
 - Active Python files compiled successfully.
-- Native/synthetic OHLC, 252/365 annualization, rolling correlation, pair confidence, events, recovery, macro alignment, data quality and regimes covered by 56 tests.
+- Native/synthetic OHLC, 252/365 annualization, rolling correlation, pair confidence, events, recovery, macro alignment, data quality, regimes and legacy import planning are covered by 62 deterministic tests.
+- EURO, YUAN, LIBRA and SSECOMPOSITE base CSV imports are disabled by default and expose only an explicit read-only `--dry-run-import` preview.
+- Read-only diagnostics identified 210,364 identical surplus rows and no conflicting duplicate groups in the four affected tables.
 - News modules import without starting network loops or SQL activity.
 - No SQL writes, migrations, CSV importers or database mutations were executed during this upgrade.
 - The read-only database audit loaded 37 assets, evaluated 666 pairs and 66 events, and produced `audit_outputs/audit_outputs.zip`.

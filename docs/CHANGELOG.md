@@ -4,6 +4,31 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [v0.4.2] - 2026-07-31 - Legacy Import Safety
+
+### Added
+
+- Centralized legacy CSV normalization, validation and in-memory date deduplication.
+- Read-only import plans that classify source rows as insert, update or unchanged.
+- Duplicate-group previews for EURO, YUAN, LIBRA and SSECOMPOSITE with identical/conflicting value classification.
+- Git-ignored local CSV and JSON diagnostic outputs under `audit_outputs/import_dry_runs/`.
+
+### Improved
+
+- Disabled automatic base CSV imports in the four affected legacy asset scripts.
+- Replaced direct import entry points with the explicit `--dry-run-import` preview option.
+- Removed duplicated CSV parsers and unreachable direct `INSERT` code from those scripts.
+
+### Validation
+
+- 62/62 deterministic unit tests pass.
+- Live read-only diagnostics confirmed that the four affected tables have no indexes.
+- All 36,732 duplicate-date groups contain identical price and volume values; no conflicting groups were found.
+- 210,364 surplus rows were identified across the four tables without changing database rows or schemas.
+- No SQL writes, migrations, CSV imports or database mutations were executed.
+
+---
+
 ## [v0.4.1] - 2026-07-31 - Data Remediation Diagnostics
 
 ### Added

@@ -39,13 +39,22 @@
 - Add correlation overlap, common period, confidence and 95% intervals
 - Re-run all financial reference tests: 56/56 passed
 
-## High Priority After v0.4.1
+## Completed in v0.4.2
+
+- Centralize legacy CSV parsing and in-memory date deduplication
+- Disable automatic base imports for EURO, YUAN, LIBRA and SSECOMPOSITE
+- Add explicit read-only `--dry-run-import` previews
+- Confirm that all 36,732 duplicate groups are identical and none are conflicting
+- Identify 210,364 surplus rows without mutating SQL data
+- Re-run all reference tests: 62/62 passed
+
+## High Priority After v0.4.2
 
 - Validate stale asset sources and updater behaviour one asset at a time
-- Define duplicate keep rules after backup and dry-run
+- Apply the reviewed duplicate cleanup and unique date constraints only after explicit approval
 - Confirm the WTI contract/source for 20 April 2020
 - Classify YUAN, FINANCIAL_CONDITIONS and TED_SPREAD by native frequency
-- Prepare read-only previews for proposed remediation actions
+- Extend read-only previews to the remaining SQL-capable importers
 - Apply database changes only after explicit approval and backup
 - Compare every post-update audit with an archived baseline
 

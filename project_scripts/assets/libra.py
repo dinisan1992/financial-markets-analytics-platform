@@ -1,4 +1,5 @@
 from pathlib import Path
+import argparse
 import sys
 
 PROJECT_ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "config.py").exists())
@@ -17,6 +18,10 @@ from indicators import calcular_indicadores
 from risk_detection import identificar_possivel_manipulacao_forte
 
 from charts import gerar_dashboard
+from services.legacy_import_service import (
+    format_dry_run_report,
+    preview_legacy_csv_against_connection,
+)
 
 
 # =========================
@@ -64,198 +69,21 @@ def converter_valor_mysql(valor):
 
 
 # =========================
-# CLEAN PRICE
+# CSV IMPORT PREVIEW
 # =========================
-def parse_price(valor):
-    if pd.isna(valor):
-        return np.nan
-
-    valor = (
-        str(valor)
-        .replace(" ", "")
-        .strip()
-    )
-
-    # Remove thousands separators, if they exist
-    valor = valor.replace(",", "")
-
-    return pd.to_numeric(
-        valor,
-        errors="coerce"
-    )
-
-
-# =========================
-# PARSE VOLUME
-# =========================
-def parse_volume(valor):
-    if pd.isna(valor):
-        return 0
-
-    valor = (
-        str(valor)
-        .upper()
-        .replace(" ", "")
-        .replace(",", "")
-        .strip()
-    )
-
-    if valor in ["", "-", "NAN", "NONE"]:
-        return 0
-
-    multiplier = 1
-
-    if valor.endswith("K"):
-        multiplier = 1_000
-        valor = valor[:-1]
-
-    elif valor.endswith("M"):
-        multiplier = 1_000_000
-        valor = valor[:-1]
-
-    elif valor.endswith("B"):
-        multiplier = 1_000_000_000
-        valor = valor[:-1]
-
-    try:
-        return float(valor) * multiplier
-
-    except Exception:
-        return 0
-
-
-# =========================
-# IMPORTAR CSV LIBRA
-# =========================
-def importar_csv_libra(csv_path, conn, cursor):
+def preview_csv_import_libra(csv_path, conn):
     if not os.path.exists(csv_path):
-        print("No CSV found, skipping import.")
-        return False
+        print(f"CSV not found; import preview skipped: {csv_path}")
+        return None
 
-    # =========================
-    # LER CSV
-    # =========================
-    df_csv = pd.read_csv(
-        csv_path,
-        sep=";",
-        encoding="utf-8-sig",
-        header=0
+    report, _ = preview_legacy_csv_against_connection(
+        asset="LIBRA",
+        table=TABLE_NAME,
+        csv_path=csv_path,
+        connection=conn,
     )
-
-    print("CSV carregado:")
-    print(df_csv.head())
-
-    # =========================
-    # NORMALIZAR NOMES DAS COLUNAS
-    # =========================
-    df_csv.columns = [
-        c.strip()
-        .lower()
-        .replace(" ", "_")
-        .replace("%", "percent")
-        for c in df_csv.columns
-    ]
-
-    print(f"Columns detetadas: {list(df_csv.columns)}")
-
-    # =========================
-    # VALIDAR COLUNAS
-    # =========================
-    required_cols = [
-        "snapped_at",
-        "price",
-        "total_volume"
-    ]
-
-    for col in required_cols:
-        if col not in df_csv.columns:
-            print(f"❌ Required column '{col}' not found in the CSV.")
-            return False
-
-    # =========================
-    # CONVERTER DATAS
-    # =========================
-    df_csv["snapped_at"] = pd.to_datetime(
-        df_csv["snapped_at"]
-        .astype(str)
-        .str.replace(" UTC", "", regex=False),
-        errors="coerce",
-        format="%b %d, %Y"
-    )
-
-    # Fallback se o formato acima falhar
-    if df_csv["snapped_at"].isna().all():
-        df_csv["snapped_at"] = pd.to_datetime(
-            df_csv["snapped_at"],
-            errors="coerce"
-        )
-
-    # =========================
-    # LIMPAR PRICE
-    # =========================
-    df_csv["price"] = df_csv["price"].apply(parse_price)
-
-    # =========================
-    # LIMPAR TOTAL_VOLUME
-    # =========================
-    df_csv["total_volume"] = df_csv["total_volume"].apply(parse_volume)
-
-    # =========================
-    # REMOVE INVALID ROWS
-    # =========================
-    df_csv = df_csv.dropna(
-        subset=[
-            "snapped_at",
-            "price"
-        ]
-    ).reset_index(drop=True)
-
-    # =========================
-    # ORDENAR POR DATA
-    # =========================
-    df_csv = df_csv.sort_values(
-        by="snapped_at"
-    ).reset_index(drop=True)
-
-    print(f"{len(df_csv)} rows valid after limpeza:")
-    print(df_csv.head())
-
-    if df_csv.empty:
-        print("No valid data to import.")
-        return False
-
-    # =========================
-    # INSERIR / ATUALIZAR DADOS BASE
-    # =========================
-    insert_sql = f"""
-        INSERT INTO {TABLE_NAME}
-            (snapped_at, price, total_volume)
-        VALUES
-            (%s, %s, %s)
-        ON DUPLICATE KEY UPDATE
-            price = VALUES(price),
-            total_volume = VALUES(total_volume)
-    """
-
-    rows_processadas = 0
-
-    for _, row in df_csv.iterrows():
-        cursor.execute(
-            insert_sql,
-            (
-                row["snapped_at"].strftime("%Y-%m-%d %H:%M:%S"),
-                row["price"],
-                row["total_volume"]
-            )
-        )
-
-        rows_processadas += 1
-
-    conn.commit()
-
-    print(f"✅ {rows_processadas} rows inseridas/updatesdas em {TABLE_NAME}.")
-
-    return rows_processadas > 0
+    print(format_dry_run_report(report))
+    return report
 
 
 # =========================
@@ -363,7 +191,18 @@ def update_manipulacao_libra_sql(df, cursor, conn):
 # =========================
 # MAIN FUNCTION
 # =========================
-def main():
+def build_parser():
+    parser = argparse.ArgumentParser(description="Validate LIBRA market data safely.")
+    parser.add_argument(
+        "--dry-run-import",
+        action="store_true",
+        help="Compare the configured CSV with SQL without writing to the database.",
+    )
+    return parser
+
+
+def main(argv=None):
+    args = build_parser().parse_args(argv)
     conn = None
     cursor = None
 
@@ -376,11 +215,10 @@ def main():
         # =========================
         # CSV IMPORT
         # =========================
-        data_processados = importar_csv_libra(
-            csv_path=CSV_PATH,
-            conn=conn,
-            cursor=cursor
-        )
+        if args.dry_run_import:
+            preview_csv_import_libra(csv_path=CSV_PATH, conn=conn)
+            return
+        print("Base CSV import is disabled. Use --dry-run-import for a read-only preview.")
 
         # =========================
         # LER DADOS MYSQL
@@ -484,10 +322,6 @@ def main():
 
         else:
             print("⏭️ UPDATE_SQL=False -> SQL not updated. Generating chart with data calculated in memory.")
-
-            if data_processados:
-                print("⚠️ Base data was inserted/updated, but indicators for those records were not written to SQL yet.")
-                print("   Para gravar indicadores no SQL, muda UPDATE_SQL para True e volta a correr.")
 
         # =========================
         # DASHBOARD
