@@ -44,14 +44,22 @@
 - Centralize legacy CSV parsing and in-memory date deduplication
 - Disable automatic base imports for EURO, YUAN, LIBRA and SSECOMPOSITE
 - Add explicit read-only `--dry-run-import` previews
-- Confirm that all 36,732 duplicate groups are identical and none are conflicting
-- Identify 210,364 surplus rows without mutating SQL data
+- Confirm that all 36,732 duplicate groups have matching price and volume values
+- Identify 210,364 surplus observations by date without mutating SQL data
 - Re-run all reference tests: 62/62 passed
 
-## High Priority After v0.4.2
+## Completed in v0.4.3
+
+- Compare every column in the four duplicated legacy tables
+- Separate base-value equality from exact full-row equality
+- Identify 36,729 groups with technical-column variants
+- Identify 173,633 exact full-row copies
+- Re-run all reference tests: 63/63 passed
+
+## High Priority After v0.4.3
 
 - Validate stale asset sources and updater behaviour one asset at a time
-- Apply the reviewed duplicate cleanup and unique date constraints only after explicit approval
+- Define the technical-column keep/recalculation rule before any approved duplicate cleanup
 - Confirm the WTI contract/source for 20 April 2020
 - Classify YUAN, FINANCIAL_CONDITIONS and TED_SPREAD by native frequency
 - Extend read-only previews to the remaining SQL-capable importers

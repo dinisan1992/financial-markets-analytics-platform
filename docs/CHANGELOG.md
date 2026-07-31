@@ -4,6 +4,28 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [v0.4.3] - 2026-07-31 - Full-Row Duplicate Classification
+
+### Added
+
+- Separate classifications for duplicate observation keys, base-value conflicts and full-row conflicts.
+- Full-row variant counts, exact full-row surplus counts and conflicting-column details for each duplicated date.
+
+### Improved
+
+- The read-only legacy audit now loads every table column instead of assuming matching price and volume implies an identical SQL row.
+- Duplicate detail is calculated once and reused by the summary to avoid repeated analysis.
+
+### Validation
+
+- 63/63 deterministic unit tests pass.
+- All 36,732 duplicate-date groups have matching price and volume values.
+- 36,729 groups contain differences in technical indicator columns and require a controlled keep/recalculation policy.
+- 173,633 rows are exact full-row copies; 210,364 rows are surplus observations when preserving one record per date.
+- No SQL writes or database mutations were executed.
+
+---
+
 ## [v0.4.2] - 2026-07-31 - Legacy Import Safety
 
 ### Added
@@ -23,8 +45,8 @@ All notable changes to this project will be documented here.
 
 - 62/62 deterministic unit tests pass.
 - Live read-only diagnostics confirmed that the four affected tables have no indexes.
-- All 36,732 duplicate-date groups contain identical price and volume values; no conflicting groups were found.
-- 210,364 surplus rows were identified across the four tables without changing database rows or schemas.
+- All 36,732 duplicate-date groups contain identical price and volume values; no base-value conflicts were found.
+- 210,364 surplus observations by date were identified across the four tables without changing database rows or schemas.
 - No SQL writes, migrations, CSV imports or database mutations were executed.
 
 ---

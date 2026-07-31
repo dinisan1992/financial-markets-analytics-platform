@@ -172,12 +172,31 @@ def prepare_existing_market_frame(frame: pd.DataFrame):
 
 
 def build_duplicate_group_preview(existing_frame: pd.DataFrame):
-    normalized, _ = prepare_existing_market_frame(existing_frame)
+    normalized = normalize_columns(existing_frame)
+    missing = [column for column in REQUIRED_LEGACY_COLUMNS if column not in normalized]
+    if missing:
+        raise ValueError(f"Missing table columns: {missing}")
+
+    normalized["snapped_at"] = pd.to_datetime(
+        normalized["snapped_at"], errors="coerce"
+    ).dt.normalize()
+    normalized["price"] = pd.to_numeric(normalized["price"], errors="coerce")
+    normalized["total_volume"] = pd.to_numeric(
+        normalized["total_volume"], errors="coerce"
+    )
+    normalized = normalized.dropna(subset=["snapped_at", "price"])
+    value_columns = [column for column in normalized.columns if column != "snapped_at"]
     rows = []
 
     for snapped_at, group in normalized.groupby("snapped_at", sort=True):
         if len(group) < 2:
             continue
+        conflicting_columns = [
+            column
+            for column in value_columns
+            if group[column].nunique(dropna=False) > 1
+        ]
+        full_row_variants = len(group[value_columns].drop_duplicates())
         rows.append(
             {
                 "snapped_at": snapped_at.date(),
@@ -185,10 +204,14 @@ def build_duplicate_group_preview(existing_frame: pd.DataFrame):
                 "rows_removable": len(group) - 1,
                 "distinct_prices": group["price"].nunique(dropna=False),
                 "distinct_volumes": group["total_volume"].nunique(dropna=False),
-                "values_identical": (
+                "base_values_identical": (
                     group["price"].nunique(dropna=False) == 1
                     and group["total_volume"].nunique(dropna=False) == 1
                 ),
+                "full_row_values_identical": full_row_variants == 1,
+                "full_row_variants": full_row_variants,
+                "exact_full_row_surplus": len(group) - full_row_variants,
+                "conflicting_columns": ",".join(conflicting_columns),
                 "proposed_keep_rule": "most_complete_then_last",
             }
         )
@@ -201,16 +224,30 @@ def build_duplicate_group_preview(existing_frame: pd.DataFrame):
             "rows_removable",
             "distinct_prices",
             "distinct_volumes",
-            "values_identical",
+            "base_values_identical",
+            "full_row_values_identical",
+            "full_row_variants",
+            "exact_full_row_surplus",
+            "conflicting_columns",
             "proposed_keep_rule",
         ],
     )
 
 
-def build_existing_duplicate_summary(asset: str, table: str, existing_frame: pd.DataFrame):
+def build_existing_duplicate_summary(
+    asset: str,
+    table: str,
+    existing_frame: pd.DataFrame,
+    duplicate_preview: pd.DataFrame | None = None,
+):
     normalized, canonical = prepare_existing_market_frame(existing_frame)
-    preview = build_duplicate_group_preview(existing_frame)
-    identical_flags = preview["values_identical"].astype(bool)
+    preview = (
+        duplicate_preview
+        if duplicate_preview is not None
+        else build_duplicate_group_preview(existing_frame)
+    )
+    base_identical_flags = preview["base_values_identical"].astype(bool)
+    full_row_identical_flags = preview["full_row_values_identical"].astype(bool)
     return {
         "asset": asset,
         "table": table,
@@ -218,8 +255,11 @@ def build_existing_duplicate_summary(asset: str, table: str, existing_frame: pd.
         "existing_unique_dates": len(canonical),
         "existing_duplicate_rows": len(normalized) - len(canonical),
         "existing_duplicate_date_groups": len(preview),
-        "identical_duplicate_groups": int(identical_flags.sum()),
-        "conflicting_duplicate_groups": int((~identical_flags).sum()),
+        "base_identical_duplicate_groups": int(base_identical_flags.sum()),
+        "base_conflicting_duplicate_groups": int((~base_identical_flags).sum()),
+        "full_row_identical_duplicate_groups": int(full_row_identical_flags.sum()),
+        "full_row_conflicting_duplicate_groups": int((~full_row_identical_flags).sum()),
+        "exact_full_row_surplus": int(preview["exact_full_row_surplus"].sum()),
         "first_duplicate_date": preview["snapped_at"].min() if not preview.empty else None,
         "last_duplicate_date": preview["snapped_at"].max() if not preview.empty else None,
         "max_rows_per_date": int(preview["rows_for_date"].max()) if not preview.empty else 1,

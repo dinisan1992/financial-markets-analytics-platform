@@ -4,7 +4,7 @@ Last updated: 31 July 2026
 
 ## Current Version
 
-**Macro-Financial Risk & Market Behaviour Analytics Platform v0.4.2**
+**Macro-Financial Risk & Market Behaviour Analytics Platform v0.4.3**
 
 ## Executive Summary
 
@@ -22,7 +22,7 @@ It combines:
 - interactive dashboarding;
 - data quality validation.
 
-The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.4.2 adds a non-destructive import-planning layer and disables the automatic legacy CSV imports that caused repeated rows in four market tables.
+The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.4.3 distinguishes duplicate observation keys from exact full-row copies and technical-column conflicts, while keeping all remediation diagnostics read-only.
 
 ## Completed and Functional Modules
 
@@ -219,11 +219,11 @@ Main file:
 
 ## Latest Documented Validation
 
-Version 0.4.2 local code validation included:
+Version 0.4.3 local code validation included:
 
 - 9/9 dashboard pages rendered without uncaught exceptions.
 - Database-offline handling validated with MySQL/XAMPP stopped.
-- 62/62 deterministic unit tests passed.
+- 63/63 deterministic unit tests passed.
 - Active Python files compiled successfully.
 - Custom event horizons, event recovery and year-only exclusion validated.
 - OHLC preservation/fallback and 252/365 annualization validated against controlled series.
@@ -242,7 +242,8 @@ The 31 July 2026 v0.4.0 baseline loaded all 37 configured asset tables without l
 - 666 correlation pairs evaluated; 149 were flagged for low overlap or insufficient observations.
 - Confidence distribution: 457 high, 60 moderate, 148 low and 1 insufficient pair.
 - 66 historical events audited; 35 had year-only date precision and 31 had exact dates.
-- Duplicate dates were found in EURO, YUAN, LIBRA and SSECOMPOSITE. A dedicated read-only preview confirmed 36,732 duplicate-date groups and 210,364 surplus rows; every group had identical price and volume values and none contained conflicts.
+- Duplicate dates were found in EURO, YUAN, LIBRA and SSECOMPOSITE. A dedicated read-only preview confirmed 36,732 duplicate-date groups and 210,364 surplus observations when preserving one row per date.
+- Price and volume match in all duplicate groups, but 36,729 groups differ in one or more technical columns. A total of 173,633 rows are exact full-row copies.
 - The four affected tables have no indexes, so the former `ON DUPLICATE KEY UPDATE` statements could not prevent repeated CSV imports.
 - The negative WTI_OIL observation on 20 April 2020 is retained and flagged for source review rather than automatic correction.
 - Excess zero returns were found in YUAN, FINANCIAL_CONDITIONS and TED_SPREAD.
@@ -339,7 +340,7 @@ The project already contains a validated multi-asset, FED macro and EURO macro a
 The current priority is the controlled execution stage of the Data Remediation Cycle:
 
 1. validate the upstream source and importer behaviour for each stale asset;
-2. after explicit approval, remove the confirmed identical duplicate rows from EURO, YUAN, LIBRA and SSECOMPOSITE and add unique date constraints;
+2. define a reviewed keep/recalculation rule for technical-column variants and, only after explicit approval, deduplicate EURO, YUAN, LIBRA and SSECOMPOSITE before adding unique date constraints;
 3. confirm the WTI_OIL contract/source for 20 April 2020 without changing the historical value automatically;
 4. classify YUAN, FINANCIAL_CONDITIONS and TED_SPREAD by native source frequency;
 5. add dry-run plans for any proposed database remediation;

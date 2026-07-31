@@ -65,7 +65,7 @@ class LegacyImportServiceTests(unittest.TestCase):
         self.assertEqual(canonical.iloc[0]["price"], 100.0)
         self.assertEqual(canonical.iloc[1]["price"], 201.0)
 
-    def test_duplicate_preview_separates_identical_and_conflicting_groups(self):
+    def test_duplicate_preview_separates_base_and_full_row_conflicts(self):
         existing = pd.DataFrame(
             {
                 "snapped_at": [
@@ -74,8 +74,9 @@ class LegacyImportServiceTests(unittest.TestCase):
                     "2024-01-02",
                     "2024-01-02",
                 ],
-                "price": [100.0, 100.0, 200.0, 201.0],
+                "price": [100.0, 100.0, 200.0, 200.0],
                 "total_volume": [10.0, 10.0, 20.0, 20.0],
+                "rsi": [50.0, 50.0, None, 55.0],
             }
         )
 
@@ -84,9 +85,28 @@ class LegacyImportServiceTests(unittest.TestCase):
 
         self.assertEqual(len(preview), 2)
         self.assertEqual(preview["rows_removable"].sum(), 2)
-        self.assertEqual(summary["identical_duplicate_groups"], 1)
-        self.assertEqual(summary["conflicting_duplicate_groups"], 1)
+        self.assertEqual(summary["base_identical_duplicate_groups"], 2)
+        self.assertEqual(summary["base_conflicting_duplicate_groups"], 0)
+        self.assertEqual(summary["full_row_identical_duplicate_groups"], 1)
+        self.assertEqual(summary["full_row_conflicting_duplicate_groups"], 1)
+        self.assertEqual(summary["exact_full_row_surplus"], 1)
+        self.assertEqual(preview.iloc[1]["conflicting_columns"], "rsi")
         self.assertFalse(summary["database_write_performed"])
+
+    def test_base_price_conflict_is_reported_separately(self):
+        existing = pd.DataFrame(
+            {
+                "snapped_at": ["2024-01-01", "2024-01-01"],
+                "price": [100.0, 101.0],
+                "total_volume": [10.0, 10.0],
+            }
+        )
+
+        summary = build_existing_duplicate_summary("TEST", "test_table", existing)
+
+        self.assertEqual(summary["base_identical_duplicate_groups"], 0)
+        self.assertEqual(summary["base_conflicting_duplicate_groups"], 1)
+        self.assertEqual(summary["full_row_conflicting_duplicate_groups"], 1)
 
     def test_dry_run_classifies_insert_update_and_unchanged_without_writes(self):
         source = prepare_legacy_market_frame(

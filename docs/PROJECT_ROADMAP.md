@@ -139,9 +139,16 @@ Improve reliability of the analytical data layer.
 
 - Centralized normalization and dry-run planning for the four affected legacy CSV importers
 - Disabled automatic base imports and removed their direct `INSERT` paths
-- Classified every existing duplicate group as identical or conflicting using read-only SQL data
-- Confirmed 36,732 identical groups, zero conflicting groups and 210,364 surplus rows
+- Confirmed matching price and volume in all 36,732 groups and 210,364 surplus observations by date
 - Added six deterministic importer-safety tests, bringing the suite to 62 tests
+
+### Completed v0.4.3 Improvements
+
+- Extended duplicate diagnostics from base market fields to every SQL column
+- Identified 36,729 groups with technical-indicator variants
+- Identified 173,633 exact full-row copies
+- Added explicit base-value and full-row classifications
+- Added a seventh importer-safety test, bringing the suite to 63 tests
 
 ---
 

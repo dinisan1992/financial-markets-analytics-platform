@@ -52,7 +52,7 @@ def build_parser():
 
 def load_existing_frame(engine, table_name):
     query = f"""
-    SELECT snapped_at, price, total_volume
+    SELECT *
     FROM `{table_name}`
     ORDER BY snapped_at
     """
@@ -65,7 +65,13 @@ def inspect_asset(engine, asset_key):
     csv_path = Path(asset["csv_path"])
     existing = load_existing_frame(engine, table_name)
 
-    summary = build_existing_duplicate_summary(asset_key, table_name, existing)
+    duplicate_preview = build_duplicate_group_preview(existing)
+    summary = build_existing_duplicate_summary(
+        asset_key,
+        table_name,
+        existing,
+        duplicate_preview=duplicate_preview,
+    )
     summary.update(
         {
             "csv_path": csv_path.name,
@@ -74,7 +80,6 @@ def inspect_asset(engine, asset_key):
         }
     )
 
-    duplicate_preview = build_duplicate_group_preview(existing)
     duplicate_preview.insert(0, "asset", asset_key)
     action_preview = pd.DataFrame()
 
