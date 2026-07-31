@@ -19,6 +19,9 @@ class ProjectConfigTests(unittest.TestCase):
             "volume_expected",
             "ohlc_expected",
             "positive_values_expected",
+            "negative_values_possible",
+            "source_type",
+            "source_reference",
         }
         for asset_key, config in ASSETS.items():
             self.assertTrue(required.issubset(config), asset_key)

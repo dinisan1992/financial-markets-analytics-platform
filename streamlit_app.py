@@ -63,7 +63,9 @@ from services.event_analysis_service import (
 )
 from services.data_quality_service import (
     audit_event_coverage,
+    build_freshness_report,
     build_pair_coverage_audit,
+    build_remediation_report,
     run_asset_audit,
 )
 from dashboard.correlation_data import build_multi_asset_price_frame
@@ -240,6 +242,8 @@ def load_data_quality_audit():
     asset_audit, asset_frames = run_asset_audit(get_engine(), ASSETS)
     return {
         "asset_audit": asset_audit,
+        "freshness_report": build_freshness_report(asset_audit),
+        "remediation_report": build_remediation_report(asset_audit),
         "correlation_coverage": build_pair_coverage_audit(asset_frames),
         "event_coverage": audit_event_coverage(get_engine(), asset_frames),
     }

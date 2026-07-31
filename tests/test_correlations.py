@@ -6,6 +6,10 @@ from dashboard.correlation_data import (
     calculate_returns,
     calculate_rolling_correlation,
 )
+from services.correlation_quality_service import (
+    build_pair_correlation_statistics,
+    classify_correlation_confidence,
+)
 
 
 class CorrelationCalculationTests(unittest.TestCase):
@@ -44,6 +48,45 @@ class CorrelationCalculationTests(unittest.TestCase):
         self.assertFalse(rolling_df.empty)
         self.assertEqual(3, len(rolling_df))
         self.assertTrue(rolling_df["rolling_correlation"].notna().all())
+
+    def test_pair_statistics_report_coverage_period_and_confidence_interval(self):
+        observations = 300
+        returns_df = pd.DataFrame(
+            {
+                "snapped_at": pd.date_range("2024-01-01", periods=observations, freq="D"),
+                "A": [index / 10000 for index in range(observations)],
+                "B": [index / 5000 for index in range(observations)],
+            }
+        )
+
+        result = build_pair_correlation_statistics(returns_df).iloc[0]
+
+        self.assertEqual(result["common_observations"], observations)
+        self.assertEqual(result["coverage_ratio"], 1.0)
+        self.assertEqual(result["confidence"], "HIGH")
+        self.assertAlmostEqual(result["correlation"], 1.0)
+        self.assertLessEqual(result["correlation_ci95_low"], result["correlation"])
+
+    def test_confidence_requires_both_sample_size_and_coverage(self):
+        self.assertEqual(classify_correlation_confidence(29, 100), "INSUFFICIENT")
+        self.assertEqual(classify_correlation_confidence(300, 60), "LOW")
+        self.assertEqual(classify_correlation_confidence(120, 95), "MODERATE")
+        self.assertEqual(classify_correlation_confidence(300, 95), "HIGH")
+
+    def test_constant_pair_is_not_reported_as_high_confidence(self):
+        returns_df = pd.DataFrame(
+            {
+                "snapped_at": pd.date_range("2024-01-01", periods=300, freq="D"),
+                "A": [0.01] * 300,
+                "B": [0.02] * 300,
+            }
+        )
+
+        result = build_pair_correlation_statistics(returns_df).iloc[0]
+
+        self.assertTrue(pd.isna(result["correlation"]))
+        self.assertEqual(result["confidence"], "INSUFFICIENT")
+        self.assertTrue(result["potential_bias"])
 
 
 if __name__ == "__main__":

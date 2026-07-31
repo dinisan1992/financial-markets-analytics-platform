@@ -4,6 +4,33 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [v0.4.1] - 2026-07-31 - Data Remediation Diagnostics
+
+### Added
+
+- Asset freshness report with configured source file, responsible updater and overdue days.
+- Duplicate-date group counts, affected date range and maximum rows per date.
+- Explicit non-positive-price review status for historically valid exceptions such as WTI on 20 April 2020.
+- Prioritized, non-destructive remediation tasks in Streamlit and audit exports.
+- Pairwise common observations, common period, coverage ratio, confidence classification and Fisher 95% confidence intervals.
+- Automatic archival of the previous local audit ZIP before a new audit is written.
+
+### Improved
+
+- Pair correlations now calculate each asset's returns on its native observation sequence before same-date alignment.
+- Multi-asset loaders no longer forward-fill by default.
+- Zero values remain valid for yields and stress series while zero market prices remain invalid.
+- Data Quality and Correlations pages expose sample quality alongside analytical results.
+
+### Validation
+
+- 56/56 deterministic unit tests pass.
+- Read-only audit loaded 37 assets, 666 pairs and 66 events without database writes.
+- Correlation confidence distribution: 457 high, 60 moderate, 148 low and 1 insufficient pair.
+- No SQL writes, migrations, CSV importers or database mutations were executed.
+
+---
+
 ## [v0.4.0] - 2026-07-31 - Analytical Engine v2
 
 ### Added

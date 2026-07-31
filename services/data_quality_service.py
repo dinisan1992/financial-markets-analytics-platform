@@ -10,6 +10,19 @@ import numpy as np
 import pandas as pd
 
 from services import data_access_service
+from services.correlation_quality_service import (
+    calculate_pair_correlation,
+    classify_correlation_confidence,
+    correlation_confidence_interval,
+)
+
+
+STALE_LIMITS = {
+    "continuous": 5,
+    "trading_days": 10,
+    "weekly": 21,
+    "monthly": 62,
+}
 
 
 def _safe_percentage(numerator, denominator):
@@ -23,6 +36,19 @@ def _longest_calendar_gap(dates: pd.Series):
     if len(unique_dates) < 2:
         return 0
     return int(unique_dates.diff().dt.days.max())
+
+
+def _date_group_diagnostics(frame: pd.DataFrame, date_column: str):
+    group_sizes = frame.dropna(subset=[date_column]).groupby(date_column).size()
+    duplicate_groups = group_sizes[group_sizes > 1]
+    if duplicate_groups.empty:
+        return 0, None, None, 0
+    return (
+        len(duplicate_groups),
+        duplicate_groups.index.min().date(),
+        duplicate_groups.index.max().date(),
+        int(duplicate_groups.max()),
+    )
 
 
 def _expected_observations(start_date, end_date, calendar_type):
@@ -68,17 +94,46 @@ def audit_asset_frame(
     output[price_column] = pd.to_numeric(output[price_column], errors="coerce")
 
     duplicate_dates = int(output[date_column].dropna().duplicated().sum())
-    invalid_mask = ~np.isfinite(output[price_column])
+    (
+        duplicate_date_groups,
+        first_duplicate_date,
+        last_duplicate_date,
+        max_rows_per_date,
+    ) = _date_group_diagnostics(output, date_column)
+
+    finite_mask = pd.Series(
+        np.isfinite(output[price_column].to_numpy(dtype=float)),
+        index=output.index,
+    )
+    non_finite_mask = output[price_column].notna() & ~finite_mask
+    zero_price_mask = finite_mask & output[price_column].eq(0)
+    negative_price_mask = finite_mask & output[price_column].lt(0)
+    negative_values_possible = asset_cfg.get("negative_values_possible", False)
+
+    invalid_mask = non_finite_mask.copy()
+    price_review_mask = pd.Series(False, index=output.index)
     if asset_cfg.get("positive_values_expected", True):
-        invalid_mask |= output[price_column] <= 0
+        invalid_mask |= zero_price_mask
+        if negative_values_possible:
+            price_review_mask = negative_price_mask
+        else:
+            invalid_mask |= negative_price_mask
+
     invalid_prices = int(invalid_mask.fillna(False).sum())
+    prices_requiring_review = int(price_review_mask.fillna(False).sum())
     missing_dates = int(output[date_column].isna().sum())
     missing_prices = int(output[price_column].isna().sum())
+
+    invalid_dates = output.loc[invalid_mask & output[date_column].notna(), date_column]
+    review_dates = output.loc[price_review_mask & output[date_column].notna(), date_column]
 
     valid = output.dropna(subset=[date_column, price_column]).copy()
     valid = valid[np.isfinite(valid[price_column])]
     if asset_cfg.get("positive_values_expected", True):
-        valid = valid[valid[price_column] > 0]
+        if negative_values_possible:
+            valid = valid[valid[price_column] != 0]
+        else:
+            valid = valid[valid[price_column] > 0]
     valid = valid.sort_values(date_column).drop_duplicates(date_column, keep="last")
 
     first_date = valid[date_column].min() if not valid.empty else pd.NaT
@@ -119,18 +174,15 @@ def audit_asset_frame(
     coverage_pct = min(_safe_percentage(len(valid), expected_count), 100.0) if expected_count else 0.0
     longest_gap_days = _longest_calendar_gap(valid[date_column]) if not valid.empty else 0
 
-    stale_limits = {
-        "continuous": 5,
-        "trading_days": 10,
-        "weekly": 21,
-        "monthly": 62,
-    }
-    stale_limit = stale_limits.get(asset_cfg.get("calendar_type"), 10)
+    stale_limit = STALE_LIMITS.get(asset_cfg.get("calendar_type"), 10)
+    days_overdue = max(stale_days - stale_limit, 0) if stale_days is not None else None
     warnings = []
     if duplicate_dates:
         warnings.append("duplicate_dates")
     if invalid_prices:
         warnings.append("invalid_prices")
+    if prices_requiring_review:
+        warnings.append("non_positive_price_review")
     if missing_dates or missing_prices:
         warnings.append("missing_core_values")
     if stale_days is None or stale_days > stale_limit:
@@ -157,16 +209,33 @@ def audit_asset_frame(
         "first_date": first_date.date() if pd.notna(first_date) else None,
         "last_date": last_date.date() if pd.notna(last_date) else None,
         "stale_days": stale_days,
+        "stale_limit_days": stale_limit,
+        "days_overdue": days_overdue,
+        "freshness_status": (
+            "UNKNOWN" if days_overdue is None else "CURRENT" if days_overdue == 0 else "STALE"
+        ),
         "duplicate_dates": duplicate_dates,
+        "duplicate_date_groups": duplicate_date_groups,
+        "first_duplicate_date": first_duplicate_date,
+        "last_duplicate_date": last_duplicate_date,
+        "max_rows_per_date": max_rows_per_date,
         "missing_dates": missing_dates,
         "missing_prices": missing_prices,
         "invalid_prices": invalid_prices,
+        "first_invalid_date": invalid_dates.min().date() if not invalid_dates.empty else None,
+        "last_invalid_date": invalid_dates.max().date() if not invalid_dates.empty else None,
+        "prices_requiring_review": prices_requiring_review,
+        "first_review_date": review_dates.min().date() if not review_dates.empty else None,
+        "last_review_date": review_dates.max().date() if not review_dates.empty else None,
         "zero_return_pct": zero_return_pct,
         "calendar_coverage_pct": coverage_pct,
         "longest_gap_days": longest_gap_days,
         "volume_available_pct": volume_available_pct,
         "native_ohlc_rows": native_ohlc_rows,
         "native_ohlc_pct": native_ohlc_pct,
+        "source_type": asset_cfg.get("source_type", "configured_pipeline"),
+        "source_reference": asset_cfg.get("source_reference", ""),
+        "updater_script": asset_cfg.get("script_name", ""),
         "forward_fill_risk": coverage_pct < 90 or longest_gap_days > 10 or zero_return_pct > 15,
         "status": status,
         "warnings": ", ".join(warnings),
@@ -224,7 +293,10 @@ def run_asset_audit(engine, assets_config, as_of=None):
             coverage_frame = coverage_frame.dropna(subset=["snapped_at", "price"])
             coverage_frame = coverage_frame[np.isfinite(coverage_frame["price"])]
             if asset_cfg.get("positive_values_expected", True):
-                coverage_frame = coverage_frame[coverage_frame["price"] > 0]
+                if asset_cfg.get("negative_values_possible", False):
+                    coverage_frame = coverage_frame[coverage_frame["price"] != 0]
+                else:
+                    coverage_frame = coverage_frame[coverage_frame["price"] > 0]
             frames[asset_key] = coverage_frame
             rows.append(audit_asset_frame(asset_key, asset_cfg, frame, as_of=as_of))
         except Exception as exc:
@@ -240,6 +312,16 @@ def run_asset_audit(engine, assets_config, as_of=None):
             )
 
     return pd.DataFrame(rows), frames
+
+
+def _prepare_asset_return_frame(frame: pd.DataFrame, asset_key: str):
+    data = frame[["snapped_at", "price"]].copy()
+    data["snapped_at"] = pd.to_datetime(data["snapped_at"], errors="coerce")
+    data["price"] = pd.to_numeric(data["price"], errors="coerce")
+    data = data.replace([np.inf, -np.inf], np.nan).dropna()
+    data = data.sort_values("snapped_at").drop_duplicates("snapped_at", keep="last")
+    data[asset_key] = data["price"].pct_change(fill_method=None)
+    return data[["snapped_at", asset_key]].dropna(subset=[asset_key])
 
 
 def build_pair_coverage_audit(asset_frames: dict[str, pd.DataFrame]):
@@ -262,35 +344,39 @@ def build_pair_coverage_audit(asset_frames: dict[str, pd.DataFrame]):
         right["snapped_at"] = pd.to_datetime(right["snapped_at"], errors="coerce")
         left = left.dropna(subset=["snapped_at"])
         right = right.dropna(subset=["snapped_at"])
-        merged = pd.merge(left, right, on="snapped_at", how="inner")
-        merged[asset_a] = pd.to_numeric(merged[asset_a], errors="coerce")
-        merged[asset_b] = pd.to_numeric(merged[asset_b], errors="coerce")
-        merged = merged.dropna(subset=[asset_a, asset_b]).sort_values("snapped_at")
-        merged = merged[
-            np.isfinite(merged[asset_a])
-            & np.isfinite(merged[asset_b])
-        ]
+        price_overlap = pd.merge(left, right, on="snapped_at", how="inner")
+        left_returns = _prepare_asset_return_frame(asset_frames[asset_a], asset_a)
+        right_returns = _prepare_asset_return_frame(asset_frames[asset_b], asset_b)
+        returns = pd.merge(left_returns, right_returns, on="snapped_at", how="inner")
+        returns = returns.replace([np.inf, -np.inf], np.nan).dropna()
 
-        returns = (
-            merged[[asset_a, asset_b]]
-            .pct_change(fill_method=None)
-            .replace([np.inf, -np.inf], np.nan)
-            .dropna()
-        )
         observations = len(returns)
-        correlation = returns[asset_a].corr(returns[asset_b]) if observations >= 2 else np.nan
-        smaller_series = min(len(left), len(right))
-        overlap_pct = _safe_percentage(len(merged), smaller_series)
+        correlation = calculate_pair_correlation(returns[asset_a], returns[asset_b])
+        smaller_return_sample = min(len(left_returns), len(right_returns))
+        overlap_ratio = observations / smaller_return_sample if smaller_return_sample else 0.0
+        overlap_pct = round(overlap_ratio * 100, 2)
+        confidence = (
+            "INSUFFICIENT"
+            if pd.isna(correlation)
+            else classify_correlation_confidence(observations, overlap_pct)
+        )
+        ci_low, ci_high = correlation_confidence_interval(correlation, observations)
 
         rows.append(
             {
                 "asset_a": asset_a,
                 "asset_b": asset_b,
-                "same_date_prices": len(merged),
+                "same_date_prices": len(price_overlap),
                 "return_observations": observations,
+                "common_start_date": returns["snapped_at"].min().date() if observations else None,
+                "common_end_date": returns["snapped_at"].max().date() if observations else None,
+                "coverage_ratio": round(overlap_ratio, 4),
                 "overlap_pct_of_smaller_series": overlap_pct,
                 "full_period_correlation": correlation,
-                "potential_bias": observations < 90 or overlap_pct < 70,
+                "correlation_ci95_low": ci_low,
+                "correlation_ci95_high": ci_high,
+                "correlation_confidence": confidence,
+                "potential_bias": confidence in {"INSUFFICIENT", "LOW"},
             }
         )
 
@@ -346,6 +432,127 @@ def audit_event_coverage(engine, asset_frames: dict[str, pd.DataFrame]):
     return pd.DataFrame(rows)
 
 
+def build_freshness_report(asset_audit: pd.DataFrame):
+    """Build an operational view of when and how each asset should be refreshed."""
+    columns = [
+        "asset",
+        "table",
+        "last_date",
+        "stale_days",
+        "stale_limit_days",
+        "days_overdue",
+        "freshness_status",
+        "source_type",
+        "source_reference",
+        "updater_script",
+    ]
+    if asset_audit.empty:
+        return pd.DataFrame(columns=columns)
+
+    report = asset_audit.reindex(columns=columns).copy()
+    report["days_overdue"] = pd.to_numeric(report["days_overdue"], errors="coerce")
+    return report.sort_values(
+        ["days_overdue", "asset"],
+        ascending=[False, True],
+        na_position="first",
+    ).reset_index(drop=True)
+
+
+def build_remediation_report(asset_audit: pd.DataFrame):
+    """Translate audit flags into explicit, non-destructive remediation tasks."""
+    columns = [
+        "priority",
+        "asset",
+        "table",
+        "issue",
+        "evidence",
+        "recommended_action",
+        "updater_script",
+    ]
+    if asset_audit.empty:
+        return pd.DataFrame(columns=columns)
+
+    issue_config = {
+        "load_failed": (
+            "P0",
+            lambda row: row.get("error", "Asset could not be loaded"),
+            "Repair the loader or table mapping, then rerun the read-only audit.",
+        ),
+        "duplicate_dates": (
+            "P1",
+            lambda row: (
+                f"{int(row.get('duplicate_dates', 0) or 0)} extra rows across "
+                f"{int(row.get('duplicate_date_groups', 0) or 0)} dates"
+            ),
+            "Inspect duplicate groups and define a keep rule after backup and dry-run.",
+        ),
+        "invalid_prices": (
+            "P1",
+            lambda row: f"{int(row.get('invalid_prices', 0) or 0)} invalid values",
+            "Validate source, units and parsing before changing any stored value.",
+        ),
+        "non_positive_price_review": (
+            "P1",
+            lambda row: (
+                f"{int(row.get('prices_requiring_review', 0) or 0)} non-positive values; "
+                f"first date {row.get('first_review_date') or '-'}"
+            ),
+            "Validate against the upstream source; WTI can legitimately be negative.",
+        ),
+        "stale_data": (
+            "P2",
+            lambda row: f"{int(row.get('days_overdue', 0) or 0)} days beyond freshness limit",
+            "Run the configured updater asset-by-asset and verify row count and max date.",
+        ),
+        "missing_core_values": (
+            "P2",
+            lambda row: (
+                f"{int(row.get('missing_dates', 0) or 0)} missing dates; "
+                f"{int(row.get('missing_prices', 0) or 0)} missing prices"
+            ),
+            "Trace missing core values to the source and importer before remediation.",
+        ),
+        "low_calendar_coverage": (
+            "P3",
+            lambda row: f"{float(row.get('calendar_coverage_pct', 0) or 0):.2f}% coverage",
+            "Validate the configured calendar and source frequency; avoid blanket forward-fill.",
+        ),
+        "excess_zero_returns": (
+            "P3",
+            lambda row: f"{float(row.get('zero_return_pct', 0) or 0):.2f}% zero returns",
+            "Confirm native frequency and repeated source values before modifying the series.",
+        ),
+        "volume_unavailable": (
+            "P3",
+            lambda row: f"{float(row.get('volume_available_pct', 0) or 0):.2f}% volume coverage",
+            "Confirm whether the upstream instrument exposes meaningful volume.",
+        ),
+    }
+
+    rows = []
+    for _, row in asset_audit.iterrows():
+        warnings = [item.strip() for item in str(row.get("warnings", "")).split(",")]
+        for issue in filter(None, warnings):
+            if issue not in issue_config:
+                continue
+            priority, evidence_builder, action = issue_config[issue]
+            rows.append(
+                {
+                    "priority": priority,
+                    "asset": row.get("asset"),
+                    "table": row.get("table"),
+                    "issue": issue,
+                    "evidence": evidence_builder(row),
+                    "recommended_action": action,
+                    "updater_script": row.get("updater_script", ""),
+                }
+            )
+
+    return pd.DataFrame(rows, columns=columns).sort_values(
+        ["priority", "asset", "issue"]
+    ).reset_index(drop=True)
+
+
 def build_audit_summary(audit_tables: dict[str, pd.DataFrame]):
     asset_audit = audit_tables.get("asset_audit", pd.DataFrame())
     pair_audit = audit_tables.get("correlation_coverage", pd.DataFrame())
@@ -358,6 +565,27 @@ def build_audit_summary(audit_tables: dict[str, pd.DataFrame]):
         "assets_ok": int(asset_audit.get("status", pd.Series(dtype=str)).eq("OK").sum()),
         "assets_warning": int(asset_audit.get("status", pd.Series(dtype=str)).eq("WARNING").sum()),
         "assets_error": int(asset_audit.get("status", pd.Series(dtype=str)).eq("ERROR").sum()),
+        "stale_assets": int(
+            asset_audit.get("freshness_status", pd.Series(dtype=str)).eq("STALE").sum()
+        ),
+        "assets_with_duplicates": int(
+            pd.to_numeric(
+                asset_audit.get("duplicate_dates", pd.Series(dtype=float)),
+                errors="coerce",
+            ).fillna(0).gt(0).sum()
+        ),
+        "assets_with_invalid_prices": int(
+            pd.to_numeric(
+                asset_audit.get("invalid_prices", pd.Series(dtype=float)),
+                errors="coerce",
+            ).fillna(0).gt(0).sum()
+        ),
+        "assets_requiring_price_review": int(
+            pd.to_numeric(
+                asset_audit.get("prices_requiring_review", pd.Series(dtype=float)),
+                errors="coerce",
+            ).fillna(0).gt(0).sum()
+        ),
         "correlation_pairs": len(pair_audit),
         "potentially_biased_pairs": int(
             pair_audit.get("potential_bias", pd.Series(dtype=bool)).fillna(False).sum()

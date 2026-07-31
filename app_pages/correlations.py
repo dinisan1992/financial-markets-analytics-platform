@@ -22,6 +22,7 @@ from dashboard.correlation_data import (
     calculate_rolling_correlation,
     normalize_base_100,
 )
+from services.correlation_quality_service import build_pair_correlation_statistics
 
 
 @dataclass(frozen=True)
@@ -182,7 +183,7 @@ def _load_correlation_data(
             min_periods=30,
         )
 
-        corr_pairs_df = _build_correlation_pairs(corr_df)
+        corr_pairs_df = build_pair_correlation_statistics(returns_df)
 
         st.session_state.corr_loaded = True
         st.session_state.corr_price_df = price_df
@@ -198,26 +199,6 @@ def _load_correlation_data(
     except Exception as exc:
         st.session_state.corr_loaded = False
         st.error(f"Error loading correlation analysis: {exc}")
-
-
-def _build_correlation_pairs(corr_df):
-    corr_pairs = []
-
-    if corr_df is not None and not corr_df.empty:
-        for i, asset_a in enumerate(corr_df.columns):
-            for asset_b in corr_df.columns[i + 1:]:
-                value = corr_df.loc[asset_a, asset_b]
-
-                if pd.notna(value):
-                    corr_pairs.append(
-                        {
-                            "asset_a": asset_a,
-                            "asset_b": asset_b,
-                            "correlation": value,
-                        }
-                    )
-
-    return pd.DataFrame(corr_pairs)
 
 
 def _render_loaded_correlations(
@@ -272,7 +253,12 @@ def _render_loaded_correlations(
 
     if tab_pair.open:
         with tab_pair:
-            _render_pair_tab(returns_df, loaded_assets, correlation_window)
+            _render_pair_tab(
+                returns_df,
+                corr_pairs_df,
+                loaded_assets,
+                correlation_window,
+            )
 
     if tab_base100.open:
         with tab_base100:
@@ -280,7 +266,7 @@ def _render_loaded_correlations(
 
     if tab_data.open:
         with tab_data:
-            _render_data_tab(price_df, returns_df, corr_df)
+            _render_data_tab(price_df, returns_df, corr_df, corr_pairs_df)
 
 
 def _render_correlation_summary(
@@ -291,18 +277,25 @@ def _render_correlation_summary(
     start_date,
     end_date,
 ):
-    avg_corr = corr_pairs_df["correlation"].mean() if corr_pairs_df is not None and not corr_pairs_df.empty else None
+    period_start = deps.date_to_str(start_date)
+    period_end = deps.date_to_str(end_date)
+    valid_pairs = (
+        corr_pairs_df.dropna(subset=["correlation"])
+        if corr_pairs_df is not None and not corr_pairs_df.empty
+        else pd.DataFrame()
+    )
+    avg_corr = valid_pairs["correlation"].mean() if not valid_pairs.empty else None
 
     top_positive = None
     top_negative = None
 
-    if corr_pairs_df is not None and not corr_pairs_df.empty:
-        top_positive = corr_pairs_df.sort_values(
+    if not valid_pairs.empty:
+        top_positive = valid_pairs.sort_values(
             "correlation",
             ascending=False,
         ).iloc[0]
 
-        top_negative = corr_pairs_df.sort_values(
+        top_negative = valid_pairs.sort_values(
             "correlation",
             ascending=True,
         ).iloc[0]
@@ -313,13 +306,15 @@ def _render_correlation_summary(
         st.metric("Assets", len(loaded_assets))
 
     with k2:
-        st.metric("Return Observations", f"{len(returns_df):,}")
+        st.metric("Return Dates", f"{len(returns_df):,}")
 
     with k3:
         st.metric("Average Correlation", f"{avg_corr:.2f}" if avg_corr is not None else "-")
 
     with k4:
-        st.metric("Period", f"{deps.date_to_str(start_date)} -> {deps.date_to_str(end_date)}")
+        st.metric("Period", f"{period_start[:4]} to {period_end[:4]}")
+
+    st.caption(f"Loaded date range: {period_start} to {period_end}.")
 
     if top_positive is not None and top_negative is not None:
         p1, p2 = st.columns(2)
@@ -381,6 +376,11 @@ def _render_rankings_tab(corr_pairs_df, loaded_assets):
         st.warning("Not enough correlation pairs.")
         return
 
+    corr_pairs_df = corr_pairs_df.dropna(subset=["correlation"]).copy()
+    if corr_pairs_df.empty:
+        st.warning("No pair has enough valid observations for a correlation.")
+        return
+
     positive_df = corr_pairs_df.sort_values(
         "correlation",
         ascending=False,
@@ -425,7 +425,13 @@ def _render_rankings_tab(corr_pairs_df, loaded_assets):
         )
 
         focus_rows = focus_rows[
-            ["other_asset", "correlation"]
+            [
+                "other_asset",
+                "correlation",
+                "common_observations",
+                "coverage_pct",
+                "confidence",
+            ]
         ].sort_values(
             "correlation",
             ascending=False,
@@ -438,7 +444,7 @@ def _render_rankings_tab(corr_pairs_df, loaded_assets):
         )
 
 
-def _render_pair_tab(returns_df, loaded_assets, correlation_window):
+def _render_pair_tab(returns_df, corr_pairs_df, loaded_assets, correlation_window):
     st.markdown("## Pair Analysis")
 
     available_assets = [
@@ -480,11 +486,52 @@ def _render_pair_tab(returns_df, loaded_assets, correlation_window):
         st.warning("Choose two different assets.")
         return
 
+    _render_pair_quality(corr_pairs_df, asset_x, asset_y)
+
     if pair_view == "Rolling Correlation":
         _render_rolling_correlation(returns_df, asset_x, asset_y, correlation_window)
 
     elif pair_view == "Returns Scatter":
         _render_returns_scatter(returns_df, asset_x, asset_y)
+
+
+def _render_pair_quality(corr_pairs_df, asset_x, asset_y):
+    if corr_pairs_df is None or corr_pairs_df.empty:
+        return
+
+    pair = corr_pairs_df[
+        ((corr_pairs_df["asset_a"] == asset_x) & (corr_pairs_df["asset_b"] == asset_y))
+        | ((corr_pairs_df["asset_a"] == asset_y) & (corr_pairs_df["asset_b"] == asset_x))
+    ]
+    if pair.empty:
+        return
+
+    stats = pair.iloc[0]
+    common_start = stats["common_start_date"]
+    common_end = stats["common_end_date"]
+    with st.container(horizontal=True):
+        st.metric("Common Observations", f"{int(stats['common_observations']):,}", border=True)
+        st.metric("Coverage", f"{stats['coverage_pct']:.2f}%", border=True)
+        st.metric("Confidence", stats["confidence"].title(), border=True)
+        st.metric(
+            "Common Period",
+            f"{str(common_start)[:4]} to {str(common_end)[:4]}",
+            border=True,
+        )
+
+    st.caption(f"Aligned return dates: {common_start} to {common_end}.")
+
+    if stats["potential_bias"]:
+        st.warning(
+            "This pair has limited aligned observations or coverage. "
+            "Treat the reported correlation as low-confidence."
+        )
+    elif pd.notna(stats["correlation_ci95_low"]):
+        st.caption(
+            f"Full-period correlation {stats['correlation']:.4f}; "
+            f"95% CI [{stats['correlation_ci95_low']:.4f}, "
+            f"{stats['correlation_ci95_high']:.4f}]."
+        )
 
 
 def _render_rolling_correlation(returns_df, asset_x, asset_y, correlation_window):
@@ -598,7 +645,7 @@ def _render_base100_tab(price_df, loaded_assets):
         st.warning("Unable to generate Base 100 chart.")
 
 
-def _render_data_tab(price_df, returns_df, corr_df):
+def _render_data_tab(price_df, returns_df, corr_df, corr_pairs_df):
     st.markdown("## Data")
 
     data_view = st.radio(
@@ -607,6 +654,7 @@ def _render_data_tab(price_df, returns_df, corr_df):
             "Prices",
             "Returns",
             "Correlation Matrix",
+            "Pair Coverage",
         ],
         horizontal=True,
     )
@@ -627,4 +675,22 @@ def _render_data_tab(price_df, returns_df, corr_df):
         st.dataframe(
             corr_df.round(4),
             width="stretch",
+        )
+
+    elif data_view == "Pair Coverage":
+        st.dataframe(
+            corr_pairs_df,
+            hide_index=True,
+            width="stretch",
+            column_config={
+                "coverage_ratio": st.column_config.ProgressColumn(
+                    "Coverage Ratio",
+                    min_value=0.0,
+                    max_value=1.0,
+                    format="percent",
+                ),
+                "correlation": st.column_config.NumberColumn(format="%.4f"),
+                "correlation_ci95_low": st.column_config.NumberColumn(format="%.4f"),
+                "correlation_ci95_high": st.column_config.NumberColumn(format="%.4f"),
+            },
         )

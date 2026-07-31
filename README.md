@@ -20,7 +20,7 @@ Functional local platform with:
 - Data quality and validation tools.
 - Automated syntax checks and unit tests through GitHub Actions.
 
-Current project version: **v0.4.0**
+Current project version: **v0.4.1**
 
 ## Main Analytical Capabilities
 
@@ -77,11 +77,11 @@ A future fraud analytics layer is planned for card fraud, credit transfer fraud,
 - **Overview** - project scope and module summary.
 - **Asset Explorer** - centralized technical analysis, OHLC provenance, KPIs, risk indicators and event overlays.
 - **Market Event Analysis** - cross-asset reactions, date precision, event detail and recovery analysis.
-- **Correlations** - pairwise-valid matrices, observation-based rolling correlations and normalized performance.
+- **Correlations** - pairwise-valid matrices, observation-based rolling correlations, common-period coverage, confidence intervals and normalized performance.
 - **Market Regimes** - rule-based regime classification and regime-conditioned performance.
 - **FED Macro** - all configured FED/market pairs aligned on real market observations.
 - **EURO Macro** - European macroeconomic series aligned on real market observations.
-- **Data Quality** - read-only asset, pair and event coverage audit with aggregated ZIP export.
+- **Data Quality** - read-only freshness, duplicate, price-review, remediation, pair-confidence and event-coverage audit with aggregated ZIP export.
 - **Project Status** - current implementation and validation status.
 
 ## Application Screenshots
@@ -263,12 +263,12 @@ The default local database is `btc_data` on `localhost:3306`. SQL writes are dis
 
 ## Validation Snapshot
 
-The v0.4.0 validation includes:
+The v0.4.1 validation includes:
 
 - 9/9 Streamlit pages rendered without uncaught exceptions, including graceful database-offline handling.
 - 48 deterministic unit tests passed.
 - Active Python files compiled successfully.
-- Native/synthetic OHLC, 252/365 annualization, rolling correlation, events, recovery, macro alignment, data quality and regimes covered by tests.
+- Native/synthetic OHLC, 252/365 annualization, rolling correlation, pair confidence, events, recovery, macro alignment, data quality and regimes covered by 56 tests.
 - News modules import without starting network loops or SQL activity.
 - No SQL writes, migrations, CSV importers or database mutations were executed during this upgrade.
 - The read-only database audit loaded 37 assets, evaluated 666 pairs and 66 events, and produced `audit_outputs/audit_outputs.zip`.

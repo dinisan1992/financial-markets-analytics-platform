@@ -128,6 +128,13 @@ Improve reliability of the analytical data layer.
 - Added OHLC/volume coverage, pair overlap and event coverage
 - Added validation status cards and aggregated ZIP export
 
+### Completed v0.4.1 Improvements
+
+- Added freshness, source responsibility and overdue-day reporting
+- Added duplicate group/date-range diagnostics and prioritized remediation tasks
+- Added historically aware review for non-positive WTI observations
+- Added automatic archival of previous audit ZIP files
+
 ---
 
 ## Phase 5 — FED Macro Layer
@@ -273,6 +280,9 @@ Provide multi-asset relationship analysis.
 - Rolling correlation
 - Returns scatter plot
 - Multi-asset Base 100 chart
+- Common observations and aligned period per pair
+- Coverage ratio and confidence classification
+- Fisher 95% correlation confidence intervals
 
 ### Next Improvements
 
@@ -368,6 +378,9 @@ Expose data quality reports directly inside Streamlit.
 - Last available date by table
 - Macro validation status
 - SQL table inventory overview
+- Freshness and responsible-updater report
+- Prioritized non-destructive remediation report
+- Correlation coverage and confidence report
 
 ---
 
@@ -509,13 +522,13 @@ Prepare the project for professional presentation.
 
 The current priority is:
 
-1. Preserve the v0.4.0 read-only audit as the remediation baseline
-2. Produce a freshness and source-responsibility report for every configured asset
-3. Diagnose duplicate-date keys without deleting or updating database rows
-4. Validate the WTI_OIL outlier against its source and historical contract definition
-5. Classify zero-return series by true source frequency and forward-fill policy
-6. Add overlap observations, common dates, coverage and confidence to correlation diagnostics
-7. Rerun the read-only audit and compare the before/after results
+1. Validate stale sources and updater behaviour asset by asset
+2. Define duplicate keep rules after backup and dry-run
+3. Confirm the historical WTI contract/source without automatic correction
+4. Classify zero-return series by native frequency and forward-fill policy
+5. Prepare read-only previews for every proposed remediation action
+6. Apply database changes only after explicit approval and backup
+7. Compare post-update audits with automatically archived baselines
 8. Begin machine learning only after data quality and feature governance are stable
 
 ---

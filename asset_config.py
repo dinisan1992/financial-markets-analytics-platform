@@ -217,7 +217,8 @@ ASSETS = {
         "csv_path": NEW_MARKET_CLEAN_DIR / "wti_oil_data_clean.csv",
         "table_name": "wti_oil_analysis",
         "market_type": "commodity",
-        "symbol": "WTI"
+        "symbol": "WTI",
+        "negative_values_possible": True,
     },
 
     "NATURAL_GAS": {
@@ -389,6 +390,7 @@ MARKET_TYPE_METADATA = {
         "volume_expected": True,
         "ohlc_expected": True,
         "positive_values_expected": True,
+        "negative_values_possible": False,
     },
     "equity_index": {
         "asset_class": "equity_index",
@@ -397,6 +399,7 @@ MARKET_TYPE_METADATA = {
         "volume_expected": False,
         "ohlc_expected": True,
         "positive_values_expected": True,
+        "negative_values_possible": False,
     },
     "commodity": {
         "asset_class": "commodity",
@@ -405,6 +408,7 @@ MARKET_TYPE_METADATA = {
         "volume_expected": True,
         "ohlc_expected": True,
         "positive_values_expected": True,
+        "negative_values_possible": False,
     },
     "currency_index": {
         "asset_class": "currency_index",
@@ -413,6 +417,7 @@ MARKET_TYPE_METADATA = {
         "volume_expected": False,
         "ohlc_expected": True,
         "positive_values_expected": True,
+        "negative_values_possible": False,
     },
     "currency": {
         "asset_class": "currency",
@@ -421,6 +426,7 @@ MARKET_TYPE_METADATA = {
         "volume_expected": False,
         "ohlc_expected": True,
         "positive_values_expected": True,
+        "negative_values_possible": False,
     },
     "volatility": {
         "asset_class": "volatility_index",
@@ -429,6 +435,7 @@ MARKET_TYPE_METADATA = {
         "volume_expected": False,
         "ohlc_expected": True,
         "positive_values_expected": True,
+        "negative_values_possible": False,
     },
     "yield": {
         "asset_class": "sovereign_yield",
@@ -437,6 +444,7 @@ MARKET_TYPE_METADATA = {
         "volume_expected": False,
         "ohlc_expected": False,
         "positive_values_expected": False,
+        "negative_values_possible": True,
     },
     "financial_stress": {
         "asset_class": "financial_stress",
@@ -445,6 +453,7 @@ MARKET_TYPE_METADATA = {
         "volume_expected": False,
         "ohlc_expected": False,
         "positive_values_expected": False,
+        "negative_values_possible": True,
     },
 }
 
@@ -462,11 +471,19 @@ def _apply_financial_metadata():
                 "volume_expected": False,
                 "ohlc_expected": False,
                 "positive_values_expected": True,
+                "negative_values_possible": False,
             },
         )
 
         for key, value in defaults.items():
             asset.setdefault(key, value)
+
+        csv_path = asset.get("csv_path")
+        asset.setdefault("source_type", "configured_csv_pipeline")
+        asset.setdefault(
+            "source_reference",
+            getattr(csv_path, "name", str(csv_path)) if csv_path else "",
+        )
 
 
 _apply_financial_metadata()

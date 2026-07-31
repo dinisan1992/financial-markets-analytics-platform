@@ -4,7 +4,7 @@ Last updated: 31 July 2026
 
 ## Current Version
 
-**Macro-Financial Risk & Market Behaviour Analytics Platform v0.4.0**
+**Macro-Financial Risk & Market Behaviour Analytics Platform v0.4.1**
 
 ## Executive Summary
 
@@ -22,7 +22,7 @@ It combines:
 - interactive dashboarding;
 - data quality validation.
 
-The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.4.0 adds the Analytical Engine v2, explicit financial metadata, OHLC provenance, market-calendar policies, a read-only audit, event recovery, macro features and rule-based market regimes.
+The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.4.1 extends the Analytical Engine v2 with operational freshness and remediation reports, duplicate diagnostics, historically aware price review and explicit correlation confidence.
 
 ## Completed and Functional Modules
 
@@ -103,6 +103,10 @@ Includes:
 - zero-return and forward-fill risk indicators;
 - native OHLC and volume coverage;
 - pairwise correlation coverage and potential bias;
+- common correlation observations, aligned period, coverage ratio and Fisher 95% confidence interval;
+- freshness limits, overdue days, configured source and responsible updater;
+- duplicate-date group counts and affected date range;
+- prioritized non-destructive remediation actions;
 - event coverage and event-date precision;
 - aggregated CSV/ZIP export with no raw prices or credentials.
 
@@ -189,6 +193,7 @@ The current architecture includes:
 - `services/data_access_service.py` — read-only SQL access and DataFrame normalization.
 - `services/event_analysis_service.py` — event-study calculations.
 - `services/data_quality_service.py` — aggregated asset, pair and event auditing.
+- `services/correlation_quality_service.py` — pair coverage, confidence classification and confidence intervals.
 - `services/macro_analytics_service.py` — market-calendar macro alignment and observation-based features.
 - `services/market_regime_service.py` — rule-based regime features and classification.
 - `services/btc_cycle_service.py` — BTC cycle and halving calculations.
@@ -214,11 +219,11 @@ Main file:
 
 ## Latest Documented Validation
 
-Version 0.4.0 local code validation included:
+Version 0.4.1 local code validation included:
 
 - 9/9 dashboard pages rendered without uncaught exceptions.
 - Database-offline handling validated with MySQL/XAMPP stopped.
-- 48/48 deterministic unit tests passed.
+- 56/56 deterministic unit tests passed.
 - Active Python files compiled successfully.
 - Custom event horizons, event recovery and year-only exclusion validated.
 - OHLC preservation/fallback and 252/365 annualization validated against controlled series.
@@ -229,14 +234,15 @@ Version 0.4.0 local code validation included:
 
 ### Read-Only Data Audit Snapshot
 
-The 31 July 2026 audit loaded all 37 configured asset tables without load errors and generated the local, Git-ignored baseline `audit_outputs/audit_outputs.zip` (SHA-256: `8BF5A15AC44043E567442E7522626B15F4321B5CB4C449CA081E5ABD9C656531`).
+The 31 July 2026 v0.4.0 baseline loaded all 37 configured asset tables without load errors. Its recorded SHA-256 is `8BF5A15AC44043E567442E7522626B15F4321B5CB4C449CA081E5ABD9C656531`. Version 0.4.1 archives the previous local ZIP under `audit_outputs/baselines/` before generating a new Git-ignored audit.
 
 - 37 assets audited; all were stale relative to the audit date.
 - 27 assets had measurable native OHLC coverage; 10 required synthetic fallback.
 - 666 correlation pairs evaluated; 149 were flagged for low overlap or insufficient observations.
+- Confidence distribution: 457 high, 60 moderate, 148 low and 1 insufficient pair.
 - 66 historical events audited; 35 had year-only date precision and 31 had exact dates.
 - Duplicate dates were found in EURO, YUAN, LIBRA and SSECOMPOSITE.
-- One invalid positive-price observation was found in WTI_OIL.
+- The negative WTI_OIL observation on 20 April 2020 is retained and flagged for source review rather than automatic correction.
 - Excess zero returns were found in YUAN, FINANCIAL_CONDITIONS and TED_SPREAD.
 - No database rows or schemas were changed by the audit.
 
@@ -328,12 +334,12 @@ Planned work:
 
 The project already contains a validated multi-asset, FED macro and EURO macro analytical layer.
 
-The current priority is a controlled Data Remediation Cycle:
+The current priority is the controlled execution stage of the Data Remediation Cycle:
 
-1. report asset freshness, source and responsible updater without writing to SQL;
-2. diagnose duplicate-date keys in EURO, YUAN, LIBRA and SSECOMPOSITE;
-3. validate the WTI_OIL observation against its date, contract and source before classifying it as invalid;
-4. distinguish genuine low-frequency series from artificial zero returns or forward-fill;
-5. expose overlap observations, common dates, coverage and confidence for correlation pairs;
-6. rerun the read-only audit and compare it with the v0.4.0 baseline;
+1. validate the upstream source and importer behaviour for each stale asset;
+2. define duplicate keep rules for EURO, YUAN, LIBRA and SSECOMPOSITE after backup and dry-run;
+3. confirm the WTI_OIL contract/source for 20 April 2020 without changing the historical value automatically;
+4. classify YUAN, FINANCIAL_CONDITIONS and TED_SPREAD by native source frequency;
+5. add dry-run plans for any proposed database remediation;
+6. rerun the read-only audit after approved data updates and compare the archived baselines;
 7. begin machine-learning experiments only after data quality and feature governance are stable.

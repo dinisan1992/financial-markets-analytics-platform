@@ -29,15 +29,25 @@
 
 ---
 
-## High Priority After v0.4.0
+## Completed in v0.4.1
 
-- Preserve and compare the read-only audit baseline
+- Archive the previous read-only audit automatically before overwrite
 - Report stale assets, source and responsible updater
-- Diagnose duplicate dates without mutating SQL data
-- Validate the WTI_OIL outlier against its source
-- Review zero-return series and source-frequency metadata
-- Add correlation overlap and confidence diagnostics
-- Re-run all financial reference tests after remediation
+- Diagnose duplicate groups without mutating SQL data
+- Classify the historical WTI_OIL negative value for source review
+- Report zero-return series and source-frequency risks
+- Add correlation overlap, common period, confidence and 95% intervals
+- Re-run all financial reference tests: 56/56 passed
+
+## High Priority After v0.4.1
+
+- Validate stale asset sources and updater behaviour one asset at a time
+- Define duplicate keep rules after backup and dry-run
+- Confirm the WTI contract/source for 20 April 2020
+- Classify YUAN, FINANCIAL_CONDITIONS and TED_SPREAD by native frequency
+- Prepare read-only previews for proposed remediation actions
+- Apply database changes only after explicit approval and backup
+- Compare every post-update audit with an archived baseline
 
 ---
 

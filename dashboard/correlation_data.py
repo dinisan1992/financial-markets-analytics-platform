@@ -66,7 +66,7 @@ def build_multi_asset_price_frame(
     assets_config: dict,
     start_date=None,
     end_date=None,
-    forward_fill: bool = True,
+    forward_fill: bool = False,
     return_load_report: bool = False,
 ):
     """
