@@ -2,10 +2,12 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Callable
 
+import pandas as pd
 import streamlit as st
 
 from asset_config import ASSETS
-from macro_config import MACRO_ASSETS
+from macro_config import MACRO_ASSETS, MACRO_MARKET_PAIRS
+from services.macro_analytics_service import prepare_macro_market_features
 
 
 @dataclass(frozen=True)
@@ -20,100 +22,110 @@ class FedMacroDeps:
 
 def render_fed_macro(deps: FedMacroDeps):
     st.title("FED Macro vs Market")
+    st.markdown("Compares active US/FED macro indicators with market assets.")
 
-    st.markdown(
-        """
-        Compares US/FED macro indicators with market assets.
-        """
+    selected_pair_key = st.selectbox(
+        "FED/market pair",
+        list(MACRO_MARKET_PAIRS),
+        format_func=lambda key: MACRO_MARKET_PAIRS[key]["name"],
     )
-
-    fed_options = {
-        "US M2 Money Supply vs BTC": ("FED_M2", "BTC", date(2020, 1, 1), "base100"),
-        "Fed Funds Rate vs NASDAQ 100": ("FED_FUNDS_RATE", "NASDAQ100", date(2020, 1, 1), "dual"),
-        "Fed Total Assets vs S&P 500": ("FED_TOTAL_ASSETS", "SP500", date(2020, 1, 1), "base100"),
-        "Credit Card Delinquency vs VIX": ("FED_CREDIT_CARD_DELINQUENCY", "VIX", date(2020, 1, 1), "dual"),
-        "Bank Credit vs S&P 500": ("FED_BANK_CREDIT", "SP500", date(2020, 1, 1), "base100"),
-    }
-
-    selected_label = st.selectbox(
-        "Choose a FED/market pair",
-        list(fed_options.keys()),
-    )
-
-    macro_key, market_asset, default_start, chart_type = fed_options[selected_label]
+    selected_cfg = MACRO_MARKET_PAIRS[selected_pair_key]
+    macro_key = selected_cfg["macro_asset"]
+    market_asset = selected_cfg["market_asset"]
 
     start_date, end_date = deps.render_date_range_selector(
-        default_start=default_start,
+        default_start=date(2000, 1, 1),
         default_end=date.today(),
     )
 
+    st.caption(selected_cfg["description"])
     if st.button("Load FED analysis"):
-        _load_and_render_fed_pair(
-            deps=deps,
-            macro_key=macro_key,
-            market_asset=market_asset,
-            start_date=start_date,
-            end_date=end_date,
-            chart_type=chart_type,
-            selected_label=selected_label,
+        try:
+            with st.spinner("Loading FED/market data..."):
+                frame = deps.load_fed_macro_pair(
+                    macro_key=macro_key,
+                    market_asset=market_asset,
+                    start_date=deps.date_to_str(start_date),
+                    end_date=deps.date_to_str(end_date),
+                )
+            st.session_state["fed_macro_result"] = {
+                "pair_key": selected_pair_key,
+                "frame": frame,
+            }
+            st.success("Data loaded successfully.")
+        except Exception as exc:
+            st.session_state.pop("fed_macro_result", None)
+            st.error(f"Error loading FED analysis: {exc}")
+
+    state = st.session_state.get("fed_macro_result")
+    if state and state.get("pair_key") == selected_pair_key:
+        _render_fed_pair(
+            deps,
+            state["frame"],
+            macro_key,
+            market_asset,
+            selected_cfg,
         )
 
 
-def _load_and_render_fed_pair(
-    deps: FedMacroDeps,
-    macro_key,
-    market_asset,
-    start_date,
-    end_date,
-    chart_type,
-    selected_label,
-):
-    try:
-        with st.spinner("Loading FED/market data..."):
-            df = deps.load_fed_macro_pair(
-                macro_key=macro_key,
-                market_asset=market_asset,
-                start_date=deps.date_to_str(start_date),
-                end_date=deps.date_to_str(end_date),
-            )
+def _render_fed_pair(deps, frame, macro_key, market_asset, selected_cfg):
+    macro_cfg = MACRO_ASSETS[macro_key]
+    market_cfg = ASSETS[market_asset]
+    features = prepare_macro_market_features(frame, macro_key, market_asset)
 
-        macro_cfg = MACRO_ASSETS[macro_key]
-        market_cfg = ASSETS[market_asset]
+    deps.make_summary_cards(frame, macro_key, market_asset)
+    st.caption(
+        "Calendar policy: real market observations. Macro values are carried backward-to-forward "
+        "only after their observation date; macro_age_days reports their age."
+    )
 
-        st.success("Data loaded successfully.")
+    tab_chart, tab_features, tab_data = st.tabs(
+        ["Comparison", "Macro Features", "Data"],
+        on_change="rerun",
+    )
 
-        deps.make_summary_cards(
-            df=df,
-            macro_col=macro_key,
-            market_col=market_asset,
-        )
+    if tab_chart.open:
+        with tab_chart:
+            if macro_cfg.get("category") in {"rates", "consumer_stress"}:
+                figure = deps.make_dual_axis_chart(
+                    df=frame,
+                    macro_col=macro_key,
+                    market_col=market_asset,
+                    macro_name=macro_cfg["display_name"],
+                    market_name=market_cfg["display_name"],
+                    macro_unit=macro_cfg.get("unit", ""),
+                    title=selected_cfg["name"],
+                )
+            else:
+                figure = deps.make_base100_chart(
+                    df=frame,
+                    left_col=macro_key,
+                    right_col=market_asset,
+                    left_name=macro_cfg["display_name"],
+                    right_name=market_cfg["display_name"],
+                    title=selected_cfg["name"],
+                )
+            if figure is not None:
+                st.plotly_chart(figure, width="stretch")
 
-        st.dataframe(df.tail(20), width="stretch")
+    if tab_features.open:
+        with tab_features:
+            latest = features.iloc[-1]
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Macro Observation Age", f"{int(latest['macro_age_days'])} days")
+            c2.metric("30-Observation Correlation", _format_number(latest.get("rolling_correlation_30obs")))
+            c3.metric("90-Observation Correlation", _format_number(latest.get("rolling_correlation_90obs")))
+            feature_columns = [
+                column for column in features.columns
+                if column == "snapped_at" or "change_" in column or "return_" in column
+                or "zscore_" in column or "correlation_" in column
+            ]
+            st.dataframe(features[feature_columns].tail(250), hide_index=True, width="stretch")
 
-        if chart_type == "dual":
-            fig = deps.make_dual_axis_chart(
-                df=df,
-                macro_col=macro_key,
-                market_col=market_asset,
-                macro_name=macro_cfg["display_name"],
-                market_name=market_cfg["display_name"],
-                macro_unit=macro_cfg.get("unit", ""),
-                title=selected_label,
-            )
-        else:
-            fig = deps.make_base100_chart(
-                df=df,
-                left_col=macro_key,
-                right_col=market_asset,
-                left_name=macro_cfg["display_name"],
-                right_name=market_cfg["display_name"],
-                title=selected_label,
-            )
+    if tab_data.open:
+        with tab_data:
+            st.dataframe(frame.tail(500), hide_index=True, width="stretch")
 
-        if fig is not None:
-            st.plotly_chart(fig, width="stretch")
-        else:
-            st.warning("Unable to generate the chart.")
 
-    except Exception as exc:
-        st.error(f"Error loading FED analysis: {exc}")
+def _format_number(value):
+    return f"{value:.3f}" if pd.notna(value) else "-"

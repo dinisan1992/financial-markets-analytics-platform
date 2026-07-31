@@ -66,6 +66,7 @@ logs/
 exports/
 output/
 outputs/
+audit_outputs/
 reports/
 
 # =========================

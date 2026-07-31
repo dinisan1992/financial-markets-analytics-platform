@@ -4,6 +4,7 @@ from sqlalchemy import create_engine, text
 from config import DB_CONFIG, get_sqlalchemy_database_url
 from asset_config import ASSETS
 from euro_series_config import EURO_SERIES
+from services.macro_analytics_service import align_macro_to_market_calendar
 
 
 # =========================
@@ -316,23 +317,14 @@ def alinhar_euro_com_market(
         end_date=end_date
     )
 
-    df = pd.merge(
-        euro_df,
-        market_df,
-        on="snapped_at",
-        how=how
+    df = align_macro_to_market_calendar(
+        macro_df=euro_df,
+        market_df=market_df,
+        macro_column=euro_series_key,
+        market_column=market_asset,
     )
 
-    df = df.sort_values("snapped_at").reset_index(drop=True)
-
-    if forward_fill:
-        df[euro_series_key] = df[euro_series_key].ffill()
-        df[market_asset] = df[market_asset].ffill()
-
-    df = df.dropna(subset=[euro_series_key, market_asset]).copy()
-    df = df.reset_index(drop=True)
-
-    print(f"Rows alinhadas: {len(df)}")
+    print(f"Aligned market observations: {len(df)}")
 
     if not df.empty:
         print(f"Minimum date: {df['snapped_at'].min().date()}")

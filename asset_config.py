@@ -324,7 +324,9 @@ ASSETS = {
         "csv_path": NEW_MARKET_CLEAN_DIR / "germany10y_data_clean.csv",
         "table_name": "germany10y_analysis",
         "market_type": "yield",
-        "symbol": "GERMANY10Y"
+        "symbol": "GERMANY10Y",
+        "periods_per_year": 12,
+        "calendar_type": "monthly"
     },
 
     "UK10Y": {
@@ -333,7 +335,9 @@ ASSETS = {
         "csv_path": NEW_MARKET_CLEAN_DIR / "uk10y_data_clean.csv",
         "table_name": "uk10y_analysis",
         "market_type": "yield",
-        "symbol": "UK10Y"
+        "symbol": "UK10Y",
+        "periods_per_year": 12,
+        "calendar_type": "monthly"
     },
 
     "JAPAN10Y": {
@@ -342,7 +346,9 @@ ASSETS = {
         "csv_path": NEW_MARKET_CLEAN_DIR / "japan10y_data_clean.csv",
         "table_name": "japan10y_analysis",
         "market_type": "yield",
-        "symbol": "JAPAN10Y"
+        "symbol": "JAPAN10Y",
+        "periods_per_year": 12,
+        "calendar_type": "monthly"
     },
 
     # =========================
@@ -355,7 +361,9 @@ ASSETS = {
         "csv_path": NEW_MARKET_CLEAN_DIR / "financial_conditions_data_clean.csv",
         "table_name": "financial_conditions_analysis",
         "market_type": "financial_stress",
-        "symbol": "NFCI"
+        "symbol": "NFCI",
+        "periods_per_year": 52,
+        "calendar_type": "weekly"
     },
 
     "TED_SPREAD": {
@@ -367,6 +375,101 @@ ASSETS = {
         "symbol": "TED"
     },
 }
+
+
+# =========================
+# FINANCIAL METADATA
+# =========================
+
+MARKET_TYPE_METADATA = {
+    "crypto": {
+        "asset_class": "crypto",
+        "periods_per_year": 365,
+        "calendar_type": "continuous",
+        "volume_expected": True,
+        "ohlc_expected": True,
+        "positive_values_expected": True,
+    },
+    "equity_index": {
+        "asset_class": "equity_index",
+        "periods_per_year": 252,
+        "calendar_type": "trading_days",
+        "volume_expected": False,
+        "ohlc_expected": True,
+        "positive_values_expected": True,
+    },
+    "commodity": {
+        "asset_class": "commodity",
+        "periods_per_year": 252,
+        "calendar_type": "trading_days",
+        "volume_expected": True,
+        "ohlc_expected": True,
+        "positive_values_expected": True,
+    },
+    "currency_index": {
+        "asset_class": "currency_index",
+        "periods_per_year": 252,
+        "calendar_type": "trading_days",
+        "volume_expected": False,
+        "ohlc_expected": True,
+        "positive_values_expected": True,
+    },
+    "currency": {
+        "asset_class": "currency",
+        "periods_per_year": 252,
+        "calendar_type": "trading_days",
+        "volume_expected": False,
+        "ohlc_expected": True,
+        "positive_values_expected": True,
+    },
+    "volatility": {
+        "asset_class": "volatility_index",
+        "periods_per_year": 252,
+        "calendar_type": "trading_days",
+        "volume_expected": False,
+        "ohlc_expected": True,
+        "positive_values_expected": True,
+    },
+    "yield": {
+        "asset_class": "sovereign_yield",
+        "periods_per_year": 252,
+        "calendar_type": "trading_days",
+        "volume_expected": False,
+        "ohlc_expected": False,
+        "positive_values_expected": False,
+    },
+    "financial_stress": {
+        "asset_class": "financial_stress",
+        "periods_per_year": 252,
+        "calendar_type": "trading_days",
+        "volume_expected": False,
+        "ohlc_expected": False,
+        "positive_values_expected": False,
+    },
+}
+
+
+def _apply_financial_metadata():
+    """Enrich every asset with explicit calculation and calendar metadata."""
+    for asset in ASSETS.values():
+        market_type = asset.get("market_type")
+        defaults = MARKET_TYPE_METADATA.get(
+            market_type,
+            {
+                "asset_class": market_type or "unknown",
+                "periods_per_year": 252,
+                "calendar_type": "trading_days",
+                "volume_expected": False,
+                "ohlc_expected": False,
+                "positive_values_expected": True,
+            },
+        )
+
+        for key, value in defaults.items():
+            asset.setdefault(key, value)
+
+
+_apply_financial_metadata()
 
 
 # =========================

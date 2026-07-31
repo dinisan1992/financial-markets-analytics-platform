@@ -86,6 +86,7 @@ class DataAccessServiceTests(unittest.TestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(result.iloc[0]["event_date"], pd.Timestamp("2021-01-01"))
         self.assertEqual(result.iloc[0]["event_source_table"], "world_historical_events")
+        self.assertEqual(result.iloc[0]["date_precision"], "year")
 
     def test_macro_pair_loader_preserves_alignment_options(self):
         align_macro = Mock(return_value=pd.DataFrame({"x": [1]}))

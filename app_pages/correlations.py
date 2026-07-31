@@ -118,7 +118,7 @@ def _render_correlation_controls():
 
     with c4:
         correlation_window = st.slider(
-            "Rolling Correlation Window",
+            "Rolling Correlation Window (observations)",
             min_value=30,
             max_value=365,
             value=90,
@@ -145,18 +145,31 @@ def _load_correlation_data(
 ):
     try:
         with st.spinner("Loading multi-asset prices..."):
-            price_df = build_multi_asset_price_frame(
+            price_df, load_report = build_multi_asset_price_frame(
                 engine=deps.get_engine(),
                 selected_assets=selected_assets,
                 assets_config=ASSETS,
                 start_date=deps.date_to_str(start_date),
                 end_date=deps.date_to_str(end_date),
                 forward_fill=False,
+                return_load_report=True,
             )
 
         if price_df.empty:
             st.warning("Unable to load data for the selected assets.")
             st.session_state.corr_loaded = False
+            st.session_state.corr_load_report = load_report
+            return
+
+        loaded_assets = [
+            column for column in price_df.columns
+            if column != "snapped_at"
+        ]
+
+        if len(loaded_assets) < 2:
+            st.warning("Fewer than two requested assets produced valid prices.")
+            st.session_state.corr_loaded = False
+            st.session_state.corr_load_report = load_report
             return
 
         returns_df = calculate_returns(
@@ -176,8 +189,9 @@ def _load_correlation_data(
         st.session_state.corr_returns_df = returns_df
         st.session_state.corr_corr_df = corr_df
         st.session_state.corr_pairs_df = corr_pairs_df
-        st.session_state.corr_selected_assets = selected_assets
+        st.session_state.corr_selected_assets = loaded_assets
         st.session_state.corr_window = correlation_window
+        st.session_state.corr_load_report = load_report
 
         st.success("Correlation data loaded successfully.")
 
@@ -218,10 +232,13 @@ def _render_loaded_correlations(
     corr_df = st.session_state.corr_corr_df
     corr_pairs_df = st.session_state.corr_pairs_df
     loaded_assets = st.session_state.corr_selected_assets or selected_assets
+    load_report = st.session_state.get("corr_load_report")
 
     if price_df is None or returns_df is None or corr_df is None:
         st.warning("Correlation data is not available. Please reload.")
         return
+
+    _render_load_report(load_report)
 
     _render_correlation_summary(
         deps=deps,
@@ -241,23 +258,29 @@ def _render_loaded_correlations(
             "Pair Analysis",
             "Base 100",
             "Data",
-        ]
+        ],
+        on_change="rerun",
     )
 
-    with tab_heatmap:
-        _render_heatmap_tab(corr_df)
+    if tab_heatmap.open:
+        with tab_heatmap:
+            _render_heatmap_tab(corr_df)
 
-    with tab_rankings:
-        _render_rankings_tab(corr_pairs_df, loaded_assets)
+    if tab_rankings.open:
+        with tab_rankings:
+            _render_rankings_tab(corr_pairs_df, loaded_assets)
 
-    with tab_pair:
-        _render_pair_tab(returns_df, loaded_assets, correlation_window)
+    if tab_pair.open:
+        with tab_pair:
+            _render_pair_tab(returns_df, loaded_assets, correlation_window)
 
-    with tab_base100:
-        _render_base100_tab(price_df, loaded_assets)
+    if tab_base100.open:
+        with tab_base100:
+            _render_base100_tab(price_df, loaded_assets)
 
-    with tab_data:
-        _render_data_tab(price_df, returns_df, corr_df)
+    if tab_data.open:
+        with tab_data:
+            _render_data_tab(price_df, returns_df, corr_df)
 
 
 def _render_correlation_summary(
@@ -314,6 +337,27 @@ def _render_correlation_summary(
                 f"{top_negative['asset_a']} / {top_negative['asset_b']} "
                 f"= {top_negative['correlation']:.2f}"
             )
+
+
+def _render_load_report(load_report):
+    if load_report is None or load_report.empty:
+        return
+
+    requested = len(load_report)
+    loaded = int(load_report["status"].eq("loaded").sum())
+    failed = requested - loaded
+
+    with st.container(horizontal=True):
+        st.metric("Assets Requested", requested, border=True)
+        st.metric("Assets Loaded", loaded, border=True)
+        st.metric("Assets Not Loaded", failed, border=True)
+
+    if failed:
+        st.dataframe(
+            load_report[load_report["status"] != "loaded"],
+            hide_index=True,
+            width="stretch",
+        )
 
 
 def _render_heatmap_tab(corr_df):

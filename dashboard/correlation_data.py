@@ -42,7 +42,11 @@ def load_asset_price_series(
     df["price"] = pd.to_numeric(df["price"], errors="coerce")
 
     df = df.dropna(subset=["snapped_at", "price"]).copy()
-    df = df.sort_values("snapped_at").reset_index(drop=True)
+    df = (
+        df.sort_values("snapped_at")
+        .drop_duplicates("snapped_at", keep="last")
+        .reset_index(drop=True)
+    )
 
     if start_date:
         df = df[df["snapped_at"] >= pd.to_datetime(start_date)]
@@ -62,8 +66,9 @@ def build_multi_asset_price_frame(
     assets_config: dict,
     start_date=None,
     end_date=None,
-    forward_fill: bool = True
-) -> pd.DataFrame:
+    forward_fill: bool = True,
+    return_load_report: bool = False,
+):
     """
     Creates a multi-asset DataFrame with prices aligned by date.
 
@@ -72,9 +77,16 @@ def build_multi_asset_price_frame(
     """
 
     frames = []
+    load_rows = []
 
     for asset_key in selected_assets:
         if asset_key not in assets_config:
+            load_rows.append({
+                "asset": asset_key,
+                "status": "failed",
+                "rows": 0,
+                "reason": "Asset is not configured",
+            })
             continue
 
         asset_cfg = assets_config[asset_key]
@@ -90,12 +102,33 @@ def build_multi_asset_price_frame(
 
             if not asset_df.empty:
                 frames.append(asset_df)
+                load_rows.append({
+                    "asset": asset_key,
+                    "status": "loaded",
+                    "rows": len(asset_df),
+                    "reason": "",
+                })
+            else:
+                load_rows.append({
+                    "asset": asset_key,
+                    "status": "empty",
+                    "rows": 0,
+                    "reason": "No valid price rows",
+                })
 
-        except Exception:
+        except Exception as exc:
+            load_rows.append({
+                "asset": asset_key,
+                "status": "failed",
+                "rows": 0,
+                "reason": str(exc),
+            })
             continue
 
     if not frames:
-        return pd.DataFrame()
+        empty = pd.DataFrame()
+        report = pd.DataFrame(load_rows)
+        return (empty, report) if return_load_report else empty
 
     merged_df = frames[0]
 
@@ -113,7 +146,8 @@ def build_multi_asset_price_frame(
         asset_cols = [col for col in merged_df.columns if col != "snapped_at"]
         merged_df[asset_cols] = merged_df[asset_cols].ffill()
 
-    return merged_df
+    report = pd.DataFrame(load_rows)
+    return (merged_df, report) if return_load_report else merged_df
 
 
 def calculate_returns(
@@ -181,7 +215,7 @@ def calculate_rolling_correlation(
     window: int = 90
 ) -> pd.DataFrame:
     """
-    Calculates rolling correlation between two assets.
+    Calculates rolling correlation over pairwise-valid observations.
     """
 
     if returns_df.empty:

@@ -13,6 +13,11 @@ SESSION_DEFAULTS = {
     "corr_pairs_df": None,
     "corr_selected_assets": None,
     "corr_window": 90,
+    "corr_load_report": None,
+    "event_load_report": None,
+    "data_quality_results": None,
+    "market_regime_df": None,
+    "market_regime_load_report": None,
     "asset_events_df": None,
 }
 

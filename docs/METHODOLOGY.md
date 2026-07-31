@@ -112,7 +112,7 @@ Each adapted market asset follows a standardized processing pipeline:
 CSV
 → Base SQL import/update
 → Data loading from MySQL
-→ Synthetic OHLC construction
+→ Native OHLC validation or synthetic fallback
 → Indicator calculation in memory
 → Manipulation/anomaly detection in memory
 → Optional SQL update
@@ -131,11 +131,9 @@ improves execution speed;
 keeps analysis flexible;
 allows indicators to be recalculated dynamically;
 reduces the risk of corrupting stored data during development.
-3. Synthetic OHLC Construction
+3. Native OHLC Preservation and Synthetic Fallback
 
-Some datasets only provide one price value per date.
-
-To create candlestick-style charts and calculate technical indicators that require high, low, open and close values, the project creates synthetic OHLC values.
+The analytical engine validates `open`, `high`, `low` and `close` row by row. Valid native values are preserved. Synthetic values are generated only for rows where OHLC is absent, non-positive or internally inconsistent.
 
 The current approximation is:
 
@@ -144,9 +142,9 @@ close = current_day_price
 high = max(open, close) * 1.01
 low = min(open, close) * 0.99
 
-This allows the project to build approximate candlestick charts even when full OHLC market data is not available.
+Each output row records `ohlc_source = native` or `ohlc_source = synthetic`. This allows the interface and downstream signals to distinguish measured candle structure from an approximation.
 
-3.1 Why Synthetic OHLC Is Used
+3.1 Why Synthetic OHLC Is Still Used
 
 Synthetic OHLC construction allows the project to:
 
@@ -156,13 +154,13 @@ calculate ADX;
 calculate CCI;
 estimate candle structure;
 apply anomaly heuristics based on candle body and candle range.
-3.2 Limitations of Synthetic OHLC
+3.2 Signal Eligibility and Limitations
 
 This method is an approximation.
 
 It does not represent real intraday high and low prices.
 
-Therefore:
+Therefore, candle-shape-dependent pump/dump and spoofing flags are disabled on synthetic rows. The following values remain approximate when their input row is synthetic:
 
 ATR is approximate;
 ADX is approximate;
@@ -170,11 +168,7 @@ CCI is approximate;
 candle body/range logic is approximate;
 manipulation/anomaly detection is heuristic, not definitive.
 
-Future improvement:
-
-replace synthetic OHLC with real OHLC data where available;
-keep synthetic OHLC only for assets where detailed OHLC data is unavailable;
-clearly flag synthetic OHLC usage in dashboards and documentation.
+Native OHLC coverage is exposed in the Asset Explorer and Data Quality page. Volume spikes and price-only risk signals may still be evaluated independently from candle-shape signals.
 4. Technical Indicators
 
 The project calculates a set of technical indicators for each asset.
@@ -268,13 +262,13 @@ This helps identify short-term directional strength.
 
 4.7 ATR
 
-ATR is used to estimate volatility based on the synthetic high, low and close series.
+ATR is calculated from true range using Wilder's recursive smoothing with a 14-observation default window.
 
 Because OHLC is currently synthetic for several assets, ATR should be interpreted as an approximate volatility measure.
 
 4.8 ADX
 
-ADX is used to estimate trend strength.
+ADX is calculated from Wilder-smoothed true range and directional movement to estimate trend strength.
 
 Because high and low values are synthetic in several assets, ADX should be interpreted with caution.
 
@@ -326,17 +320,15 @@ Current window:
 
 30 periods
 
-Annualization currently uses:
+Annualization uses the asset configuration:
 
-sqrt(365)
+- crypto and continuous-calendar assets: `sqrt(365)`;
+- equity indices, commodities, FX, yields and stress-market series: `sqrt(252)`;
+- macroeconomic features: no market-style volatility annualization.
 
-This was originally chosen for Bitcoin/crypto, which trades continuously.
+Source-frequency overrides are used where required: monthly sovereign-yield series use 12 observations and the weekly Financial Conditions series uses 52.
 
-Future improvement:
-
-use asset-specific annualization factors;
-for crypto: 365;
-for traditional markets: approximately 252.
+The selected `periods_per_year` is retained in analytical outputs.
 5.3 Volatility of Volatility
 
 Volatility of volatility measures instability in the volatility itself.
@@ -579,9 +571,7 @@ normalize across assets;
 separate market events from macro/geopolitical events.
 9. Intermarket Analysis Methodology
 
-The intermarket analysis layer is planned but not yet implemented.
-
-Future methodology will include:
+The intermarket analysis layer is implemented through correlation, event-impact, macro and market-regime services. Current methodology includes:
 
 rolling correlations;
 dynamic beta;
@@ -590,6 +580,8 @@ risk-on/risk-off behaviour;
 capital flow analysis;
 crisis-period comparison.
 9.1 Rolling Correlations
+
+Rolling windows are defined in pairwise valid observations, not calendar days. A 90-observation window therefore means 90 aligned return observations after missing values are removed for that pair. No indiscriminate daily forward-fill is used for price correlation.
 
 Potential asset pairs:
 
@@ -719,7 +711,7 @@ The current methodology has important limitations.
 
 12.1 Synthetic OHLC
 
-Several assets use synthetic OHLC data rather than real OHLC.
+Several assets still require synthetic OHLC where valid native OHLC is unavailable.
 
 This limits the precision of:
 
@@ -736,21 +728,12 @@ They should not be interpreted as definitive proof of market manipulation.
 
 They are useful for identifying dates that deserve further investigation.
 
-12.3 Macro Data Standardization
+12.3 Macro Observation Dates
 
-FED and EU/ECB tables are not yet standardized.
-
-Future work is required to:
-
-normalize date fields;
-prevent duplicated observations;
-create macro features;
-align macro data with market data.
+FED and EU/ECB series are aligned to real market observations with backward `merge_asof` logic. The engine records `macro_observation_date` and `macro_age_days` and does not create artificial market prices. A remaining limitation is that source observation dates may differ from true publication or revision timestamps.
 12.4 Event Mapping
 
-Some world events are mapped by year rather than exact date.
-
-This is useful for broad context but not precise enough for event-window analysis.
+Some world events are mapped by year rather than exact date. They are marked with `date_precision = year`, displayed as approximate and excluded from daily event-window analysis by default.
 
 12.5 Asset Comparability
 
@@ -768,18 +751,14 @@ Future intermarket analysis must normalize these differences carefully.
 
 Planned improvements include:
 
-real OHLC data where possible;
-asset-specific volatility annualization;
-generic asset processor;
-standardized macro ingestion;
-exact event date mapping;
-event window analysis;
-rolling correlation engine;
-intermarket dashboards;
-Streamlit platform;
-anomaly detection models;
-regime classification models;
-explainable feature importance.
+greater native OHLC coverage;
+asset-class-specific anomaly calibration;
+verified exact dates for important historical events;
+publication-date-aware macro vintages;
+database-backed reference snapshots;
+dry-run protection for remaining ETL scripts;
+anomaly detection models after feature governance;
+explainable regime classification.
 14. Disclaimer
 
 This project is for educational, analytical and portfolio purposes only.

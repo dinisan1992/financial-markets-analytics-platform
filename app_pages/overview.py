@@ -41,6 +41,8 @@ def render_overview():
     st.success("EURO macro layer v1 validated.")
     st.success("Asset Explorer with an integrated technical dashboard, historical events and suspicious flags.")
     st.success("Correlations with heatmap, rolling correlation, scatter and Base 100 views.")
+    st.success("Data Quality audit and rule-based Market Regimes pages.")
+    st.success("Event detail, date precision and recovery analysis.")
     st.info("EURO fraud layer is documented as a separate backlog.")
 
     st.markdown("---")

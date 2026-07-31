@@ -4,5 +4,4 @@ from services.project_status_service import load_project_status
 
 
 def render_project_status():
-    st.title("Project Status")
     st.markdown(load_project_status())

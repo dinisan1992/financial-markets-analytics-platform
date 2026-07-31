@@ -69,7 +69,7 @@ def make_rolling_correlation_chart(
     fig.add_hline(y=-0.5, line_dash="dot", opacity=0.4)
 
     fig.update_layout(
-        title=f"Rolling Correlation {window}D - {asset_x} vs {asset_y}",
+        title=f"Rolling Correlation ({window} observations) - {asset_x} vs {asset_y}",
         template="plotly_dark",
         height=600,
         hovermode="x unified",

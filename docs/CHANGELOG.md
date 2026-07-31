@@ -4,20 +4,33 @@ All notable changes to this project will be documented here.
 
 ---
 
-## [Unreleased] - English Language Normalization
+## [v0.4.0] - 2026-07-31 - Analytical Engine v2
+
+### Added
+
+- Per-asset financial metadata for asset class, calendar policy, source frequency and annualization.
+- Row-level native/synthetic OHLC provenance and native-data preservation.
+- Read-only Data Quality and rule-based Market Regimes pages.
+- Event date precision, event detail and recovery analysis.
+- Observation-based macro alignment without future-value leakage.
+- Independent financial reference tests for indicators, events, BTC cycles, macro alignment and data quality.
 
 ### Improved
 
-- Normalized Streamlit UI text, launcher messages, documentation, comments and CLI script output to English for portfolio presentation.
-- Updated public-release notes so documentation matches the current GitHub portfolio state.
-- Rewrote `docs/EURO_FRAUD_BACKLOG.md` in English and fixed its markdown fence.
+- Centralized technical preparation and aligned volatility annualization to each asset's frequency.
+- Reimplemented ATR and ADX with Wilder smoothing.
+- Changed rolling correlation windows to pairwise valid observations.
+- Added explicit multi-asset load reports instead of silent failures.
+- Hardened news imports against import-time loops, missing timeouts and unintended SQL activity.
+- Normalized the Streamlit interface and public documentation to English.
 
 ### Validation
 
-- Global Portuguese keyword scan returned no common Portuguese wording matches.
-- All tracked Python files compile successfully.
-- Unit test suite passes with `python -m unittest discover -s tests`.
-- Streamlit entrypoint imports successfully in bare mode.
+- 48/48 unit tests pass.
+- 9/9 Streamlit pages pass smoke validation.
+- The read-only audit loaded 37 assets, evaluated 666 correlation pairs and classified 66 historical events.
+- No SQL writes, migrations, CSV importers or database mutations were executed during the upgrade.
+- The local audit baseline is excluded from Git; its SHA-256 is `8BF5A15AC44043E567442E7522626B15F4321B5CB4C449CA081E5ABD9C656531`.
 
 ---
 

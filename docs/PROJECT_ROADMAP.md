@@ -121,13 +121,12 @@ Improve reliability of the analytical data layer.
 - EURO series validation
 - EURO market pair validation
 
-### Next Improvements
+### Completed v0.4.0 Improvements
 
-- Add Streamlit Data Quality page
-- Show missing data by asset
-- Show date coverage by asset
-- Show invalid values and duplicates
-- Add validation status cards
+- Added the Streamlit Data Quality page
+- Added missing values, coverage, invalid values and duplicate metrics by asset
+- Added OHLC/volume coverage, pair overlap and event coverage
+- Added validation status cards and aggregated ZIP export
 
 ---
 
@@ -214,7 +213,7 @@ Validated active EURO series:
 
 ### Status
 
-In progress
+Functional and modularized
 
 ### Objectives
 
@@ -225,8 +224,10 @@ Transform Python scripts into an interactive analytical dashboard.
 - Overview
 - Asset Explorer
 - Correlations
+- Market Regimes
 - FED Macro
 - EURO Macro
+- Data Quality
 - Project Status
 
 ### Completed / Prepared Features
@@ -244,14 +245,12 @@ Transform Python scripts into an interactive analytical dashboard.
 - Suspicious event markers
 - Suspicious events table
 
-### Next Improvements
+### v0.4.0 Validation
 
-- Test dashboard end-to-end
-- Improve layout and visual consistency
-- Add sidebar filters
-- Add better error handling
-- Add loading messages
-- Add downloadable tables
+- 9/9 pages smoke-tested
+- Database-offline errors handled without uncaught exceptions
+- Dynamic tabs avoid unnecessary hidden-panel work
+- Downloadable audit and analytical tables available
 
 ---
 
@@ -259,7 +258,7 @@ Transform Python scripts into an interactive analytical dashboard.
 
 ### Status
 
-Prepared / pending testing
+Completed and covered by reference tests
 
 ### Objectives
 
@@ -288,13 +287,13 @@ Provide multi-asset relationship analysis.
 
 ### Status
 
-Planned
+Rule-based v1 completed
 
 ### Objectives
 
 Classify market environments into interpretable regimes.
 
-### Planned Regimes
+### Implemented Regimes
 
 - Risk-on
 - Risk-off
@@ -306,7 +305,7 @@ Classify market environments into interpretable regimes.
 - Commodity shock
 - Credit stress
 
-### Planned Features
+### Implemented Features
 
 - Current regime KPI
 - Regime timeline
@@ -322,7 +321,7 @@ Classify market environments into interpretable regimes.
 
 ### Status
 
-Planned
+Event impact, detail and recovery v1 completed
 
 ### Objectives
 
@@ -340,7 +339,7 @@ Analyse market behaviour around crisis and geopolitical events.
 - Major rate hike cycles
 - Liquidity stress periods
 
-### Planned Features
+### Implemented Features
 
 - Event markers on price charts
 - Pre-event and post-event returns
@@ -354,13 +353,13 @@ Analyse market behaviour around crisis and geopolitical events.
 
 ### Status
 
-Planned
+Read-only v1 completed
 
 ### Objectives
 
 Expose data quality reports directly inside Streamlit.
 
-### Planned Features
+### Implemented Features
 
 - Missing values by asset
 - Date coverage by asset
@@ -484,7 +483,7 @@ Extend the rule-based detection system with machine learning.
 
 ### Status
 
-In progress
+Current portfolio release prepared
 
 ### Objectives
 
@@ -498,14 +497,11 @@ Prepare the project for professional presentation.
 - PROJECT_ROADMAP.md
 - PROJECT_STATUS.md
 
-### Planned Improvements
+### Remaining Improvements
 
-- Add screenshots
-- Add architecture diagram
-- Add sample dashboard images
-- Add public demo with reduced sample data
-- Add LinkedIn project summary
-- Add CV project bullet points
+- Keep screenshots synchronized with major interface releases
+- Add an architecture diagram
+- Keep LinkedIn and CV summaries synchronized with validated capabilities
 
 ---
 
@@ -513,13 +509,14 @@ Prepare the project for professional presentation.
 
 The current priority is:
 
-1. Test the modular Streamlit dashboard
-2. Validate Asset Explorer
-3. Validate Correlations page
-4. Commit stable dashboard version
-5. Add Market Regimes page
-6. Add Event Overlay page
-7. Add Data Quality page
+1. Preserve the v0.4.0 read-only audit as the remediation baseline
+2. Produce a freshness and source-responsibility report for every configured asset
+3. Diagnose duplicate-date keys without deleting or updating database rows
+4. Validate the WTI_OIL outlier against its source and historical contract definition
+5. Classify zero-return series by true source frequency and forward-fill policy
+6. Add overlap observations, common dates, coverage and confidence to correlation diagnostics
+7. Rerun the read-only audit and compare the before/after results
+8. Begin machine learning only after data quality and feature governance are stable
 
 ---
 
@@ -533,6 +530,7 @@ Then expand.
 Then polish.
 
 Each major feature should be tested and committed before adding the next module.
+```
 
 Final Goal
 

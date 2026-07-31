@@ -3,6 +3,7 @@ import pandas as pd
 
 EVENT_COLUMNS = [
     "event_date",
+    "date_precision",
     "event_title",
     "event_category",
     "event_description",
@@ -102,6 +103,7 @@ def _load_world_historical_events(engine, start_date=None, end_date=None):
     )
 
     df["event_title"] = df["event"].astype(str)
+    df["date_precision"] = "year"
     df["event_category"] = "World / Geopolitical"
     df["event_description"] = (
         "Macro impact: "
@@ -203,6 +205,8 @@ def _load_generic_events_table(engine, table_name, columns, start_date=None, end
 
     if "event_title" not in df.columns:
         df["event_title"] = "Event"
+
+    df["date_precision"] = "exact"
 
     if "event_category" not in df.columns:
         df["event_category"] = table_name

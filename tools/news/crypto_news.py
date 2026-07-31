@@ -17,7 +17,7 @@ from config import DB_CONFIG
 MYSQL_CONFIG = DB_CONFIG
 
 API_TOKEN = os.getenv("CRYPTOPANIC_API_TOKEN", "")
-API_URL = f"https://cryptopanic.com/api/developer/v2/posts/?auth_token={API_TOKEN}&currencies=BTC&public=true&kind=news"
+API_URL = "https://cryptopanic.com/api/developer/v2/posts/"
 
 
 # =========================
@@ -45,18 +45,27 @@ def create_table_if_not_exists(conn):
 # =========================
 def fetch_news():
     if not API_TOKEN:
-        print("CRYPTOPANIC_API_TOKEN not configurado no .env.")
+        print("CRYPTOPANIC_API_TOKEN is not configured in the environment.")
         return []
 
     try:
-        response = requests.get(API_URL)
+        response = requests.get(
+            API_URL,
+            params={
+                "auth_token": API_TOKEN,
+                "currencies": "BTC",
+                "public": "true",
+                "kind": "news",
+            },
+            timeout=15,
+        )
         response.raise_for_status()
         data = response.json()
         news_list = data.get('results', [])
         print(f"✅ News received: {len(news_list)}")
         return news_list
     except Exception as e:
-        print(f"❌ Error ao buscar news: {e}")
+        print(f"Error fetching news: {e}")
         return []
 
 # =========================

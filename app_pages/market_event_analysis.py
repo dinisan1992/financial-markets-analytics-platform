@@ -4,6 +4,7 @@ from typing import Callable
 
 import numpy as np
 import pandas as pd
+import plotly.graph_objects as go
 import streamlit as st
 
 
@@ -29,6 +30,7 @@ class MarketEventAnalysisDeps:
     calculate_event_category_asset_summary: Callable
     make_event_category_heatmap: Callable
     calculate_risk_on_off_snapshot: Callable
+    calculate_event_recovery_analysis: Callable
     dataframe_to_csv_bytes: Callable
 
 
@@ -43,7 +45,14 @@ def render_market_event_analysis(deps: MarketEventAnalysisDeps):
     )
 
     selected_assets, start_date, end_date = _render_asset_date_controls(deps)
-    event_source, horizon_mode, selected_horizon, custom_horizon_days, max_events = _render_event_controls()
+    (
+        event_source,
+        horizon_mode,
+        selected_horizon,
+        custom_horizon_days,
+        max_events,
+        include_approximate,
+    ) = _render_event_controls()
 
     st.markdown("---")
 
@@ -51,13 +60,19 @@ def render_market_event_analysis(deps: MarketEventAnalysisDeps):
         st.warning("Select at least one asset.")
         return
 
-    events_df = _load_filtered_events(
-        deps=deps,
-        event_source=event_source,
-        start_date=start_date,
-        end_date=end_date,
-        max_events=max_events,
-    )
+    try:
+        events_df = _load_filtered_events(
+            deps=deps,
+            event_source=event_source,
+            start_date=start_date,
+            end_date=end_date,
+            max_events=max_events,
+            include_approximate=include_approximate,
+        )
+    except Exception as exc:
+        st.error(f"Event data is unavailable: {exc}")
+        st.caption("Check that MySQL/XAMPP is running and that the configured event tables exist.")
+        return
 
     if events_df.empty:
         st.info("No events available for the selected filters.")
@@ -72,7 +87,7 @@ def render_market_event_analysis(deps: MarketEventAnalysisDeps):
             )
         )
 
-    cross_asset_df = deps.calculate_cross_asset_event_impact(
+    cross_asset_df, load_report = deps.calculate_cross_asset_event_impact(
         events_df=events_df,
         asset_keys=selected_assets,
         start_date=start_date,
@@ -80,14 +95,22 @@ def render_market_event_analysis(deps: MarketEventAnalysisDeps):
         horizons=analysis_horizons,
         assets_config=deps.assets_config,
         load_asset_data_func=deps.load_asset_data,
+        include_approximate=include_approximate,
+        return_load_report=True,
     )
 
     if cross_asset_df.empty:
         st.info("No cross-asset event impact data available.")
         return
 
+    _render_load_report(load_report)
     _render_summary(cross_asset_df, selected_horizon)
-    _render_tabs(deps, cross_asset_df, selected_horizon)
+    _render_tabs(
+        deps,
+        cross_asset_df,
+        selected_horizon,
+        selected_assets,
+    )
 
 
 def _render_asset_date_controls(deps: MarketEventAnalysisDeps):
@@ -135,9 +158,9 @@ def _render_event_controls():
         event_source = st.selectbox(
             "Event Source",
             [
-                "World Events",
-                "BTC Events",
                 "All Events",
+                "BTC Events",
+                "World Events",
             ],
             index=0,
         )
@@ -180,10 +203,29 @@ def _render_event_controls():
             step=5,
         )
 
-    return event_source, horizon_mode, selected_horizon, custom_horizon_days, max_events
+        include_approximate = st.checkbox(
+            "Include approximate year-only events",
+            value=False,
+        )
+
+    return (
+        event_source,
+        horizon_mode,
+        selected_horizon,
+        custom_horizon_days,
+        max_events,
+        include_approximate,
+    )
 
 
-def _load_filtered_events(deps: MarketEventAnalysisDeps, event_source, start_date, end_date, max_events):
+def _load_filtered_events(
+    deps: MarketEventAnalysisDeps,
+    event_source,
+    start_date,
+    end_date,
+    max_events,
+    include_approximate,
+):
     events_df = deps.load_asset_events(
         start_date=start_date,
         end_date=end_date,
@@ -197,6 +239,9 @@ def _load_filtered_events(deps: MarketEventAnalysisDeps, event_source, start_dat
         events_df = events_df[
             events_df["event_source_table"] == "bitcoin_historical_events"
         ].copy()
+
+    if not include_approximate and "date_precision" in events_df.columns:
+        events_df = events_df[events_df["date_precision"].eq("exact")].copy()
 
     return events_df.sort_values("event_date").tail(max_events).reset_index(drop=True)
 
@@ -236,27 +281,61 @@ def _render_summary(cross_asset_df, selected_horizon):
     )
 
 
-def _render_tabs(deps: MarketEventAnalysisDeps, cross_asset_df, selected_horizon):
-    tab_matrix, tab_category, tab_risk, tab_data = st.tabs(
+def _render_tabs(
+    deps: MarketEventAnalysisDeps,
+    cross_asset_df,
+    selected_horizon,
+    selected_assets,
+):
+    tab_matrix, tab_category, tab_risk, tab_detail, tab_data = st.tabs(
         [
             "Event Impact Matrix",
             "Category Summary",
             "Risk-On / Risk-Off",
+            "Event Detail & Recovery",
             "Data",
-        ]
+        ],
+        on_change="rerun",
     )
 
-    with tab_matrix:
-        _render_matrix_tab(deps, cross_asset_df, selected_horizon)
+    if tab_matrix.open:
+        with tab_matrix:
+            _render_matrix_tab(deps, cross_asset_df, selected_horizon)
 
-    with tab_category:
-        _render_category_tab(deps, cross_asset_df, selected_horizon)
+    if tab_category.open:
+        with tab_category:
+            _render_category_tab(deps, cross_asset_df, selected_horizon)
 
-    with tab_risk:
-        _render_risk_tab(deps, cross_asset_df, selected_horizon)
+    if tab_risk.open:
+        with tab_risk:
+            _render_risk_tab(deps, cross_asset_df, selected_horizon)
 
-    with tab_data:
-        _render_data_tab(deps, cross_asset_df)
+    if tab_detail.open:
+        with tab_detail:
+            _render_event_detail_tab(
+                deps,
+                cross_asset_df,
+                selected_horizon,
+                selected_assets,
+            )
+
+    if tab_data.open:
+        with tab_data:
+            _render_data_tab(deps, cross_asset_df)
+
+
+def _render_load_report(load_report):
+    if load_report is None or load_report.empty:
+        return
+
+    with st.container(horizontal=True):
+        st.metric("Assets Requested", len(load_report), border=True)
+        st.metric("Assets Loaded", int(load_report["status"].eq("loaded").sum()), border=True)
+        st.metric("Assets Not Loaded", int(load_report["status"].ne("loaded").sum()), border=True)
+
+    failures = load_report[load_report["status"] != "loaded"]
+    if not failures.empty:
+        st.dataframe(failures, hide_index=True, width="stretch")
 
 
 def _render_matrix_tab(deps: MarketEventAnalysisDeps, cross_asset_df, selected_horizon):
@@ -305,6 +384,101 @@ def _render_risk_tab(deps: MarketEventAnalysisDeps, cross_asset_df, selected_hor
     )
 
     st.dataframe(risk_df, width="stretch")
+
+
+def _render_event_detail_tab(
+    deps: MarketEventAnalysisDeps,
+    cross_asset_df,
+    selected_horizon,
+    selected_assets,
+):
+    labels = cross_asset_df["Event Label"].dropna().drop_duplicates().tolist()
+    if not labels:
+        st.info("No event detail is available.")
+        return
+
+    selected_label = st.selectbox("Event", labels, key="event_detail_label")
+    event_rows = cross_asset_df[cross_asset_df["Event Label"] == selected_label].copy()
+    if event_rows.empty:
+        return
+
+    event_info = event_rows.iloc[0]
+    precision = event_info.get("Date Precision", "exact")
+    precision_label = "Exact event date" if precision == "exact" else "Approximate year-only date"
+
+    with st.container(horizontal=True):
+        st.metric("Date", str(event_info.get("Event Date")), border=True)
+        st.metric("Date Precision", precision_label, border=True)
+        st.metric("Assets with Results", int(event_rows[selected_horizon].notna().sum()), border=True)
+
+    description = str(event_info.get("Description", "")).strip()
+    if description:
+        st.caption(description)
+
+    values = pd.to_numeric(event_rows[selected_horizon], errors="coerce")
+    chart_data = event_rows.assign(_event_return=values).dropna(subset=["_event_return"])
+
+    if not chart_data.empty:
+        best = chart_data.sort_values("_event_return", ascending=False).iloc[0]
+        worst = chart_data.sort_values("_event_return", ascending=True).iloc[0]
+
+        with st.container(horizontal=True):
+            st.metric("Best Asset", best["Asset"], f"{best['_event_return']:.2f}%", border=True)
+            st.metric("Worst Asset", worst["Asset"], f"{worst['_event_return']:.2f}%", border=True)
+
+        figure = go.Figure(
+            go.Bar(
+                x=chart_data["Asset"],
+                y=chart_data["_event_return"],
+                marker_color=np.where(chart_data["_event_return"] >= 0, "#2E8B57", "#C44536"),
+                hovertemplate="%{x}: %{y:.2f}%<extra></extra>",
+            )
+        )
+        figure.add_hline(y=0, line_dash="dot", opacity=0.5)
+        figure.update_layout(
+            title=f"Asset Reaction - {selected_horizon}",
+            template="plotly_dark",
+            height=480,
+            xaxis_title="Asset",
+            yaxis_title="Return (%)",
+        )
+        st.plotly_chart(figure, width="stretch")
+
+    st.dataframe(event_rows, hide_index=True, width="stretch")
+
+    if precision != "exact":
+        st.warning("Recovery analysis is disabled because this event has only year-level date precision.")
+        return
+
+    recovery_window = st.slider(
+        "Recovery Window (calendar days)",
+        min_value=30,
+        max_value=1095,
+        value=365,
+        step=30,
+    )
+    event_payload = {
+        "event_date": event_info.get("Event Date"),
+        "date_precision": precision,
+    }
+    recovery_df, recovery_report = deps.calculate_event_recovery_analysis(
+        event=event_payload,
+        asset_keys=selected_assets,
+        assets_config=deps.assets_config,
+        load_asset_data_func=deps.load_asset_data,
+        horizon_days=recovery_window,
+    )
+
+    st.markdown("### Recovery Analysis")
+    if recovery_df.empty:
+        st.info("No recovery observations are available for this event.")
+    else:
+        st.dataframe(recovery_df, hide_index=True, width="stretch")
+
+    if recovery_report is not None and not recovery_report.empty:
+        failures = recovery_report[recovery_report["status"] != "loaded"]
+        if not failures.empty:
+            st.dataframe(failures, hide_index=True, width="stretch")
 
 
 def _render_data_tab(deps: MarketEventAnalysisDeps, cross_asset_df):

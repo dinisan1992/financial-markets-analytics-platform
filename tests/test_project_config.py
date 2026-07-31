@@ -11,6 +11,27 @@ from config import BASE_DIR
 
 
 class ProjectConfigTests(unittest.TestCase):
+    def test_all_assets_have_financial_metadata(self):
+        required = {
+            "asset_class",
+            "periods_per_year",
+            "calendar_type",
+            "volume_expected",
+            "ohlc_expected",
+            "positive_values_expected",
+        }
+        for asset_key, config in ASSETS.items():
+            self.assertTrue(required.issubset(config), asset_key)
+            self.assertGreater(config["periods_per_year"], 0, asset_key)
+
+    def test_source_frequency_overrides_are_explicit(self):
+        for asset_key in ["GERMANY10Y", "UK10Y", "JAPAN10Y"]:
+            self.assertEqual(ASSETS[asset_key]["calendar_type"], "monthly")
+            self.assertEqual(ASSETS[asset_key]["periods_per_year"], 12)
+
+        self.assertEqual(ASSETS["FINANCIAL_CONDITIONS"]["calendar_type"], "weekly")
+        self.assertEqual(ASSETS["FINANCIAL_CONDITIONS"]["periods_per_year"], 52)
+
     def test_asset_script_paths_are_project_relative(self):
         for asset_key, cfg in ASSETS.items():
             script_name = cfg.get("script_name")

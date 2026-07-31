@@ -1,10 +1,10 @@
 # Project Status
 
-Last updated: 24 July 2026
+Last updated: 31 July 2026
 
 ## Current Version
 
-**Macro-Financial Risk & Market Behaviour Analytics Platform v0.3.1**
+**Macro-Financial Risk & Market Behaviour Analytics Platform v0.4.0**
 
 ## Executive Summary
 
@@ -22,7 +22,7 @@ It combines:
 - interactive dashboarding;
 - data quality validation.
 
-The Streamlit application is now separated into page modules, analytical services, visualization components and reusable data-access functions. The current priority is consolidation, documentation, testing and portfolio presentation rather than adding additional raw datasets.
+The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.4.0 adds the Analytical Engine v2, explicit financial metadata, OHLC provenance, market-calendar policies, a read-only audit, event recovery, macro features and rule-based market regimes.
 
 ## Completed and Functional Modules
 
@@ -45,7 +45,7 @@ A total of 37 configured assets were included in the latest local validation.
 
 ### Technical Indicator Engine
 
-Status: **Functional and centralized in `indicators.py`**
+Status: **Functional and centralized through `prepare_asset_technical_data()` and `indicators.py`**
 
 Includes:
 
@@ -67,7 +67,7 @@ Includes:
 - Liquidity stress.
 - Market entropy.
 
-Indicator calculations use `pct_change(fill_method=None)` where appropriate to avoid artificial returns across missing observations.
+Indicator calculations use `pct_change(fill_method=None)` where appropriate to avoid artificial returns across missing observations. Valid native OHLC is preserved row by row; synthetic OHLC is created only where required and recorded in `ohlc_source`. Volatility uses asset metadata: 365 observations for crypto, 252 for market-session assets, and no market-style annualization for macro features.
 
 ### Risk and Anomaly Screening
 
@@ -86,7 +86,7 @@ The layer is intended for analytical screening only and does not prove manipulat
 
 ### Data Quality
 
-Status: **Functional**
+Status: **Functional with a read-only Streamlit audit**
 
 Includes:
 
@@ -97,7 +97,14 @@ Includes:
 - date-shift detection;
 - table consistency checks;
 - macro-series validation;
-- configured-pair validation.
+- configured-pair validation;
+- first/last dates and staleness;
+- calendar coverage and longest gaps;
+- zero-return and forward-fill risk indicators;
+- native OHLC and volume coverage;
+- pairwise correlation coverage and potential bias;
+- event coverage and event-date precision;
+- aggregated CSV/ZIP export with no raw prices or credentials.
 
 ### Market Analysis
 
@@ -157,8 +164,10 @@ Current pages:
 - Asset Explorer.
 - Market Event Analysis.
 - Correlations.
+- Market Regimes.
 - FED Macro.
 - EURO Macro.
+- Data Quality.
 - Project Status.
 
 ### Application Modules
@@ -172,11 +181,16 @@ The current architecture includes:
 - `app_pages/asset_explorer.py` — Asset Explorer page.
 - `app_pages/market_event_analysis.py` — Market Event Analysis page.
 - `app_pages/correlations.py` — Correlations page.
+- `app_pages/market_regimes.py` — Market Regimes page.
 - `app_pages/fed_macro.py` — FED Macro page.
 - `app_pages/euro_macro.py` — EURO Macro page.
+- `app_pages/data_quality.py` — read-only Data Quality page.
 - `app_pages/project_status.py` — Project Status page.
 - `services/data_access_service.py` — read-only SQL access and DataFrame normalization.
 - `services/event_analysis_service.py` — event-study calculations.
+- `services/data_quality_service.py` — aggregated asset, pair and event auditing.
+- `services/macro_analytics_service.py` — market-calendar macro alignment and observation-based features.
+- `services/market_regime_service.py` — rule-based regime features and classification.
 - `services/btc_cycle_service.py` — BTC cycle and halving calculations.
 - `services/technical_signal_service.py` — technical signal summaries.
 - `services/risk_statistics_service.py` — risk scores and return statistics.
@@ -200,19 +214,45 @@ Main file:
 
 ## Latest Documented Validation
 
-Local validation performed with XAMPP and MySQL enabled included:
+Version 0.4.0 local code validation included:
+
+- 9/9 dashboard pages rendered without uncaught exceptions.
+- Database-offline handling validated with MySQL/XAMPP stopped.
+- 48/48 deterministic unit tests passed.
+- Active Python files compiled successfully.
+- Custom event horizons, event recovery and year-only exclusion validated.
+- OHLC preservation/fallback and 252/365 annualization validated against controlled series.
+- Rolling correlations validated on pairwise observations.
+- Macro alignment validated to prevent future-value leakage and artificial market dates.
+- News modules imported without network loops or SQL execution.
+- No SQL writes, migrations, CSV imports or database mutations were executed.
+
+### Read-Only Data Audit Snapshot
+
+The 31 July 2026 audit loaded all 37 configured asset tables without load errors and generated the local, Git-ignored baseline `audit_outputs/audit_outputs.zip` (SHA-256: `8BF5A15AC44043E567442E7522626B15F4321B5CB4C449CA081E5ABD9C656531`).
+
+- 37 assets audited; all were stale relative to the audit date.
+- 27 assets had measurable native OHLC coverage; 10 required synthetic fallback.
+- 666 correlation pairs evaluated; 149 were flagged for low overlap or insufficient observations.
+- 66 historical events audited; 35 had year-only date precision and 31 had exact dates.
+- Duplicate dates were found in EURO, YUAN, LIBRA and SSECOMPOSITE.
+- One invalid positive-price observation was found in WTI_OIL.
+- Excess zero returns were found in YUAN, FINANCIAL_CONDITIONS and TED_SPREAD.
+- No database rows or schemas were changed by the audit.
+
+The latest database-enabled validation before v0.4.0 included:
 
 - Streamlit health check completed successfully.
-- 7/7 dashboard pages rendered without exceptions.
+- 7/7 then-existing dashboard pages rendered without exceptions.
 - Main dashboard data-loading actions completed successfully.
 - Rolling correlation validated with real BTC and SP500 data.
 - 37/37 configured assets loaded and calculated technical KPIs successfully.
-- 5/5 configured FED market pairs loaded successfully.
+- 5/5 then-exposed FED market pairs loaded successfully; the current page exposes all 15 configured pairs.
 - 12/12 active EURO market pairs loaded successfully.
 - 37/37 asset SQL tables were present with data.
 - 11/11 FED macro tables were present with data.
 - 12/12 active EURO loaders completed successfully.
-- 21 unit tests passed.
+- 21 then-existing unit tests passed.
 - Active Python files compiled successfully.
 - Streamlit imported successfully in bare mode.
 - No SQL writes, migrations or table mutations were introduced by the dashboard modularization.
@@ -239,10 +279,9 @@ Implemented:
 
 - The production-scale MySQL database is not included in the repository.
 - Raw and processed datasets are intentionally excluded.
-- The repository does not yet provide a fully reproducible sample-data demo.
-- Dashboard screenshots and a short demonstration have not yet been added.
-- Some legacy ETL and news scripts still need safer entry points and retry handling.
-- Some older scripts and messages still contain mixed Portuguese and English wording.
+- The public repository intentionally excludes the local production-scale database and datasets.
+- Remaining legacy SQL-capable ETL scripts still need dry-run modes and explicit entry points.
+- Some legacy-only scripts and comments still contain mixed Portuguese and English wording.
 - The dependency file contains both direct and transitive packages and should be simplified later.
 - Some duplicated legacy asset workflows remain, although newer assets use shared wrappers.
 
@@ -289,13 +328,12 @@ Planned work:
 
 The project already contains a validated multi-asset, FED macro and EURO macro analytical layer.
 
-The current priority is:
+The current priority is a controlled Data Remediation Cycle:
 
-1. consolidation;
-2. testing;
-3. documentation;
-4. GitHub presentation;
-5. reproducibility;
-6. incremental modularization.
-
-Adding further raw datasets is not currently the main priority.
+1. report asset freshness, source and responsible updater without writing to SQL;
+2. diagnose duplicate-date keys in EURO, YUAN, LIBRA and SSECOMPOSITE;
+3. validate the WTI_OIL observation against its date, contract and source before classifying it as invalid;
+4. distinguish genuine low-frequency series from artificial zero returns or forward-fill;
+5. expose overlap observations, common dates, coverage and confidence for correlation pairs;
+6. rerun the read-only audit and compare it with the v0.4.0 baseline;
+7. begin machine-learning experiments only after data quality and feature governance are stable.

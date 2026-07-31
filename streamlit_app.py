@@ -18,12 +18,14 @@ from app.navigation import render_sidebar
 from app.state import initialize_session_state
 from app_pages.asset_explorer import AssetExplorerDeps, render_asset_explorer
 from app_pages.correlations import CorrelationsDeps, render_correlations
+from app_pages.data_quality import DataQualityDeps, render_data_quality
 from app_pages.euro_macro import EuroMacroDeps, render_euro_macro
 from app_pages.fed_macro import FedMacroDeps, render_fed_macro
 from app_pages.market_event_analysis import (
     MarketEventAnalysisDeps,
     render_market_event_analysis,
 )
+from app_pages.market_regimes import MarketRegimeDeps, render_market_regimes
 from app_pages.overview import render_overview
 from app_pages.project_status import render_project_status
 from dashboard.asset_view_components import (
@@ -55,9 +57,16 @@ from services.event_analysis_service import (
     calculate_cross_asset_event_impact,
     calculate_event_category_asset_summary,
     calculate_event_forward_returns,
+    calculate_event_recovery_analysis,
     calculate_risk_on_off_snapshot,
     filter_events_for_chart,
 )
+from services.data_quality_service import (
+    audit_event_coverage,
+    build_pair_coverage_audit,
+    run_asset_audit,
+)
+from dashboard.correlation_data import build_multi_asset_price_frame
 from services.export_service import dataframe_to_csv_bytes
 from services.risk_statistics_service import filter_df_by_recent_window
 
@@ -121,7 +130,7 @@ def date_to_str(value):
 # ASSET DATA LOADERS
 # =========================
 
-@st.cache_data(show_spinner=True)
+@st.cache_data(show_spinner=True, ttl="1h")
 def get_table_columns(table_name):
     return data_access_service.get_table_columns(
         engine=get_engine(),
@@ -140,7 +149,7 @@ def detect_column(columns, candidates):
     )
 
 
-@st.cache_data(show_spinner=True)
+@st.cache_data(show_spinner=True, ttl="5m")
 def table_exists(table_name):
     return data_access_service.table_exists(
         engine=get_engine(),
@@ -148,7 +157,7 @@ def table_exists(table_name):
     )
 
 
-@st.cache_data(show_spinner=True)
+@st.cache_data(show_spinner=True, ttl="15m")
 def load_events_from_table(table_name, start_date=None, end_date=None):
     return data_access_service.load_events_from_table(
         engine=get_engine(),
@@ -160,7 +169,7 @@ def load_events_from_table(table_name, start_date=None, end_date=None):
     )
 
 
-@st.cache_data(show_spinner=True)
+@st.cache_data(show_spinner=True, ttl="15m")
 def load_asset_events(start_date=None, end_date=None):
     return data_access_service.load_asset_events(
         load_events_from_table_func=load_events_from_table,
@@ -173,7 +182,7 @@ def load_asset_events(start_date=None, end_date=None):
 # ASSET DATA LOADER
 # =========================
 
-@st.cache_data(show_spinner=True)
+@st.cache_data(show_spinner=True, ttl="15m")
 def load_asset_data(asset_key, start_date=None, end_date=None):
     return data_access_service.load_asset_data(
         engine=get_engine(),
@@ -189,7 +198,7 @@ def load_asset_data(asset_key, start_date=None, end_date=None):
 # FED / EURO LOADERS
 # =========================
 
-@st.cache_data(show_spinner=True)
+@st.cache_data(show_spinner=True, ttl="15m")
 def load_fed_macro_pair(macro_key, market_asset, start_date, end_date):
     return data_access_service.load_fed_macro_pair(
         engine=get_engine(),
@@ -201,7 +210,7 @@ def load_fed_macro_pair(macro_key, market_asset, start_date, end_date):
     )
 
 
-@st.cache_data(show_spinner=True)
+@st.cache_data(show_spinner=True, ttl="15m")
 def load_euro_macro_pair(euro_series_key, market_asset, start_date, end_date):
     return data_access_service.load_euro_macro_pair(
         engine=get_engine(),
@@ -211,6 +220,29 @@ def load_euro_macro_pair(euro_series_key, market_asset, start_date, end_date):
         start_date=start_date,
         end_date=end_date,
     )
+
+
+@st.cache_data(show_spinner=True, ttl="15m")
+def load_regime_prices(asset_keys, start_date, end_date):
+    return build_multi_asset_price_frame(
+        engine=get_engine(),
+        selected_assets=list(asset_keys),
+        assets_config=ASSETS,
+        start_date=start_date,
+        end_date=end_date,
+        forward_fill=False,
+        return_load_report=True,
+    )
+
+
+@st.cache_data(show_spinner=True, ttl="15m")
+def load_data_quality_audit():
+    asset_audit, asset_frames = run_asset_audit(get_engine(), ASSETS)
+    return {
+        "asset_audit": asset_audit,
+        "correlation_coverage": build_pair_coverage_audit(asset_frames),
+        "event_coverage": audit_event_coverage(get_engine(), asset_frames),
+    }
 
 
 # =========================
@@ -271,6 +303,7 @@ elif page == "Market Event Analysis":
             calculate_event_category_asset_summary=calculate_event_category_asset_summary,
             make_event_category_heatmap=make_event_category_heatmap,
             calculate_risk_on_off_snapshot=calculate_risk_on_off_snapshot,
+            calculate_event_recovery_analysis=calculate_event_recovery_analysis,
             dataframe_to_csv_bytes=dataframe_to_csv_bytes,
         )
     )
@@ -284,6 +317,18 @@ elif page == "Correlations":
             get_engine=get_engine,
             render_date_range_selector=render_date_range_selector,
             date_to_str=date_to_str,
+        )
+    )
+
+# =========================
+# PAGE - MARKET REGIMES
+# =========================
+elif page == "Market Regimes":
+    render_market_regimes(
+        MarketRegimeDeps(
+            render_date_range_selector=render_date_range_selector,
+            date_to_str=date_to_str,
+            load_regime_prices=load_regime_prices,
         )
     )
 
@@ -315,6 +360,16 @@ elif page == "EURO Macro":
             make_summary_cards=make_summary_cards,
             make_dual_axis_chart=make_dual_axis_chart,
             make_base100_chart=make_base100_chart,
+        )
+    )
+
+# =========================
+# PAGE - DATA QUALITY
+# =========================
+elif page == "Data Quality":
+    render_data_quality(
+        DataQualityDeps(
+            load_data_quality_audit=load_data_quality_audit,
         )
     )
 

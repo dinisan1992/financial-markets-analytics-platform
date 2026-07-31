@@ -4,269 +4,236 @@ import pandas as pd
 from indicators import calcular_indicadores
 
 
-def prepare_asset_technical_data(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Prepares technical data for the Asset Explorer.
+OHLC_COLUMNS = ["open", "high", "low", "close"]
+VOLUME_CANDIDATES = [
+    "total_volume",
+    "volume",
+    "Volume",
+    "vol",
+    "trading_volume",
+]
 
-    Requires at least:
-    - snapped_at
-    - price
 
-    Optional:
-    - total_volume
+def _native_ohlc_mask(
+    df: pd.DataFrame,
+    positive_values_expected: bool = True,
+) -> pd.Series:
+    """Return rows containing internally consistent, positive native OHLC."""
+    if any(column not in df.columns for column in OHLC_COLUMNS):
+        return pd.Series(False, index=df.index, dtype=bool)
 
-    Returns a DataFrame with:
-    - Synthetic OHLC
-    - EMAs
-    - Bollinger Bands
-    - RSI
-    - Stoch RSI
-    - MACD
-    - Volatility
-    - Drawdown
-    - Volume z-score
-    - Suspicious event flags
-    """
+    ohlc = df[OHLC_COLUMNS].apply(pd.to_numeric, errors="coerce")
+    finite = pd.Series(
+        np.isfinite(ohlc.to_numpy(dtype=float)).all(axis=1),
+        index=df.index,
+    )
 
-    df = df.copy()
-    df = df.sort_values("snapped_at").reset_index(drop=True)
+    valid = (
+        finite
+        & (ohlc["high"] >= ohlc[["open", "close"]].max(axis=1))
+        & (ohlc["low"] <= ohlc[["open", "close"]].min(axis=1))
+        & (ohlc["high"] >= ohlc["low"])
+    )
+    if positive_values_expected:
+        valid &= (ohlc > 0).all(axis=1)
+    return valid
 
-    if "price" not in df.columns:
-        raise ValueError("Required column missing: price")
 
-    if "snapped_at" not in df.columns:
-        raise ValueError("Required column missing: snapped_at")
+def _prepare_ohlc(
+    df: pd.DataFrame,
+    positive_values_expected: bool = True,
+) -> pd.DataFrame:
+    """Preserve valid native candles and synthesize only incomplete rows."""
+    output = df.copy()
 
-    volume_candidates = [
-        "total_volume",
-        "volume",
-        "Volume",
-        "vol",
-        "trading_volume"
-    ]
+    for column in OHLC_COLUMNS:
+        if column in output.columns:
+            output[column] = pd.to_numeric(output[column], errors="coerce")
 
-    volume_source_col = None
+    native_mask = _native_ohlc_mask(
+        output,
+        positive_values_expected=positive_values_expected,
+    )
 
-    for candidate in volume_candidates:
-        if candidate in df.columns:
-            candidate_values = pd.to_numeric(df[candidate], errors="coerce")
-
-            if candidate_values.notna().sum() > 0:
-                volume_source_col = candidate
-                break
-
-    if volume_source_col is None:
-        df["total_volume"] = np.nan
+    if "price" in output.columns:
+        synthetic_close = pd.to_numeric(output["price"], errors="coerce")
+    elif "close" in output.columns:
+        synthetic_close = pd.to_numeric(output["close"], errors="coerce")
     else:
-        df["total_volume"] = pd.to_numeric(
-            df[volume_source_col],
-            errors="coerce"
+        raise ValueError("Required price field missing: expected price or close")
+
+    if "close" in output.columns:
+        synthetic_close = synthetic_close.fillna(output["close"])
+
+    synthetic_open = synthetic_close.shift(1).fillna(synthetic_close)
+    synthetic_upper = pd.concat([synthetic_open, synthetic_close], axis=1).max(axis=1)
+    synthetic_lower = pd.concat([synthetic_open, synthetic_close], axis=1).min(axis=1)
+    synthetic_padding = (
+        pd.concat([synthetic_open.abs(), synthetic_close.abs()], axis=1)
+        .max(axis=1)
+        .clip(lower=1e-9)
+        * 0.01
+    )
+    synthetic_high = synthetic_upper + synthetic_padding
+    synthetic_low = synthetic_lower - synthetic_padding
+
+    synthetic_values = {
+        "open": synthetic_open,
+        "high": synthetic_high,
+        "low": synthetic_low,
+        "close": synthetic_close,
+    }
+
+    for column in OHLC_COLUMNS:
+        native_values = output[column] if column in output.columns else np.nan
+        output[column] = pd.Series(native_values, index=output.index).where(
+            native_mask,
+            synthetic_values[column],
         )
 
-    df["snapped_at"] = pd.to_datetime(df["snapped_at"], errors="coerce")
-    df["price"] = pd.to_numeric(df["price"], errors="coerce")
-    df["total_volume"] = pd.to_numeric(df["total_volume"], errors="coerce")
+    output["ohlc_source"] = np.where(native_mask, "native", "synthetic")
+    output["native_ohlc_valid"] = native_mask
 
-    df = df.dropna(subset=["snapped_at", "price"]).copy()
-    df = df.sort_values("snapped_at").reset_index(drop=True)
+    return output
 
-    # =========================
-    # PRICE / OHLC
-    # =========================
 
-    df["close"] = df["price"]
+def _prepare_volume(df: pd.DataFrame) -> pd.DataFrame:
+    output = df.copy()
+    volume_source = None
 
-    # Synthetic OHLC for assets that only have a daily price
-    df["open"] = df["close"].shift(1)
-    df["open"] = df["open"].fillna(df["close"])
+    for candidate in VOLUME_CANDIDATES:
+        if candidate not in output.columns:
+            continue
 
-    df["high"] = df[["open", "close"]].max(axis=1) * 1.01
-    df["low"] = df[["open", "close"]].min(axis=1) * 0.99
+        values = pd.to_numeric(output[candidate], errors="coerce")
+        if values.notna().any():
+            volume_source = candidate
+            break
 
-    df["daily_return"] = df["close"].pct_change(fill_method=None)
-    df["daily_return_pct"] = df["daily_return"] * 100
-    df["price_change_pct"] = df["close"].pct_change(fill_method=None) * 100
+    if volume_source is None:
+        output["total_volume"] = np.nan
+    else:
+        output["total_volume"] = pd.to_numeric(
+            output[volume_source],
+            errors="coerce",
+        )
 
-    # =========================
-    # EMAs
-    # =========================
+    output["volume"] = output["total_volume"]
+    output["volume_source"] = volume_source or "unavailable"
 
-    for window in [9, 20, 50, 100, 200]:
-        df[f"ema_{window}"] = df["close"].ewm(
-            span=window,
-            adjust=False
-        ).mean()
+    return output
 
-    # =========================
-    # BOLLINGER BANDS
-    # =========================
 
-    df["bb_middle"] = df["close"].rolling(20).mean()
-    df["bb_std"] = df["close"].rolling(20).std()
-    df["bb_upper"] = df["bb_middle"] + 2 * df["bb_std"]
-    df["bb_lower"] = df["bb_middle"] - 2 * df["bb_std"]
+def prepare_asset_technical_data(
+    df: pd.DataFrame,
+    asset_cfg: dict | None = None,
+) -> pd.DataFrame:
+    """Build the canonical technical dataset used by the Asset Explorer.
 
-    # =========================
-    # RSI
-    # =========================
+    Native OHLC is retained row by row when it is complete and internally
+    consistent. Synthetic candles are used only for rows without valid OHLC.
+    Candle-shape anomaly signals are disabled for synthetic rows.
+    """
+    if df is None or df.empty:
+        return pd.DataFrame()
 
-    delta = df["close"].diff()
-    gain = delta.clip(lower=0)
-    loss = -delta.clip(upper=0)
+    asset_cfg = asset_cfg or {}
+    periods_per_year = int(asset_cfg.get("periods_per_year", 252))
+    positive_values_expected = bool(asset_cfg.get("positive_values_expected", True))
 
-    avg_gain = gain.ewm(alpha=1 / 14, adjust=False).mean()
-    avg_loss = loss.ewm(alpha=1 / 14, adjust=False).mean()
+    output = df.copy()
 
-    rs = avg_gain / avg_loss
-    df["rsi"] = 100 - (100 / (1 + rs))
+    if "snapped_at" not in output.columns:
+        raise ValueError("Required column missing: snapped_at")
 
-    df["rsi"] = df["rsi"].replace([np.inf, -np.inf], np.nan)
+    output["snapped_at"] = pd.to_datetime(output["snapped_at"], errors="coerce")
 
-    # =========================
-    # STOCHASTIC RSI
-    # =========================
+    if "price" in output.columns:
+        output["price"] = pd.to_numeric(output["price"], errors="coerce")
 
-    rsi_min = df["rsi"].rolling(14).min()
-    rsi_max = df["rsi"].rolling(14).max()
+    output = output.dropna(subset=["snapped_at"]).copy()
+    output = output.sort_values("snapped_at").reset_index(drop=True)
+    output = _prepare_volume(output)
+    output = _prepare_ohlc(
+        output,
+        positive_values_expected=positive_values_expected,
+    )
+    output["close"] = pd.to_numeric(output["close"], errors="coerce").replace(
+        [np.inf, -np.inf],
+        np.nan,
+    )
+    output = output.dropna(subset=["close"])
+    if positive_values_expected:
+        output = output[output["close"] > 0]
+    output = output.reset_index(drop=True)
 
-    df["stoch_rsi"] = (df["rsi"] - rsi_min) / (rsi_max - rsi_min) * 100
-    df["stoch_rsi"] = df["stoch_rsi"].replace([np.inf, -np.inf], np.nan)
-
-    df["stoch_rsi_k"] = df["stoch_rsi"].rolling(3).mean()
-    df["stoch_rsi_d"] = df["stoch_rsi_k"].rolling(3).mean()
-
-    # =========================
-    # MACD
-    # =========================
-
-    ema_12 = df["close"].ewm(span=12, adjust=False).mean()
-    ema_26 = df["close"].ewm(span=26, adjust=False).mean()
-
-    df["macd"] = ema_12 - ema_26
-    df["macd_signal"] = df["macd"].ewm(span=9, adjust=False).mean()
-    df["macd_hist"] = df["macd"] - df["macd_signal"]
-
-    # =========================
-    # VOLATILITY / DRAWDOWN
-    # =========================
-
-    df["rolling_volatility_30d"] = (
-        df["daily_return"].rolling(30).std() * np.sqrt(252) * 100
+    output = calcular_indicadores(
+        output,
+        periods_per_year=periods_per_year,
     )
 
-    df["rolling_max"] = df["close"].cummax()
-    df["drawdown_pct"] = ((df["close"] / df["rolling_max"]) - 1) * 100
+    output["daily_return"] = output["price_change_pct"] / 100
+    output["daily_return_pct"] = output["price_change_pct"]
+    output["macd_hist"] = output["macd"] - output["macd_signal"]
+    output["stoch_rsi"] = output["stoch_rsi_k"]
+    output["rolling_volatility_30d"] = output["realized_volatility_30d"]
+    output["rolling_max"] = output["close"].cummax()
+    output["drawdown_pct"] = ((output["close"] / output["rolling_max"]) - 1) * 100
+    output["volume_sma_20"] = output["volume"].rolling(20).mean()
 
-    # =========================
-    # VOLUME
-    # =========================
-
-    df["volume_sma_30"] = df["total_volume"].rolling(30).mean()
-    df["volume_std_30"] = df["total_volume"].rolling(30).std()
-
-    df["volume_zscore"] = (
-        (df["total_volume"] - df["volume_sma_30"]) / df["volume_std_30"]
+    output["candle_range"] = output["high"] - output["low"]
+    output["candle_body"] = (output["close"] - output["open"]).abs()
+    output["body_to_range"] = (
+        output["candle_body"]
+        / output["candle_range"].replace(0, np.nan)
     )
 
-    df["volume_zscore"] = df["volume_zscore"].replace([np.inf, -np.inf], np.nan)
+    volume_available = output["volume"].notna() & (output["volume"] > 0)
+    native_candle = output["ohlc_source"].eq("native")
+    output["candle_signal_eligible"] = native_candle & volume_available
 
-    # Recalcula os indicadores pelo motor central para manter o dashboard
-    # consistente com os scripts principais.
-    df["volume"] = df["total_volume"]
-    df["daily_return"] = df["close"].pct_change(fill_method=None)
-    df["daily_return_pct"] = df["daily_return"] * 100
-
-    df = calcular_indicadores(df)
-
-    if "ema_20" not in df.columns:
-        df["ema_20"] = df["close"].ewm(
-            span=20,
-            adjust=False
-        ).mean()
-
-    df["macd_hist"] = df["macd"] - df["macd_signal"]
-
-    rsi_min = df["rsi"].rolling(14, min_periods=1).min()
-    rsi_max = df["rsi"].rolling(14, min_periods=1).max()
-    rsi_range = (rsi_max - rsi_min).replace(0, np.nan)
-
-    df["stoch_rsi"] = ((df["rsi"] - rsi_min) / rsi_range) * 100
-    df["stoch_rsi"] = df["stoch_rsi"].replace([np.inf, -np.inf], np.nan)
-
-    df["rolling_volatility_30d"] = df["realized_volatility_30d"]
-    df["rolling_max"] = df["close"].cummax()
-    df["drawdown_pct"] = ((df["close"] / df["rolling_max"]) - 1) * 100
-    df["volume_sma_20"] = df["volume"].rolling(20).mean()
-
-    # =========================
-    # CANDLE BEHAVIOUR
-    # =========================
-
-    df["candle_range"] = df["high"] - df["low"]
-    df["candle_body"] = (df["close"] - df["open"]).abs()
-
-    df["body_to_range"] = df["candle_body"] / df["candle_range"]
-    df["body_to_range"] = df["body_to_range"].replace([np.inf, -np.inf], np.nan)
-
-    # =========================
-    # FLAGS
-    # =========================
-
-    df["volume_spike"] = df["volume_zscore"] > 2.5
-
-    df["possible_pump_dump"] = (
-        (df["volume_zscore"] > 2.5)
-        & (df["price_change_pct"].abs() > 5)
-        & (df["body_to_range"] > 0.5)
+    output["volume_spike"] = volume_available & (output["volume_zscore"] > 2.5)
+    output["possible_pump_dump"] = (
+        output["candle_signal_eligible"]
+        & output["volume_spike"]
+        & (output["price_change_pct"].abs() > 5)
+        & (output["body_to_range"] > 0.5)
+    )
+    output["possible_spoofing"] = (
+        output["candle_signal_eligible"]
+        & output["volume_spike"]
+        & (output["price_change_pct"].abs() < 0.5)
+        & (output["body_to_range"] < 0.3)
+    )
+    output["extreme_rsi"] = (output["rsi"] > 80) | (output["rsi"] < 20)
+    output["risk_signal"] = output["possible_pump_dump"] | output["possible_spoofing"]
+    output["suspicious_event"] = output["risk_signal"] | output["volume_spike"]
+    output["signal_confidence"] = np.where(
+        output["candle_signal_eligible"],
+        "standard",
+        "limited",
     )
 
-    df["possible_spoofing"] = (
-        (df["volume_zscore"] > 2.5)
-        & (df["price_change_pct"].abs() < 0.5)
-        & (df["body_to_range"] < 0.3)
-    )
+    output["manipulation_reason"] = ""
+    output.loc[output["possible_pump_dump"], "manipulation_reason"] += "Possible pump/dump; "
+    output.loc[output["possible_spoofing"], "manipulation_reason"] += "Possible spoofing; "
+    output.loc[output["volume_spike"], "manipulation_reason"] += "Volume spike; "
+    output.loc[output["rsi"] > 80, "manipulation_reason"] += "RSI very high; "
+    output.loc[output["rsi"] < 20, "manipulation_reason"] += "RSI very low; "
+    output["manipulation_reason"] = output["manipulation_reason"].str.strip()
 
-    df["extreme_rsi"] = (
-        (df["rsi"] > 80)
-        | (df["rsi"] < 20)
-    )
+    output["asset_class"] = asset_cfg.get("asset_class", "unknown")
+    output["calendar_type"] = asset_cfg.get("calendar_type", "unknown")
 
-    df["risk_signal"] = (
-        df["possible_pump_dump"]
-        | df["possible_spoofing"]
-    )
-
-    df["suspicious_event"] = df["risk_signal"]
-
-    # =========================
-    # HUMAN-READABLE REASONS
-    # =========================
-
-    df["manipulation_reason"] = ""
-
-    df.loc[df["possible_pump_dump"], "manipulation_reason"] += "Possible pump/dump; "
-    df.loc[df["possible_spoofing"], "manipulation_reason"] += "Possible spoofing; "
-    df.loc[df["volume_spike"], "manipulation_reason"] += "Volume spike; "
-    df.loc[df["rsi"] > 80, "manipulation_reason"] += "RSI very high; "
-    df.loc[df["rsi"] < 20, "manipulation_reason"] += "RSI very low; "
-
-    df["manipulation_reason"] = df["manipulation_reason"].str.strip()
-
-    return df
+    return output
 
 
 def get_suspicious_events(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Returns only suspicious events, sorted from newest to oldest.
-    """
-
+    """Return suspicious observations, sorted from newest to oldest."""
     if "suspicious_event" not in df.columns:
         return pd.DataFrame()
 
     suspicious_df = df[df["suspicious_event"]].copy()
-
-    if suspicious_df.empty:
-        return suspicious_df
 
     columns = [
         "snapped_at",
@@ -275,26 +242,24 @@ def get_suspicious_events(df: pd.DataFrame) -> pd.DataFrame:
         "total_volume",
         "volume_zscore",
         "rsi",
+        "ohlc_source",
+        "signal_confidence",
         "possible_pump_dump",
         "possible_spoofing",
         "volume_spike",
         "extreme_rsi",
-        "manipulation_reason"
+        "manipulation_reason",
     ]
+    existing_columns = [column for column in columns if column in suspicious_df.columns]
 
-    existing_columns = [col for col in columns if col in suspicious_df.columns]
-
-    suspicious_df = suspicious_df[existing_columns].copy()
-    suspicious_df = suspicious_df.sort_values("snapped_at", ascending=False)
-
-    return suspicious_df
+    return suspicious_df[existing_columns].sort_values(
+        "snapped_at",
+        ascending=False,
+    )
 
 
 def calculate_asset_kpis(df: pd.DataFrame) -> dict:
-    """
-    Calcula KPIs principais para mostrar no topo do Asset Explorer.
-    """
-
+    """Calculate the headline Asset Explorer metrics."""
     close_series = df["close"].dropna() if "close" in df.columns else pd.Series(dtype=float)
 
     if close_series.empty:
@@ -309,51 +274,36 @@ def calculate_asset_kpis(df: pd.DataFrame) -> dict:
             "pump_dump_count": 0,
             "spoofing_count": 0,
             "volume_spike_count": 0,
+            "native_ohlc_pct": 0,
+            "periods_per_year": None,
         }
 
     latest_price = close_series.iloc[-1]
     first_price = close_series.iloc[0]
 
-    total_return = ((latest_price / first_price) - 1) * 100 if first_price != 0 else None
+    def latest_value(column):
+        if column not in df.columns:
+            return None
+        values = df[column].dropna()
+        return values.iloc[-1] if not values.empty else None
 
-    latest_rsi = (
-        df["rsi"].dropna().iloc[-1]
-        if "rsi" in df.columns and not df["rsi"].dropna().empty
-        else None
+    native_ohlc_pct = (
+        df["ohlc_source"].eq("native").mean() * 100
+        if "ohlc_source" in df.columns and len(df)
+        else 0
     )
-
-    latest_macd = (
-        df["macd"].dropna().iloc[-1]
-        if "macd" in df.columns and not df["macd"].dropna().empty
-        else None
-    )
-
-    latest_volatility = (
-        df["rolling_volatility_30d"].dropna().iloc[-1]
-        if "rolling_volatility_30d" in df.columns and not df["rolling_volatility_30d"].dropna().empty
-        else None
-    )
-
-    latest_drawdown = (
-        df["drawdown_pct"].dropna().iloc[-1]
-        if "drawdown_pct" in df.columns and not df["drawdown_pct"].dropna().empty
-        else None
-    )
-
-    suspicious_count = int(df["suspicious_event"].sum()) if "suspicious_event" in df.columns else 0
-    pump_dump_count = int(df["possible_pump_dump"].sum()) if "possible_pump_dump" in df.columns else 0
-    spoofing_count = int(df["possible_spoofing"].sum()) if "possible_spoofing" in df.columns else 0
-    volume_spike_count = int(df["volume_spike"].sum()) if "volume_spike" in df.columns else 0
 
     return {
         "latest_price": latest_price,
-        "total_return": total_return,
-        "latest_rsi": latest_rsi,
-        "latest_macd": latest_macd,
-        "latest_volatility": latest_volatility,
-        "latest_drawdown": latest_drawdown,
-        "suspicious_count": suspicious_count,
-        "pump_dump_count": pump_dump_count,
-        "spoofing_count": spoofing_count,
-        "volume_spike_count": volume_spike_count,
+        "total_return": ((latest_price / first_price) - 1) * 100 if first_price != 0 else None,
+        "latest_rsi": latest_value("rsi"),
+        "latest_macd": latest_value("macd"),
+        "latest_volatility": latest_value("rolling_volatility_30d"),
+        "latest_drawdown": latest_value("drawdown_pct"),
+        "suspicious_count": int(df["suspicious_event"].sum()) if "suspicious_event" in df.columns else 0,
+        "pump_dump_count": int(df["possible_pump_dump"].sum()) if "possible_pump_dump" in df.columns else 0,
+        "spoofing_count": int(df["possible_spoofing"].sum()) if "possible_spoofing" in df.columns else 0,
+        "volume_spike_count": int(df["volume_spike"].sum()) if "volume_spike" in df.columns else 0,
+        "native_ohlc_pct": native_ohlc_pct,
+        "periods_per_year": latest_value("volatility_periods_per_year"),
     }

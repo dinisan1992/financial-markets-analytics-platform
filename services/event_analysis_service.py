@@ -40,7 +40,8 @@ def filter_events_for_chart(events_df: pd.DataFrame, event_filter: str):
 def calculate_event_forward_returns(
     events_df: pd.DataFrame,
     price_df: pd.DataFrame,
-    horizons=(1, 7, 30, 90, 180, 365)
+    horizons=(1, 7, 30, 90, 180, 365),
+    include_approximate=False,
 ):
     if events_df is None or events_df.empty:
         return pd.DataFrame()
@@ -52,6 +53,8 @@ def calculate_event_forward_returns(
         return events_df.copy()
 
     events = events_df.copy()
+    if not include_approximate and "date_precision" in events.columns:
+        events = events[events["date_precision"].eq("exact")].copy()
     prices = price_df[["snapped_at", "close"]].copy()
 
     events["event_date"] = pd.to_datetime(events["event_date"], errors="coerce")
@@ -106,19 +109,16 @@ def calculate_event_forward_returns(
 
     result_df = pd.DataFrame(output_rows)
 
+    return_columns = [f"return_{int(horizon)}d_pct" for horizon in horizons]
     display_cols = [
         "event_date",
+        "date_precision",
         "market_date",
         "event_title",
         "event_category",
         "event_source_table",
         "event_close",
-        "return_1d_pct",
-        "return_7d_pct",
-        "return_30d_pct",
-        "return_90d_pct",
-        "return_180d_pct",
-        "return_365d_pct",
+        *return_columns,
         "event_description",
     ]
 
@@ -127,30 +127,26 @@ def calculate_event_forward_returns(
 
     rename_map = {
         "event_date": "Event Date",
+        "date_precision": "Date Precision",
         "market_date": "Market Date",
         "event_title": "Event",
         "event_category": "Category",
         "event_source_table": "Source",
         "event_close": "Close at Event",
-        "return_1d_pct": "Return +1D %",
-        "return_7d_pct": "Return +7D %",
-        "return_30d_pct": "Return +30D %",
-        "return_90d_pct": "Return +90D %",
-        "return_180d_pct": "Return +180D %",
-        "return_365d_pct": "Return +365D %",
         "event_description": "Description",
     }
+    rename_map.update(
+        {
+            f"return_{int(horizon)}d_pct": f"Return +{int(horizon)}D %"
+            for horizon in horizons
+        }
+    )
 
     result_df = result_df.rename(columns=rename_map)
 
     numeric_cols = [
         "Close at Event",
-        "Return +1D %",
-        "Return +7D %",
-        "Return +30D %",
-        "Return +90D %",
-        "Return +180D %",
-        "Return +365D %",
+        *[f"Return +{int(horizon)}D %" for horizon in horizons],
     ]
 
     for col in numeric_cols:
@@ -376,22 +372,29 @@ def calculate_cross_asset_event_impact(
     end_date=None,
     horizons=(1, 7, 30, 90, 180, 365),
     assets_config=None,
-    load_asset_data_func=None
+    load_asset_data_func=None,
+    include_approximate=False,
+    return_load_report=False,
 ):
     """
     Calculates cross-asset forward returns after historical events.
     Output is long-form: one row per event + asset.
     """
     if events_df is None or events_df.empty:
-        return pd.DataFrame()
+        empty = pd.DataFrame()
+        return (empty, empty.copy()) if return_load_report else empty
 
     if not asset_keys:
-        return pd.DataFrame()
+        empty = pd.DataFrame()
+        return (empty, empty.copy()) if return_load_report else empty
 
     if assets_config is None or load_asset_data_func is None:
-        return pd.DataFrame()
+        empty = pd.DataFrame()
+        return (empty, empty.copy()) if return_load_report else empty
 
     events = events_df.copy()
+    if not include_approximate and "date_precision" in events.columns:
+        events = events[events["date_precision"].eq("exact")].copy()
     events["event_date"] = pd.to_datetime(events["event_date"], errors="coerce")
     events = events.dropna(subset=["event_date"]).copy()
 
@@ -404,12 +407,20 @@ def calculate_cross_asset_event_impact(
     events = events.sort_values("event_date").reset_index(drop=True)
 
     if events.empty:
-        return pd.DataFrame()
+        empty = pd.DataFrame()
+        return (empty, empty.copy()) if return_load_report else empty
 
     rows = []
+    load_rows = []
 
     for asset_key in asset_keys:
         if asset_key not in assets_config:
+            load_rows.append({
+                "asset": asset_key,
+                "status": "failed",
+                "rows": 0,
+                "reason": "Asset is not configured",
+            })
             continue
 
         asset_cfg = assets_config[asset_key]
@@ -426,13 +437,31 @@ def calculate_cross_asset_event_impact(
                 start_date=start_date,
                 end_date=extended_end_date
             )
-        except Exception:
+        except Exception as exc:
+            load_rows.append({
+                "asset": asset_key,
+                "status": "failed",
+                "rows": 0,
+                "reason": str(exc),
+            })
             continue
 
         if price_df is None or price_df.empty:
+            load_rows.append({
+                "asset": asset_key,
+                "status": "empty",
+                "rows": 0,
+                "reason": "No price rows returned",
+            })
             continue
 
         if "snapped_at" not in price_df.columns or "close" not in price_df.columns:
+            load_rows.append({
+                "asset": asset_key,
+                "status": "failed",
+                "rows": len(price_df),
+                "reason": "Missing snapped_at or close column",
+            })
             continue
 
         prices = price_df[["snapped_at", "close"]].copy()
@@ -441,7 +470,20 @@ def calculate_cross_asset_event_impact(
         prices = prices.dropna(subset=["snapped_at", "close"]).sort_values("snapped_at").reset_index(drop=True)
 
         if prices.empty:
+            load_rows.append({
+                "asset": asset_key,
+                "status": "empty",
+                "rows": 0,
+                "reason": "No valid dated prices",
+            })
             continue
+
+        load_rows.append({
+            "asset": asset_key,
+            "status": "loaded",
+            "rows": len(prices),
+            "reason": "",
+        })
 
         for _, event in events.iterrows():
             event_date = event["event_date"]
@@ -450,6 +492,7 @@ def calculate_cross_asset_event_impact(
             row = {
                 "Event Date": event_date.date(),
                 "Event": event.get("event_title", "Event"),
+                "Date Precision": event.get("date_precision", "exact"),
                 "Category": event.get("event_category", "Uncategorized"),
                 "Source": event.get("event_source_table", ""),
                 "Description": event.get("event_description", ""),
@@ -491,8 +534,10 @@ def calculate_cross_asset_event_impact(
 
     result_df = pd.DataFrame(rows)
 
+    load_report = pd.DataFrame(load_rows)
+
     if result_df.empty:
-        return result_df
+        return (result_df, load_report) if return_load_report else result_df
 
     numeric_cols = ["Close at Event"]
 
@@ -514,6 +559,7 @@ def calculate_cross_asset_event_impact(
     preferred_cols = [
         "Event Date",
         "Event",
+        "Date Precision",
         "Category",
         "Source",
         "Asset",
@@ -533,7 +579,8 @@ def calculate_cross_asset_event_impact(
     existing_preferred_cols = [col for col in preferred_cols if col in result_df.columns]
     other_cols = [col for col in result_df.columns if col not in existing_preferred_cols]
 
-    return result_df[existing_preferred_cols + other_cols].copy()
+    result_df = result_df[existing_preferred_cols + other_cols].copy()
+    return (result_df, load_report) if return_load_report else result_df
 
 
 
@@ -637,3 +684,90 @@ def calculate_risk_on_off_snapshot(cross_asset_df: pd.DataFrame, return_col: str
             snapshot_df[col] = pd.to_numeric(snapshot_df[col], errors="coerce").round(2)
 
     return snapshot_df.sort_values("Event Date").reset_index(drop=True)
+
+
+def calculate_event_recovery_analysis(
+    event: dict,
+    asset_keys: list[str],
+    assets_config: dict,
+    load_asset_data_func,
+    horizon_days: int = 365,
+):
+    """Measure drawdown and recovery from the first market price after an event."""
+    if not event or event.get("date_precision", "exact") != "exact":
+        return pd.DataFrame(), pd.DataFrame()
+
+    event_date = pd.to_datetime(event.get("event_date"), errors="coerce")
+    if pd.isna(event_date):
+        return pd.DataFrame(), pd.DataFrame()
+
+    end_date = event_date + pd.Timedelta(days=int(horizon_days))
+    rows = []
+    load_rows = []
+
+    for asset_key in asset_keys:
+        try:
+            frame = load_asset_data_func(
+                asset_key=asset_key,
+                start_date=event_date - pd.Timedelta(days=7),
+                end_date=end_date,
+            )
+        except Exception as exc:
+            load_rows.append({"asset": asset_key, "status": "failed", "reason": str(exc)})
+            continue
+
+        if frame is None or frame.empty or "snapped_at" not in frame or "close" not in frame:
+            load_rows.append({"asset": asset_key, "status": "empty", "reason": "No usable prices"})
+            continue
+
+        prices = frame[["snapped_at", "close"]].copy()
+        prices["snapped_at"] = pd.to_datetime(prices["snapped_at"], errors="coerce")
+        prices["close"] = pd.to_numeric(prices["close"], errors="coerce")
+        prices = prices.dropna().sort_values("snapped_at")
+        prices = prices[(prices["snapped_at"] >= event_date) & (prices["snapped_at"] <= end_date)]
+
+        if prices.empty:
+            load_rows.append({"asset": asset_key, "status": "empty", "reason": "No prices in event window"})
+            continue
+
+        base = prices.iloc[0]
+        base_price = base["close"]
+        path = prices.copy()
+        path["return_from_event_pct"] = ((path["close"] / base_price) - 1) * 100
+        trough = path.sort_values("return_from_event_pct").iloc[0]
+        after_trough = path[path["snapped_at"] >= trough["snapped_at"]]
+        recovered = after_trough[after_trough["close"] >= base_price]
+
+        if recovered.empty:
+            recovery_date = pd.NaT
+            recovery_days = np.nan
+            recovery_status = "Not recovered within window"
+        else:
+            recovery_date = recovered.iloc[0]["snapped_at"]
+            recovery_days = int((recovery_date - base["snapped_at"]).days)
+            recovery_status = "Recovered"
+
+        rows.append(
+            {
+                "Asset": asset_key,
+                "Asset Name": assets_config.get(asset_key, {}).get("display_name", asset_key),
+                "Event Date": event_date.date(),
+                "Market Date": base["snapped_at"].date(),
+                "Event Price": base_price,
+                "Trough Date": trough["snapped_at"].date(),
+                "Max Drawdown %": trough["return_from_event_pct"],
+                "Days to Trough": int((trough["snapped_at"] - base["snapped_at"]).days),
+                "Recovery Date": recovery_date.date() if pd.notna(recovery_date) else None,
+                "Recovery Days": recovery_days,
+                "Recovery Status": recovery_status,
+                "Window Days": int(horizon_days),
+            }
+        )
+        load_rows.append({"asset": asset_key, "status": "loaded", "reason": ""})
+
+    result = pd.DataFrame(rows)
+    for column in ["Event Price", "Max Drawdown %"]:
+        if column in result:
+            result[column] = pd.to_numeric(result[column], errors="coerce").round(2)
+
+    return result, pd.DataFrame(load_rows)

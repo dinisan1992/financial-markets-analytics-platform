@@ -1,6 +1,6 @@
 # TODO
 
-## Completed in v0.2.0 / v0.2.1
+## Historical Work Completed in v0.2.0 / v0.2.1
 
 - Modular BTC pipeline tested successfully
 - `main.py` validated
@@ -29,17 +29,15 @@
 
 ---
 
-## High Priority
+## High Priority After v0.4.0
 
-- Update `README.md` to reflect current v0.2.1 status
-- Update `CHANGELOG.md`
-- Update `project_structure.md`
-- Create `DATABASE_SCHEMA.md`
-- Review `asset_config.py`
-- Review `STREAMLIT_ROADMAP.md`
-- Review `requirements.txt`
-- Confirm `.gitignore` filename is correct
-- Confirm `VERSION` value is updated to `0.2.1`
+- Preserve and compare the read-only audit baseline
+- Report stale assets, source and responsible updater
+- Diagnose duplicate dates without mutating SQL data
+- Validate the WTI_OIL outlier against its source
+- Review zero-return series and source-frequency metadata
+- Add correlation overlap and confidence diagnostics
+- Re-run all financial reference tests after remediation
 
 ---
 

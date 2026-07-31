@@ -20,7 +20,7 @@ Functional local platform with:
 - Data quality and validation tools.
 - Automated syntax checks and unit tests through GitHub Actions.
 
-Current project version: **v0.3.1**
+Current project version: **v0.4.0**
 
 ## Main Analytical Capabilities
 
@@ -74,19 +74,42 @@ A future fraud analytics layer is planned for card fraud, credit transfer fraud,
 
 ## Dashboard Pages
 
-- **Overview** — project scope and module summary.
-- **Asset Explorer** — technical analysis, KPIs, risk indicators and event overlays by asset.
-- **Market Event Analysis** — cross-asset reactions, event heatmaps and risk-on/risk-off snapshots.
-- **Correlations** — correlation matrices, rolling correlations and normalized performance comparisons.
-- **FED Macro** — FED indicators aligned with selected market assets.
-- **EURO Macro** — European macroeconomic series aligned with selected market assets.
-- **Project Status** — current implementation and validation status.
+- **Overview** - project scope and module summary.
+- **Asset Explorer** - centralized technical analysis, OHLC provenance, KPIs, risk indicators and event overlays.
+- **Market Event Analysis** - cross-asset reactions, date precision, event detail and recovery analysis.
+- **Correlations** - pairwise-valid matrices, observation-based rolling correlations and normalized performance.
+- **Market Regimes** - rule-based regime classification and regime-conditioned performance.
+- **FED Macro** - all configured FED/market pairs aligned on real market observations.
+- **EURO Macro** - European macroeconomic series aligned on real market observations.
+- **Data Quality** - read-only asset, pair and event coverage audit with aggregated ZIP export.
+- **Project Status** - current implementation and validation status.
+
+## Application Screenshots
+
+| Overview | Asset Explorer |
+| --- | --- |
+| ![Overview dashboard](docs/images/overview.png) | ![Asset Explorer](docs/images/asset_explorer.png) |
+
+| Market Event Analysis | Correlations |
+| --- | --- |
+| ![Market Event Analysis](docs/images/market_event_analysis.png) | ![Correlation analysis](docs/images/correlations.png) |
+
+| Market Regimes | Data Quality |
+| --- | --- |
+| ![Market Regimes](docs/images/market_regimes.png) | ![Data Quality audit](docs/images/data_quality.png) |
+
+| FED Macro | EURO Macro |
+| --- | --- |
+| ![FED macro analysis](docs/images/fed_macro.png) | ![EURO macro analysis](docs/images/euro_macro.png) |
+
+![Project Status](docs/images/project_status.png)
 
 ## Technical Indicators
 
 The central indicator engine calculates:
 
-- Synthetic OHLC where source data contains price-only series.
+- Native OHLC preservation when valid, with synthetic OHLC only for missing or invalid rows.
+- Row-level `ohlc_source` provenance and candle-signal eligibility.
 - Daily returns and price change percentages.
 - EMA 9, 12, 20, 26, 50, 100 and 200.
 - Bollinger Bands.
@@ -151,12 +174,17 @@ The application is separated into configuration, data access, analytical service
 |   |-- asset_explorer.py
 |   |-- market_event_analysis.py
 |   |-- correlations.py
+|   |-- market_regimes.py
 |   |-- fed_macro.py
 |   |-- euro_macro.py
+|   |-- data_quality.py
 |   `-- project_status.py
 |-- services/
 |   |-- data_access_service.py
 |   |-- event_analysis_service.py
+|   |-- data_quality_service.py
+|   |-- macro_analytics_service.py
+|   |-- market_regime_service.py
 |   |-- btc_cycle_service.py
 |   |-- technical_signal_service.py
 |   |-- risk_statistics_service.py
@@ -235,19 +263,17 @@ The default local database is `btc_data` on `localhost:3306`. SQL writes are dis
 
 ## Validation Snapshot
 
-The latest documented local validation included:
+The v0.4.0 validation includes:
 
-- 7/7 Streamlit pages rendered without exceptions.
-- Main data-loading actions tested.
-- 37/37 configured market assets loaded successfully.
-- 5/5 configured FED macro-market pairs loaded successfully.
-- 12/12 active EURO macro-market pairs loaded successfully.
-- 21 unit tests passed.
+- 9/9 Streamlit pages rendered without uncaught exceptions, including graceful database-offline handling.
+- 48 deterministic unit tests passed.
 - Active Python files compiled successfully.
-- SQL writes remained opt-in.
-- No private `.env`, datasets or SQL dumps were tracked.
+- Native/synthetic OHLC, 252/365 annualization, rolling correlation, events, recovery, macro alignment, data quality and regimes covered by tests.
+- News modules import without starting network loops or SQL activity.
+- No SQL writes, migrations, CSV importers or database mutations were executed during this upgrade.
+- The read-only database audit loaded 37 assets, evaluated 666 pairs and 66 events, and produced `audit_outputs/audit_outputs.zip`.
 
-See `docs/PROJECT_STATUS.md` for the detailed implementation status.
+The previous database-enabled validation covered 37/37 configured assets, 11/11 FED series and 12/12 active EURO loaders. See `PROJECT_STATUS.md` for details.
 
 ## Data and Reproducibility
 
@@ -262,7 +288,7 @@ The public repository focuses on:
 - configuration examples;
 - documentation.
 
-Adding anonymized or synthetic sample datasets for a fully reproducible public demo is part of the future roadmap.
+The local database remains intentionally separate from the public source repository.
 
 ## GitHub Safety
 
@@ -280,13 +306,13 @@ The repository is configured to exclude:
 
 Planned improvements include:
 
-- Add anonymized or synthetic sample datasets.
-- Add dashboard screenshots and a short demonstration.
-- Extend automated test coverage.
-- Continue reducing duplicated legacy workflows.
-- Convert remaining ETL and news scripts into explicit, reusable entry points.
+- Calibrate risk thresholds by asset class and data provenance.
+- Replace important year-only world events with verified exact dates.
+- Add dry-run and explicit entry points to the remaining SQL-capable ETL scripts.
+- Extend reference tests with database-backed snapshots when MySQL is available.
 - Simplify the dependency file to direct project dependencies.
 - Develop the deferred EURO fraud analytics layer.
+- Start machine-learning experiments only after feature and label governance is stable.
 
 ## Disclaimer
 

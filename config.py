@@ -118,4 +118,4 @@ DEFAULT_UPDATE_SQL = _env_bool("DEFAULT_UPDATE_SQL", False)
 # PROJECT VERSION
 # =========================
 
-PROJECT_VERSION = "0.3.1"
+PROJECT_VERSION = "0.4.0"

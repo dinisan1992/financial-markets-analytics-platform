@@ -138,7 +138,7 @@ def make_summary_cards(df, macro_col, market_col):
     market_latest = market_series.iloc[-1] if not market_series.empty else None
 
     with col1:
-        st.metric("Observacoes", f"{len(df):,}")
+        st.metric("Observations", f"{len(df):,}")
 
     with col2:
         st.metric("Start date", str(start_date.date()) if pd.notna(start_date) else "-")

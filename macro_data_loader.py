@@ -4,6 +4,7 @@ from sqlalchemy import create_engine
 from config import DB_CONFIG, get_sqlalchemy_database_url
 from asset_config import ASSETS
 from macro_config import MACRO_ASSETS, get_macro_config
+from services.macro_analytics_service import align_macro_to_market_calendar
 
 
 # =========================
@@ -272,31 +273,19 @@ def alinhar_macro_com_market(
         end_date=end_date
     )
 
-    merged = pd.merge(
-        df_macro,
-        df_market,
-        on="snapped_at",
-        how=how
+    merged = align_macro_to_market_calendar(
+        macro_df=df_macro,
+        market_df=df_market,
+        macro_column=macro_key,
+        market_column=market_asset,
     )
-
-    merged = merged.sort_values("snapped_at").reset_index(drop=True)
-
-    cols = [
-        col for col in merged.columns
-        if col != "snapped_at"
-    ]
-
-    if forward_fill:
-        merged[cols] = merged[cols].ffill()
-
-    merged = merged.dropna(subset=[macro_key, market_asset]).reset_index(drop=True)
 
     if merged.empty:
         raise ValueError(
-            f"No data alinhados para {macro_key} vs {market_asset}"
+            f"No aligned observations for {macro_key} vs {market_asset}"
         )
 
-    print(f"Rows alinhadas: {len(merged)}")
+    print(f"Aligned market observations: {len(merged)}")
     print(f"Minimum date: {merged['snapped_at'].min().date()}")
     print(f"Maximum date: {merged['snapped_at'].max().date()}")
 

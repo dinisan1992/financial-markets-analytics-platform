@@ -60,7 +60,28 @@ def calcular_stochrsi(precos, rsi_window=14, stoch_window=14, k_smooth=3, d_smoo
 # =========================
 # ATR
 # =========================
+def calcular_wilder_smoothing(values, window=14):
+    """Apply Wilder's recursive moving average with an initial simple mean."""
+    values = pd.to_numeric(values, errors="coerce")
+    output = pd.Series(np.nan, index=values.index, dtype="float64")
+    valid = values.dropna()
+
+    if len(valid) < window:
+        return output
+
+    seed_index = valid.index[window - 1]
+    previous = valid.iloc[:window].mean()
+    output.loc[seed_index] = previous
+
+    for index, current in valid.iloc[window:].items():
+        previous = previous + (current - previous) / window
+        output.loc[index] = previous
+
+    return output
+
+
 def calcular_atr(high, low, close, window=14):
+    """Calculate Average True Range using Wilder smoothing."""
     tr1 = high - low
     tr2 = (high - close.shift(1)).abs()
     tr3 = (low - close.shift(1)).abs()
@@ -70,15 +91,14 @@ def calcular_atr(high, low, close, window=14):
         axis=1
     ).max(axis=1)
 
-    atr = tr.rolling(window=window).mean()
-
-    return atr
+    return calcular_wilder_smoothing(tr, window=window)
 
 
 # =========================
 # ADX
 # =========================
 def calcular_adx(high, low, close, window=14):
+    """Calculate Average Directional Index using Wilder smoothing."""
     high_diff = high.diff()
     low_diff = low.diff()
 
@@ -101,29 +121,29 @@ def calcular_adx(high, low, close, window=14):
         axis=1
     ).max(axis=1)
 
-    atr = tr.rolling(window=window).mean()
+    atr = calcular_wilder_smoothing(tr, window=window)
+    plus_dm_smoothed = calcular_wilder_smoothing(plus_dm, window=window)
+    minus_dm_smoothed = calcular_wilder_smoothing(minus_dm, window=window)
 
     plus_di = 100 * (
-        plus_dm.rolling(window=window).mean()
+        plus_dm_smoothed
         /
-        (atr + 1e-9)
+        atr.replace(0, np.nan)
     )
 
     minus_di = 100 * (
-        minus_dm.rolling(window=window).mean()
+        minus_dm_smoothed
         /
-        (atr + 1e-9)
+        atr.replace(0, np.nan)
     )
 
     dx = 100 * (
         (plus_di - minus_di).abs()
         /
-        (plus_di + minus_di + 1e-9)
+        (plus_di + minus_di).replace(0, np.nan)
     )
 
-    adx = dx.rolling(window=window).mean()
-
-    return adx
+    return calcular_wilder_smoothing(dx, window=window)
 
 
 # =========================
@@ -237,19 +257,18 @@ def calcular_drawdown_duration(close):
 # =========================
 # CALCULAR TODOS OS INDICADORES
 # =========================
-def calcular_indicadores(df):
-    """
-    Calcula todos os indicadores usados no projeto.
-
-    Indicadores antigos:
-    - Podem ser updated no SQL via database.py ou pelos scripts de assets.
-
-    Indicadores novos:
-    - Are apenas calculados no DataFrame por agora.
-    - They are not sent to SQL at this stage.
-    """
+def calcular_indicadores(df, periods_per_year=252):
+    """Calculate the canonical in-memory technical indicator set."""
 
     df = df.copy()
+
+    try:
+        periods_per_year = int(periods_per_year)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("periods_per_year must be a positive integer") from exc
+
+    if periods_per_year <= 0:
+        raise ValueError("periods_per_year must be a positive integer")
 
     required_columns = [
         "open",
@@ -374,7 +393,12 @@ def calcular_indicadores(df):
     # =========================
     # PRICE CHANGE
     # =========================
-    df["price_change_pct"] = df["close"].pct_change(fill_method=None) * 100
+    observation_returns = (
+        df["close"]
+        .pct_change(fill_method=None)
+        .replace([np.inf, -np.inf], np.nan)
+    )
+    df["price_change_pct"] = observation_returns * 100
 
     # =====================================================
     # NEW ADVANCED INDICATORS
@@ -397,13 +421,14 @@ def calcular_indicadores(df):
     # REALIZED VOLATILITY 30D
     # =========================
     df["realized_volatility_30d"] = (
-        df["close"]
-        .pct_change(fill_method=None)
+        observation_returns
         .rolling(30)
         .std()
-        * np.sqrt(365)
+        * np.sqrt(periods_per_year)
         * 100
     )
+
+    df["volatility_periods_per_year"] = periods_per_year
 
     # =========================
     # VOLATILITY OF VOLATILITY

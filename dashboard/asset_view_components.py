@@ -95,6 +95,19 @@ def render_asset_kpi_cards(kpis):
         spoof = kpis.get("spoofing_count", 0)
         st.metric("Pump/Dump | Spoofing", f"{pump} | {spoof}")
 
+    c9, c10 = st.columns(2)
+
+    with c9:
+        native_pct = kpis.get("native_ohlc_pct", 0)
+        st.metric("Native OHLC Coverage", f"{native_pct:,.1f}%")
+
+    with c10:
+        periods = kpis.get("periods_per_year")
+        st.metric(
+            "Volatility Periods / Year",
+            f"{int(periods)}" if periods is not None else "-",
+        )
+
 
 def render_suspicious_events_table(df):
     suspicious_df = get_suspicious_events(df)

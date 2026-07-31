@@ -140,14 +140,17 @@ def _load_selected_asset(deps: AssetExplorerDeps, selected_asset, start_date, en
                 end_date=deps.date_to_str(end_date),
             )
 
-            tech_df = prepare_asset_technical_data(raw_df)
+            asset_cfg = ASSETS[selected_asset]
+            tech_df = prepare_asset_technical_data(
+                raw_df,
+                asset_cfg=asset_cfg,
+            )
 
             events_df = deps.load_asset_events(
                 start_date=deps.date_to_str(start_date),
                 end_date=deps.date_to_str(end_date),
             )
 
-        asset_cfg = ASSETS[selected_asset]
         display_name = asset_cfg["display_name"]
 
         st.session_state.asset_loaded = True
@@ -191,7 +194,8 @@ def _render_loaded_asset(deps: AssetExplorerDeps, chart_mode, chart_size, event_
                 "Risk Signals",
                 "Statistics",
                 "Data",
-            ]
+            ],
+            on_change="rerun",
         )
     else:
         tab_technical, tab_event_impact, tab_risk, tab_stats, tab_data = st.tabs(
@@ -201,45 +205,51 @@ def _render_loaded_asset(deps: AssetExplorerDeps, chart_mode, chart_size, event_
                 "Risk Signals",
                 "Statistics",
                 "Data",
-            ]
+            ],
+            on_change="rerun",
         )
 
-    with tab_technical:
-        _render_technical_tab(
-            deps=deps,
-            tech_df=tech_df,
-            display_name=display_name,
-            chart_mode=chart_mode,
-            chart_size=chart_size,
-            events_for_chart=events_for_chart,
-        )
+    if tab_technical.open:
+        with tab_technical:
+            _render_technical_tab(
+                deps=deps,
+                tech_df=tech_df,
+                display_name=display_name,
+                chart_mode=chart_mode,
+                chart_size=chart_size,
+                events_for_chart=events_for_chart,
+            )
 
-    with tab_event_impact:
-        deps.render_event_impact_tab(
-            events_for_chart=events_for_chart,
-            tech_df=tech_df,
-        )
+    if tab_event_impact.open:
+        with tab_event_impact:
+            deps.render_event_impact_tab(
+                events_for_chart=events_for_chart,
+                tech_df=tech_df,
+            )
 
-    if selected_asset_loaded == "BTC":
+    if selected_asset_loaded == "BTC" and tab_btc_cycle.open:
         with tab_btc_cycle:
             deps.render_btc_halving_cycle_analysis(
                 price_df=tech_df,
                 events_df=st.session_state.asset_events_df,
             )
 
-    with tab_risk:
-        _render_risk_tab(deps, tech_df, display_name)
+    if tab_risk.open:
+        with tab_risk:
+            _render_risk_tab(deps, tech_df, display_name)
 
-    with tab_stats:
-        _render_stats_tab(deps, tech_df, display_name)
+    if tab_stats.open:
+        with tab_stats:
+            _render_stats_tab(deps, tech_df, display_name)
 
-    with tab_data:
-        _render_data_tab(
-            deps=deps,
-            tech_df=tech_df,
-            events_for_chart=events_for_chart,
-            selected_asset_loaded=selected_asset_loaded,
-        )
+    if tab_data.open:
+        with tab_data:
+            _render_data_tab(
+                deps=deps,
+                tech_df=tech_df,
+                events_for_chart=events_for_chart,
+                selected_asset_loaded=selected_asset_loaded,
+            )
 
 
 def _render_technical_tab(
