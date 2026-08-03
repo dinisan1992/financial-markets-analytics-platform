@@ -4,6 +4,30 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [v0.5.2] - 2026-08-03 - Controlled Macro Import Safety
+
+### Added
+
+- Executable contracts for 11 FED and 17 EURO/ECB source files.
+- A shared macro import preview service and one aggregate CLI for header, sample and SQL-key validation.
+- Backup validation, exact table confirmation and unique-key enforcement before any FED upsert.
+- Deterministic tests for import-time side effects, source coverage, preview calculations and write guards.
+
+### Changed
+
+- Replaced 28 direct importer entrypoints with thin, read-only-by-default wrappers.
+- Added full-source FED preflight, invalid/duplicate source blocking and one atomic transaction across all write chunks.
+- Preserved the pre-v0.5.2 implementations locally as Git-ignored, non-executable text; the public history remains available in v0.5.1.
+- Classified 7 FED imports as write-ready and 4 as blocked by missing unique date keys.
+- Blocked all EURO writes pending complete multidimensional mappings; 12 tables also require a unique `(key_code, time_period)` key.
+
+### Safety
+
+- Importing any FED or EURO entrypoint no longer opens MySQL or starts reading a multi-gigabyte CSV.
+- No FED or EURO CSV import, SQL write, migration or schema change was performed during this release.
+
+---
+
 ## [v0.5.1] - 2026-08-03 - Treasury Source Identity and Provenance
 
 ### Added

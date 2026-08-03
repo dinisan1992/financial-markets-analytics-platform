@@ -77,10 +77,20 @@
 - Add a dry-run-first official US2Y refresh command
 - Expose provider and series identity in the Data Quality outputs
 
-## High Priority After v0.5.1
+## Completed in v0.5.2
+
+- Register all 11 FED and 17 EURO source files in an executable import manifest
+- Replace import-time database writes with safe preview entrypoints
+- Require explicit `--update-sql`, exact table confirmation and a verified backup for FED writes
+- Block EURO writes pending complete multidimensional mappings and business keys
+- Preserve the previous implementations locally as Git-ignored non-executable text
+- Validate 28/28 source contracts and importer side-effect safety
+
+## High Priority After v0.5.2
 
 - Confirm the seven source contracts still marked as inferred during their next refresh
-- Move FED and EURO importers behind explicit dry-run and write commands
+- Add unique `observation_date` keys to the four blocked FED tables after a verified backup
+- Validate EURO mappings and `(key_code, time_period)` keys in an isolated schema
 - Add isolated database-backed synchronization tests
 - Confirm the WTI contract/source for 20 April 2020
 - Classify YUAN, FINANCIAL_CONDITIONS and TED_SPREAD by native frequency
@@ -191,8 +201,8 @@ Future task:
 
 Future work:
 
-- Standardize FED ingestion scripts
-- Standardize EU / ECB ingestion scripts
+- Complete schema remediation for the standardized FED ingestion service
+- Complete safe write support for standardized EU / ECB ingestion
 - Prevent duplicated macro rows
 - Add unique constraints where appropriate
 - Create macro feature calculations

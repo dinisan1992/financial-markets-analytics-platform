@@ -109,3 +109,4 @@ dist/
 # ARCHIVE / OLD BACKUPS
 # =========================
 archive/
+tools/legacy/pre_v052/

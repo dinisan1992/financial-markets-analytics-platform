@@ -4,7 +4,7 @@ Last updated: 3 August 2026
 
 ## Current Version
 
-**Macro-Financial Risk & Market Behaviour Analytics Platform v0.5.1**
+**Macro-Financial Risk & Market Behaviour Analytics Platform v0.5.2**
 
 ## Executive Summary
 
@@ -22,7 +22,7 @@ It combines:
 - interactive dashboarding;
 - data quality validation.
 
-The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.5.1 adds an executable source registry and corrects a material Treasury-series identity issue: the historical Yahoo `^IRX` observations are now preserved as US3M, while US2Y uses the official Federal Reserve H.15 two-year constant-maturity series.
+The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.5.2 replaces import-time FED and EURO database writes with a controlled 28-source registry, read-only previews and explicit backup-gated FED upserts. EURO writes remain blocked until their multidimensional key contracts are remediated.
 
 ## Completed and Functional Modules
 
@@ -219,10 +219,16 @@ Main file:
 
 ## Latest Documented Validation
 
-Version 0.5.1 local validation included:
+Version 0.5.2 local validation included:
 
-- 85/85 deterministic unit tests passed.
-- 194 active Python files parsed successfully and `pip check` reported no broken requirements.
+- 98/98 deterministic unit tests passed.
+- 199 active Python files parsed successfully and `pip check` reported no broken requirements.
+- 28/28 FED and EURO CSV source contracts passed controlled preview with no writes.
+- All 28 active importer entrypoints imported without opening MySQL or starting a CSV load.
+- SQL-read-only checks classified 7 FED imports as write-ready and 4 FED imports as blocked by a missing unique `observation_date` key.
+- All 17 EURO writes are blocked pending complete multidimensional mappings; 12 also lack a unique `(key_code, time_period)` key.
+- FED writes require `--update-sql`, exact table confirmation and a verified SQL backup containing structure and data.
+- No FED or EURO CSV import, SQL insert, update, migration or schema change was executed.
 - 38/38 configured asset tables loaded and recalculated through a SQL-only runner with database writes disabled.
 - 9/9 Streamlit pages rendered without uncaught exceptions.
 - US2Y, US3M and Data Quality were exercised in a real browser session.
@@ -362,10 +368,10 @@ The project already contains a validated multi-asset, FED macro and EURO macro a
 
 The current priority is the next controlled data-engineering cycle:
 
-1. migrate FED and EURO importers to explicit `dry-run`/`--update-sql` entry points without import-time execution;
-2. add a freshness dashboard action that identifies which source must be refreshed next without performing network access;
-3. verify the seven legacy market-source contracts currently marked as inferred during their next controlled refresh;
-4. document the WTI_OIL source contract for 20 April 2020 without changing the valid historical negative value automatically;
-5. add database-backed synchronization tests in an isolated test schema;
-6. compare future audit outputs against the retained v0.5.1 baseline;
-7. begin machine-learning experiments only after data freshness and feature governance are stable.
+1. back up and remediate the four FED tables that lack a unique `observation_date` key;
+2. define and test complete EURO column mappings and `(key_code, time_period)` business keys in an isolated schema;
+3. add a freshness dashboard action that identifies which source must be refreshed next without performing network access;
+4. verify the seven legacy market-source contracts currently marked as inferred during their next controlled refresh;
+5. document the WTI_OIL source contract for 20 April 2020 without changing the valid historical negative value automatically;
+6. add database-backed synchronization tests in an isolated test schema;
+7. compare future audit outputs against the retained v0.5.1 baseline before machine-learning work.

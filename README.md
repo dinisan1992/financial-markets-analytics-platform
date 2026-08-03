@@ -20,7 +20,7 @@ Functional local platform with:
 - Data quality and validation tools.
 - Automated syntax checks and unit tests through GitHub Actions.
 
-Current project version: **v0.5.1**
+Current project version: **v0.5.2**
 
 ## Main Analytical Capabilities
 
@@ -280,11 +280,26 @@ Provider, ticker/series identity, source URL, native frequency and OHLC contract
 are documented in `docs/DATA_SOURCES.md` and enforced by
 `market_source_manifest.py`.
 
+FED and EURO source files have a separate controlled preview command:
+
+```powershell
+python project_scripts/ingestion/refresh_macro_sources.py ALL --check-sql
+```
+
+The command validates all 28 source contracts and never writes by default. A
+single FED import can use `--update-sql` only with an exact table confirmation,
+a verified SQL backup containing that table and a unique business key. EURO
+writes remain blocked until their multidimensional SQL keys and mappings are
+remediated. See `docs/MACRO_IMPORT_SAFETY.md`.
+
 ## Validation Snapshot
 
-The v0.5.1 validation includes:
+The v0.5.2 validation includes:
 
-- 85/85 deterministic unit tests pass, 194 active Python files parse successfully and `pip check` reports no broken requirements.
+- 98/98 deterministic unit tests pass, 199 active Python files parse successfully and `pip check` reports no broken requirements.
+- 28/28 FED and EURO CSV contracts pass controlled preview; all entrypoint modules import without opening a database connection.
+- SQL-read-only contract checks identify 7 FED imports as write-ready, 4 FED imports without a unique date key and all 17 EURO writes as intentionally blocked pending schema remediation.
+- Every active macro importer requires explicit `--update-sql`; no macro CSV or SQL write was performed during v0.5.2 validation.
 - 38/38 configured asset tables load and recalculate successfully through the SQL-only global validator with database writes disabled.
 - 9/9 Streamlit pages render without uncaught exceptions; US2Y, US3M and Data Quality were exercised in a real browser session.
 - The post-migration audit reports 38 assets, 703 correlation pairs, 66 events, zero duplicate assets, zero invalid price assets and no load errors.

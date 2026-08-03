@@ -1,30 +1,17 @@
-import pandas as pd
-import mysql.connector
-from sqlalchemy import create_engine
-
 from pathlib import Path
 import sys
 
-BASE_DIR = Path(__file__).resolve().parents[2]
-if str(BASE_DIR) not in sys.path:
-    sys.path.append(str(BASE_DIR))
 
-from config import DB_CONFIG, EURO_SOURCE_DIR, FED_SOURCE_DIR, get_sqlalchemy_database_url
+PROJECT_ROOT = next(
+    parent
+    for parent in Path(__file__).resolve().parents
+    if (parent / "config.py").exists()
+)
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from services.macro_import_service import run_import_cli
 
 
-# CSV path
-csv_path = FED_SOURCE_DIR / "Delinquency Rate on Credit Card Loans, All Commercial Banks.csv"
-
-# Ler CSV
-df = pd.read_csv(csv_path)
-df['observation_date'] = pd.to_datetime(df['observation_date'])
-df.rename(columns={'DRCCLACBS': 'delinquency_rate'}, inplace=True)
-
-# Conectar ao MySQL
-db_url = get_sqlalchemy_database_url()
-engine = create_engine(db_url)
-
-# Inserir data no SQL
-df.to_sql('fed_credit_card_delinquency', con=engine, if_exists='append', index=False)
-
-print("Data inserted successfully!")
+if __name__ == "__main__":
+    raise SystemExit(run_import_cli("FED_CREDIT_CARD_DELINQUENCY"))
