@@ -4,6 +4,27 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [v0.5.3] - 2026-08-03 - FED Observation-Date Key Remediation
+
+### Added
+
+- A dry-run-first FED key-remediation command with duplicate/null audits, exact confirmation and post-migration validation.
+- Five deterministic tests for SQL scope, write guards, backup coverage and rollback output.
+
+### Changed
+
+- Added `uq_observation_date` to `fed_total_assets`, `fed_bank_credit`, `fed_consumer_loans_credit_cards` and `fed_charge_off_rate_credit_cards`.
+- Promoted all 11 FED source contracts to write-ready status while preserving explicit backup and `--update-sql` requirements.
+
+### Safety
+
+- Verified a 181,266-byte SQL dump containing structure and data for all four tables before the migration.
+- Confirmed zero null dates and zero duplicate-date groups before every schema change.
+- Preserved all row counts and date ranges; no source row was inserted, updated or deleted.
+- Recorded reviewed `DROP INDEX uq_observation_date` rollback statements for each changed table.
+
+---
+
 ## [v0.5.2] - 2026-08-03 - Controlled Macro Import Safety
 
 ### Added

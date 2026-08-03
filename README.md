@@ -20,7 +20,7 @@ Functional local platform with:
 - Data quality and validation tools.
 - Automated syntax checks and unit tests through GitHub Actions.
 
-Current project version: **v0.5.2**
+Current project version: **v0.5.3**
 
 ## Main Analytical Capabilities
 
@@ -294,12 +294,14 @@ remediated. See `docs/MACRO_IMPORT_SAFETY.md`.
 
 ## Validation Snapshot
 
-The v0.5.2 validation includes:
+The v0.5.3 validation includes:
 
-- 98/98 deterministic unit tests pass, 199 active Python files parse successfully and `pip check` reports no broken requirements.
+- 103/103 deterministic unit tests pass, 201 active Python files parse successfully and `pip check` reports no broken requirements.
 - 28/28 FED and EURO CSV contracts pass controlled preview; all entrypoint modules import without opening a database connection.
-- SQL-read-only contract checks identify 7 FED imports as write-ready, 4 FED imports without a unique date key and all 17 EURO writes as intentionally blocked pending schema remediation.
-- Every active macro importer requires explicit `--update-sql`; no macro CSV or SQL write was performed during v0.5.2 validation.
+- Full-source and SQL contract checks identify all 11 FED imports as write-ready; all 17 EURO writes remain intentionally blocked pending schema remediation.
+- Four FED tables received a unique `observation_date` key after duplicate/null checks and a verified scoped SQL backup; no source rows were changed or removed.
+- Every active macro importer requires explicit `--update-sql`; no FED or EURO CSV import was performed during v0.5.3 validation.
+- 15/15 configured FED/market pairs loaded and aligned successfully from the live MySQL data.
 - 38/38 configured asset tables load and recalculate successfully through the SQL-only global validator with database writes disabled.
 - 9/9 Streamlit pages render without uncaught exceptions; US2Y, US3M and Data Quality were exercised in a real browser session.
 - The post-migration audit reports 38 assets, 703 correlation pairs, 66 events, zero duplicate assets, zero invalid price assets and no load errors.

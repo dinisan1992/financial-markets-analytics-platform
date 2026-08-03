@@ -86,10 +86,17 @@
 - Preserve the previous implementations locally as Git-ignored non-executable text
 - Validate 28/28 source contracts and importer side-effect safety
 
-## High Priority After v0.5.2
+## Completed in v0.5.3
+
+- Audit all four blocked FED tables for null and duplicate observation dates
+- Create and validate a scoped structure-and-data SQL backup
+- Add unique `observation_date` keys without changing source rows
+- Validate all 11 FED import contracts as write-ready
+- Add dry-run, confirmation, post-check and rollback support to the migration command
+
+## High Priority After v0.5.3
 
 - Confirm the seven source contracts still marked as inferred during their next refresh
-- Add unique `observation_date` keys to the four blocked FED tables after a verified backup
 - Validate EURO mappings and `(key_code, time_period)` keys in an isolated schema
 - Add isolated database-backed synchronization tests
 - Confirm the WTI contract/source for 20 April 2020
@@ -201,10 +208,9 @@ Future task:
 
 Future work:
 
-- Complete schema remediation for the standardized FED ingestion service
 - Complete safe write support for standardized EU / ECB ingestion
-- Prevent duplicated macro rows
-- Add unique constraints where appropriate
+- Prevent duplicated EURO macro rows
+- Add unique EURO constraints where appropriate
 - Create macro feature calculations
 - Create macro charts later
 - Create macro stress indicators

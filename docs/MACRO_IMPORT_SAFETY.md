@@ -28,23 +28,31 @@ database transaction so a failure cannot leave a partially imported file.
 
 ## FED Write Contract
 
-Seven FED tables currently have a unique `observation_date` key and pass the
+All 11 FED tables now have a unique `observation_date` key and pass the
 write-readiness check:
 
 - `fed_federal_funds_rate`
 - `fed_m2`
+- `fed_total_assets`
 - `fed_reserve_bank_credit`
 - `fed_deposits`
+- `fed_bank_credit`
 - `fed_loans_leases`
 - `fed_securities_bank_credit`
-- `fed_credit_card_delinquency`
-
-Four FED tables remain blocked because `observation_date` is not unique:
-
-- `fed_total_assets`
-- `fed_bank_credit`
 - `fed_consumer_loans_credit_cards`
+- `fed_credit_card_delinquency`
 - `fed_charge_off_rate_credit_cards`
+
+The last four keys were added by the v0.5.3 controlled migration after a
+scoped SQL backup, zero-null and zero-duplicate checks, and post-migration row
+count/range validation. The reusable command is:
+
+```powershell
+python project_scripts/diagnostics/remediate_fed_macro_keys.py
+```
+
+It is read-only unless `--apply`, the verified backup path and the exact
+confirmation phrase are provided together.
 
 A write-ready FED import still requires all three safeguards:
 

@@ -757,16 +757,15 @@ Keep the v0.5.0 daily-key invariant and route future market CSV refreshes throug
 
 FED Tables
 
-Possible future constraints after duplicate checks:
+Completed in v0.5.3 after duplicate/null checks and a scoped SQL backup:
 
 ALTER TABLE fed_bank_credit ADD UNIQUE KEY unique_observation_date (observation_date);
 ALTER TABLE fed_charge_off_rate_credit_cards ADD UNIQUE KEY unique_observation_date (observation_date);
 ALTER TABLE fed_consumer_loans_credit_cards ADD UNIQUE KEY unique_observation_date (observation_date);
 ALTER TABLE fed_total_assets ADD UNIQUE KEY unique_observation_date (observation_date);
 
-Important:
-
-Do not apply these migrations before checking for duplicated dates.
+All four tables retained their original row counts and date ranges. Future FED
+refreshes must continue through the backup-gated macro import service.
 
 Reporting Tables
 
