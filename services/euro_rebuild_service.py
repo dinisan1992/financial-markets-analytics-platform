@@ -28,6 +28,13 @@ HASH_COLUMN = "_source_row_sha256"
 BUSINESS_KEY = ("key_code", "time_period")
 DECIMAL_COLUMNS = {"obs_value"}
 INTEGER_COLUMNS = {"decimals", "unit_mult"}
+LONG_TEXT_COLUMNS = {
+    "comment_obs",
+    "comment_ts",
+    "compilation",
+    "title",
+    "title_compl",
+}
 RAW_NUMERIC_MISSING = {"", ".", "na", "n/a", "nan", "null"}
 DECIMAL_QUANTUM = Decimal("0.000000000001")
 
@@ -82,16 +89,16 @@ def versioned_table_name(table_name, marker, suffix):
     return f"{table_name[:64 - len(tail)]}{tail}"
 
 
-def shadow_table_name(table_name, suffix):
-    return versioned_table_name(table_name, "shadow_v055", suffix)
+def shadow_table_name(table_name, suffix, version="v055"):
+    return versioned_table_name(table_name, f"shadow_{version}", suffix)
 
 
-def retained_table_name(table_name, suffix):
-    return versioned_table_name(table_name, "pre_v055", suffix)
+def retained_table_name(table_name, suffix, version="v055"):
+    return versioned_table_name(table_name, f"pre_{version}", suffix)
 
 
-def failed_table_name(table_name, suffix):
-    return versioned_table_name(table_name, "failed_v055", suffix)
+def failed_table_name(table_name, suffix, version="v055"):
+    return versioned_table_name(table_name, f"failed_{version}", suffix)
 
 
 def validate_scoped_backup(backup_file, tables):
@@ -327,10 +334,10 @@ def _business_key_is_unique(engine, table_name):
     return BUSINESS_KEY in candidates
 
 
-def build_shadow_schema_statements(engine, import_key, suffix):
+def build_shadow_schema_statements(engine, import_key, suffix, version="v055"):
     contract = get_macro_import(import_key)
     active = validate_identifier(contract["table_name"])
-    shadow = shadow_table_name(active, suffix)
+    shadow = shadow_table_name(active, suffix, version=version)
     inspector = inspect(engine)
     active_schema = {
         normalize_column_name(column["name"]): column
@@ -341,9 +348,17 @@ def build_shadow_schema_statements(engine, import_key, suffix):
     if missing:
         raise ValueError(f"Active table is missing source columns: {missing}")
 
+    statements = [f"CREATE TABLE `{shadow}` LIKE `{active}`"]
     clauses = []
+    if "id" in active_schema and "id" not in source_columns:
+        id_type = str(active_schema["id"]["type"]).upper()
+        statements.append(
+            f"ALTER TABLE `{shadow}` MODIFY `id` {id_type} NOT NULL"
+        )
     if import_key != "EURO_ATM_POS_TRANSACTIONS":
         clauses.append("DROP PRIMARY KEY")
+    if "id" in active_schema and "id" not in source_columns:
+        clauses.append("DROP COLUMN `id`")
     if import_key == "EURO_COMPOSITE_SYSTEMIC_STRESS" and "key" in active_schema:
         clauses.append("DROP COLUMN `KEY`")
 
@@ -355,6 +370,8 @@ def build_shadow_schema_statements(engine, import_key, suffix):
             clauses.append(f"MODIFY {quoted} VARCHAR(20) NOT NULL")
         elif column == "obs_value":
             clauses.append(f"MODIFY {quoted} DECIMAL(38,12) NULL")
+        elif column in LONG_TEXT_COLUMNS:
+            clauses.append(f"MODIFY {quoted} TEXT NULL")
         elif column in {"pre_break_value", "obs_pre_break", "reported_transaction"}:
             clauses.append(f"MODIFY {quoted} VARCHAR(255) NULL")
         else:
@@ -371,21 +388,24 @@ def build_shadow_schema_statements(engine, import_key, suffix):
         clauses.append("ADD PRIMARY KEY (`key_code`, `time_period`)")
     clauses.append(f"ADD COLUMN `{HASH_COLUMN}` CHAR(64) NOT NULL")
 
-    return (
-        f"CREATE TABLE `{shadow}` LIKE `{active}`",
-        f"ALTER TABLE `{shadow}` " + ", ".join(clauses),
-    )
+    statements.append(f"ALTER TABLE `{shadow}` " + ", ".join(clauses))
+    return tuple(statements)
 
 
-def create_shadow_schema(engine, import_key, suffix):
+def create_shadow_schema(engine, import_key, suffix, version="v055"):
     contract = get_macro_import(import_key)
     active = validate_identifier(contract["table_name"])
-    shadow = shadow_table_name(active, suffix)
+    shadow = shadow_table_name(active, suffix, version=version)
     if not _table_exists(engine, active):
         raise ValueError(f"Active table not found: {active}")
     if _table_exists(engine, shadow):
         raise ValueError(f"Shadow table already exists: {shadow}")
-    statements = build_shadow_schema_statements(engine, import_key, suffix)
+    statements = build_shadow_schema_statements(
+        engine,
+        import_key,
+        suffix,
+        version=version,
+    )
     with engine.begin() as connection:
         for statement in statements:
             connection.execute(text(statement))
@@ -549,6 +569,7 @@ def build_and_validate_shadows(
     chunk_size=5000,
     insert_batch_size=250,
     import_keys=TARGET_IMPORT_KEYS,
+    version="v055",
 ):
     if confirmation != BUILD_CONFIRMATION:
         raise ValueError(f"--confirm must exactly match {BUILD_CONFIRMATION}")
@@ -559,7 +580,12 @@ def build_and_validate_shadows(
     for import_key in import_keys:
         contract = get_macro_import(import_key)
         print(f"Building shadow: {import_key}")
-        shadow = create_shadow_schema(engine, import_key, suffix)
+        shadow = create_shadow_schema(
+            engine,
+            import_key,
+            suffix,
+            version=version,
+        )
         columns, fingerprints, _, non_null_values = load_source_into_shadow(
             engine,
             import_key,
@@ -589,12 +615,12 @@ def build_and_validate_shadows(
     }
 
 
-def build_swap_statement(import_keys, suffix):
+def build_swap_statement(import_keys, suffix, version="v055"):
     pairs = []
     for import_key in import_keys:
         active = get_macro_import(import_key)["table_name"]
-        shadow = shadow_table_name(active, suffix)
-        retained = retained_table_name(active, suffix)
+        shadow = shadow_table_name(active, suffix, version=version)
+        retained = retained_table_name(active, suffix, version=version)
         pairs.extend(
             [
                 f"`{active}` TO `{retained}`",
@@ -604,12 +630,12 @@ def build_swap_statement(import_keys, suffix):
     return "RENAME TABLE " + ", ".join(pairs)
 
 
-def build_rollback_statement(import_keys, suffix):
+def build_rollback_statement(import_keys, suffix, version="v055"):
     pairs = []
     for import_key in import_keys:
         active = get_macro_import(import_key)["table_name"]
-        retained = retained_table_name(active, suffix)
-        failed = failed_table_name(active, suffix)
+        retained = retained_table_name(active, suffix, version=version)
+        failed = failed_table_name(active, suffix, version=version)
         pairs.extend(
             [
                 f"`{active}` TO `{failed}`",
@@ -636,11 +662,17 @@ def _post_swap_summary(engine, table_name):
         return dict(connection.execute(query).mappings().one())
 
 
-def validate_existing_shadows(engine, suffix, chunk_size, import_keys):
+def validate_existing_shadows(
+    engine,
+    suffix,
+    chunk_size,
+    import_keys,
+    version="v055",
+):
     validations = []
     for import_key in import_keys:
         active = get_macro_import(import_key)["table_name"]
-        shadow = shadow_table_name(active, suffix)
+        shadow = shadow_table_name(active, suffix, version=version)
         if not _table_exists(engine, shadow):
             raise ValueError(f"Validated shadow table not found: {shadow}")
         columns, fingerprints, non_null_values = source_fingerprints(
@@ -667,6 +699,7 @@ def swap_validated_shadows(
     suffix,
     chunk_size=5000,
     import_keys=TARGET_IMPORT_KEYS,
+    version="v055",
 ):
     if confirmation != SWAP_CONFIRMATION:
         raise ValueError(f"--confirm must exactly match {SWAP_CONFIRMATION}")
@@ -675,8 +708,8 @@ def swap_validated_shadows(
 
     for import_key in import_keys:
         active = get_macro_import(import_key)["table_name"]
-        retained = retained_table_name(active, suffix)
-        failed = failed_table_name(active, suffix)
+        retained = retained_table_name(active, suffix, version=version)
+        failed = failed_table_name(active, suffix, version=version)
         if not _table_exists(engine, active):
             raise ValueError(f"Active table not found: {active}")
         if _table_exists(engine, retained):
@@ -689,6 +722,7 @@ def swap_validated_shadows(
         suffix,
         chunk_size,
         import_keys,
+        version=version,
     )
     expected_rows = {
         validation.active_table: validation.source_rows
@@ -704,8 +738,16 @@ def swap_validated_shadows(
                 )
             )
 
-    swap_statement = build_swap_statement(import_keys, suffix)
-    rollback_statement = build_rollback_statement(import_keys, suffix)
+    swap_statement = build_swap_statement(
+        import_keys,
+        suffix,
+        version=version,
+    )
+    rollback_statement = build_rollback_statement(
+        import_keys,
+        suffix,
+        version=version,
+    )
     with engine.begin() as connection:
         connection.execute(text(swap_statement))
 
@@ -743,6 +785,7 @@ def swap_validated_shadows(
         "database_write_performed": True,
         "active_tables_changed": True,
         "retained_tables": tuple(
-            retained_table_name(table_name, suffix) for table_name in tables
+            retained_table_name(table_name, suffix, version=version)
+            for table_name in tables
         ),
     }

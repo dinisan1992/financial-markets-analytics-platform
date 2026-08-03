@@ -112,10 +112,20 @@
 - Swap the six tables atomically and retain every original table for rollback
 - Confirm 11 ready schemas, six key candidates and zero remaining rebuilds
 
-## High Priority After v0.5.5
+## Completed in v0.5.6
+
+- Scan all six remaining EURO CSVs for complete source cardinality
+- Rebuild fraud losses, retail interest rates and payment-system transactions
+- Preserve 112,559 exact rows with full-row hash validation
+- Retain all three former tables and a verified scoped backup for rollback
+- Reclassify three incomplete target histories instead of adding misleading keys
+- Confirm 14 ready schemas, zero key candidates and three controlled rebuilds
+
+## High Priority After v0.5.6
 
 - Confirm the seven source contracts still marked as inferred during their next refresh
-- Back up and review the six EURO composite-key candidates before any migration
+- Implement memory-bounded full-row validation for multi-million-row EURO sources
+- Rebuild consumer prices, national accounts and MFI interest rates one at a time
 - Build the transactional multidimensional EURO updater with missing-value policy
 - Add isolated database-backed synchronization tests
 - Confirm the WTI contract/source for 20 April 2020

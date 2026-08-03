@@ -111,7 +111,7 @@ Version v0.5.5 executed this plan after explicit approval. The six source files
 provided 1,548,900 unique observations, all of which were loaded into isolated
 shadow tables and compared across every mapped column after SQL storage.
 
-The atomic swap produced:
+The v0.5.5 atomic swap produced:
 
 - 11 `write_contract_ready` EURO schemas;
 - six `key_addition_candidate` schemas;
@@ -124,3 +124,19 @@ The atomic swap produced:
 The original six tables remain retained under versioned `pre_v055` names. See
 `EURO_SCHEMA_REMEDIATION.md` for the before/after counts, backup digest,
 validation method and recovery policy.
+
+## v0.5.6 Completeness Follow-up
+
+A complete scan of the six remaining registered CSVs changed the classification.
+Three tables had complete key coverage but stored rounded numeric values or
+truncated/modified text, so they were rebuilt exactly from 112,559 source rows.
+Three larger tables were found to have incomplete SQL history and remain
+blocked:
+
+- consumer prices: 5,873,163 source rows absent from SQL;
+- national accounts: 2,103,859 source rows absent from SQL;
+- MFI interest rates: 1,498,491 source rows absent from SQL.
+
+The current classification is 14 `write_contract_ready` and three
+`rebuild_required` schemas. See `EURO_SOURCE_COMPLETENESS.md` for the complete
+counts, validation hashes and capacity review.

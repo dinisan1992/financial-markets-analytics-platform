@@ -7,6 +7,7 @@ from services.euro_schema_audit_service import (
     EuroSchemaAudit,
     EuroSeriesAudit,
     classify_period,
+    classify_euro_remediation,
     map_source_columns,
     period_type_is_safe,
     write_euro_audit_report,
@@ -42,6 +43,14 @@ class EuroSchemaAuditServiceTests(unittest.TestCase):
         self.assertTrue(period_type_is_safe("VARCHAR(20)", ("semester",)))
         self.assertTrue(period_type_is_safe("DATE", ("date",)))
 
+    def test_incomplete_target_history_requires_rebuild(self):
+        self.assertEqual(
+            "rebuild_required",
+            classify_euro_remediation(
+                ("target_history_incomplete", "unique_business_key_missing")
+            ),
+        )
+
     def test_report_is_read_only_and_serializes_structured_results(self):
         table_audit = EuroSchemaAudit(
             import_key="EURO_TEST",
@@ -53,6 +62,8 @@ class EuroSchemaAuditServiceTests(unittest.TestCase):
             source_only_columns=(),
             target_only_columns=(),
             target_rows=2,
+            audited_source_rows=2,
+            source_rows_missing_from_target=0,
             sample_rows=2,
             invalid_sample_rows=0,
             period_patterns=("month",),

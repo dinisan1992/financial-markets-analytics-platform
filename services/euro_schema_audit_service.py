@@ -18,6 +18,14 @@ from services.market_data_sync_service import validate_identifier
 
 BUSINESS_KEY = ("key_code", "time_period")
 AUTO_TARGET_COLUMNS = {"id", "created_at", "updated_at"}
+SOURCE_ROW_BASELINE = {
+    "EURO_CONSUMER_PRICES": 6_548_663,
+    "EURO_FRAUD_LOSSES": 198,
+    "EURO_NATIONAL_ACCOUNTS": 2_721_359,
+    "EURO_MFI_INTEREST_RATES": 1_594_491,
+    "EURO_RETAIL_INTEREST_RATES": 8_798,
+    "EURO_PAYMENT_SYSTEM_TRANSACTIONS": 103_563,
+}
 
 
 @dataclass(frozen=True)
@@ -31,6 +39,8 @@ class EuroSchemaAudit:
     source_only_columns: tuple[str, ...]
     target_only_columns: tuple[str, ...]
     target_rows: int
+    audited_source_rows: int | None
+    source_rows_missing_from_target: int | None
     sample_rows: int
     invalid_sample_rows: int
     period_patterns: tuple[str, ...]
@@ -106,6 +116,23 @@ def period_type_is_safe(target_type, patterns):
     if normalized_type.startswith("YEAR") or "INT" in normalized_type:
         return pattern_set <= {"year"}
     return False
+
+
+def classify_euro_remediation(blockers):
+    blockers = tuple(dict.fromkeys(blockers))
+    rebuild_reasons = {
+        "unsafe_time_period_type",
+        "key_code_only_overwrite_risk",
+        "duplicate_business_keys",
+        "target_history_incomplete",
+    }
+    if rebuild_reasons.intersection(blockers):
+        return "rebuild_required"
+    if blockers == ("unique_business_key_missing",):
+        return "key_addition_candidate"
+    if not blockers:
+        return "write_contract_ready"
+    return "mapping_review_required"
 
 
 def _unique_key_sets(inspector, table_name):
@@ -193,6 +220,8 @@ def audit_euro_schema_contract(
             source_only_columns=source_columns,
             target_only_columns=(),
             target_rows=0,
+            audited_source_rows=SOURCE_ROW_BASELINE.get(str(import_key).upper()),
+            source_rows_missing_from_target=None,
             sample_rows=len(sample),
             invalid_sample_rows=invalid_rows,
             period_patterns=period_patterns,
@@ -266,6 +295,12 @@ def audit_euro_schema_contract(
                     ).scalar_one()
                 )
 
+    audited_source_rows = SOURCE_ROW_BASELINE.get(str(import_key).upper())
+    source_rows_missing = (
+        max(audited_source_rows - target_rows, 0)
+        if audited_source_rows is not None
+        else None
+    )
     blockers = []
     if required_target_missing:
         blockers.append("target_contract_columns_missing")
@@ -281,22 +316,12 @@ def audit_euro_schema_contract(
         blockers.append("null_business_key_rows")
     if duplicate_groups:
         blockers.append("duplicate_business_keys")
+    if source_rows_missing:
+        blockers.append("target_history_incomplete")
     if not unique_business_key:
         blockers.append("unique_business_key_missing")
 
-    rebuild_reasons = {
-        "unsafe_time_period_type",
-        "key_code_only_overwrite_risk",
-        "duplicate_business_keys",
-    }
-    if rebuild_reasons.intersection(blockers):
-        remediation_class = "rebuild_required"
-    elif blockers == ["unique_business_key_missing"]:
-        remediation_class = "key_addition_candidate"
-    elif not blockers:
-        remediation_class = "write_contract_ready"
-    else:
-        remediation_class = "mapping_review_required"
+    remediation_class = classify_euro_remediation(blockers)
 
     configured = _configured_series_by_table().get(table_name, [])
     return EuroSchemaAudit(
@@ -309,6 +334,8 @@ def audit_euro_schema_contract(
         source_only_columns=source_only,
         target_only_columns=target_only,
         target_rows=target_rows,
+        audited_source_rows=audited_source_rows,
+        source_rows_missing_from_target=source_rows_missing,
         sample_rows=len(sample),
         invalid_sample_rows=invalid_rows,
         period_patterns=period_patterns,

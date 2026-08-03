@@ -1,6 +1,6 @@
 # Database Schema
 
-Current version: v0.5.5
+Current version: v0.5.6
 
 ## Overview
 
@@ -579,9 +579,9 @@ banking sector behaviour;
 European financial system indicators.
 Current Limitations
 
-EU / ECB tables are heterogeneous. The v0.5.5 post-migration audit divides the
-17 tables into 11 write-contract-ready schemas and six safe composite-key
-candidates, with no remaining rebuild class.
+EU / ECB tables are heterogeneous. The v0.5.6 post-migration audit divides the
+17 tables into 14 write-contract-ready schemas and three controlled rebuilds
+whose SQL history is incomplete relative to the registered CSV sources.
 
 The following six tables were rebuilt from their complete source files in
 v0.5.5:
@@ -598,6 +598,13 @@ They now preserve textual source periods and enforce a unique
 locally under versioned `pre_v055` names. The audit baseline is documented in
 `EURO_SCHEMA_AUDIT.md`, and the applied migration is documented in
 `EURO_SCHEMA_REMEDIATION.md`.
+
+Version v0.5.6 also rebuilt `euro_losses_due_to_fraud`,
+`euro_retail_interest_rates` and `euro_transactions_payments_systems` after
+full-row validation exposed decimal rounding and text truncation. Their former
+versions remain under `pre_v056` names. Consumer prices, national accounts and
+MFI interest rates remain blocked pending memory-bounded reconstruction; see
+`EURO_SOURCE_COMPLETENESS.md`.
 
 They often contain different combinations of:
 

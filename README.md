@@ -20,7 +20,7 @@ Functional local platform with:
 - Data quality and validation tools.
 - Automated syntax checks and unit tests through GitHub Actions.
 
-Current project version: **v0.5.5**
+Current project version: **v0.5.6**
 
 ## Main Analytical Capabilities
 
@@ -290,22 +290,26 @@ The command validates all 28 source contracts and never writes by default. A
 single FED import can use `--update-sql` only with an exact table confirmation,
 a verified SQL backup containing that table and a unique business key. EURO
 writes remain blocked until the multidimensional updater is completed. The
-v0.5.5 remediation leaves 11 schemas contract-ready and six safe key-addition
-candidates, with no remaining rebuild class. See `docs/EURO_SCHEMA_AUDIT.md`,
-`docs/EURO_SCHEMA_REMEDIATION.md` and
+v0.5.6 remediation leaves 14 schemas contract-ready and three large tables in
+the rebuild class because their SQL history is incomplete relative to the
+registered CSV sources. See `docs/EURO_SCHEMA_AUDIT.md`,
+`docs/EURO_SCHEMA_REMEDIATION.md`, `docs/EURO_SOURCE_COMPLETENESS.md` and
 `docs/MACRO_IMPORT_SAFETY.md`.
 
 ## Validation Snapshot
 
-The v0.5.5 validation includes:
+The v0.5.6 validation includes:
 
-- 114/114 deterministic unit tests pass, 207 active Python files parse successfully and `pip check` reports no broken requirements.
+- 121/121 deterministic unit tests pass, 211 active Python files parse successfully and `pip check` reports no broken requirements.
 - 28/28 FED and EURO CSV contracts pass controlled preview; all entrypoint modules import without opening a database connection.
-- Full-source and SQL contract checks identify all 11 FED imports as write-ready; EURO schema status is 11 contract-ready and six key-addition candidates.
+- Full-source and SQL contract checks identify all 11 FED imports as write-ready; EURO schema status is 14 contract-ready and three controlled rebuilds.
 - Four FED tables received a unique `observation_date` key after duplicate/null checks and a verified scoped SQL backup; no source rows were changed or removed.
 - Six unsafe EURO schemas were rebuilt from 1,548,900 source observations through validated shadow tables and an atomic swap.
 - The remediation recovered 956,717 unique historical business keys relative to the previous schemas; zero null or duplicate keys remain.
 - A 324,480,219-byte structure-and-data backup was verified before the swap, and all six original tables remain retained locally for rollback.
+- Three further EURO tables were rebuilt exactly from 112,559 source rows after full-row checks found decimal rounding and text truncation in the former copies.
+- A separate 48,858,895-byte SQL backup was verified; all three former tables remain retained under `pre_v056` names.
+- Source cardinality checks found 9,475,513 observations still absent from consumer prices, national accounts and MFI interest rates; these tables remain blocked rather than being given misleading keys.
 - 16/16 configured EURO series are present and 12/12 active EURO/market pairs load and align successfully.
 - Every active macro importer requires explicit `--update-sql`; general EURO refresh writes remain disabled pending the transactional multidimensional updater.
 - 15/15 configured FED/market pairs loaded and aligned successfully from the live MySQL data.

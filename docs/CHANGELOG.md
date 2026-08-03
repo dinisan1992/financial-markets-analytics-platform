@@ -4,6 +4,30 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [v0.5.6] - 2026-08-03 - EURO Source Completeness and Exact Rebuilds
+
+### Added
+
+- A full-source row-cardinality baseline for the six remaining EURO schemas.
+- Version-aware shadow, retained and failed-table names so later migrations do not collide with v0.5.5 recovery tables.
+- A backup-gated exact-rebuild command for fraud losses, retail interest rates and payment-system transactions.
+- Seven deterministic tests for v0.5.6 confirmation guards, versioned SQL, legacy auto-increment removal, incomplete-history classification and live status-file refresh.
+
+### Corrected
+
+- Rebuilt three source-complete tables from 112,559 observations with `DECIMAL(38,12)`, non-truncated long text and a composite `(key_code, time_period)` primary key.
+- Reclassified consumer prices, national accounts and MFI interest rates as controlled rebuilds after identifying 9,475,513 source observations absent from MySQL.
+- Improved the EURO schema classification from 11 ready / 6 candidates / 0 rebuilds to 14 ready / 0 candidates / 3 rebuilds.
+
+### Safety
+
+- Verified a 48,858,895-byte structure-and-data SQL dump before creating shadows.
+- Compared every mapped source value after SQL storage; all three active tables have zero missing, extra or mismatched rows.
+- Retained all former tables under versioned `pre_v056` names and recorded an atomic rollback statement.
+- Deferred the three large rebuilds until validation is memory-bounded and migration capacity is rechecked.
+
+---
+
 ## [v0.5.5] - 2026-08-03 - EURO Historical Schema Remediation
 
 ### Added

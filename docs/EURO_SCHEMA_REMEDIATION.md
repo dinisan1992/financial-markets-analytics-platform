@@ -89,3 +89,15 @@ tables to `failed_v055` names and restores every retained table in one operation
 Retained tables must not be deleted until a later, separately approved cleanup
 checkpoint confirms stable application operation and preserves an external SQL
 backup.
+
+## v0.5.6 Follow-up
+
+The six remaining candidates received a complete source-cardinality and
+full-row review. Fraud losses, retail interest rates and payment-system
+transactions were rebuilt exactly from 112,559 rows and their former tables
+remain under `pre_v056` names. Consumer prices, national accounts and MFI
+interest rates were reclassified as rebuilds because the active SQL tables are
+missing 9,475,513 registered source rows.
+
+See `EURO_SOURCE_COMPLETENESS.md` for the exact counts, report digests and the
+memory-bounded migration plan for those larger tables.
