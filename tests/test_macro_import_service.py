@@ -7,7 +7,7 @@ import unittest
 
 import pandas as pd
 
-from config import BASE_DIR
+from config import BASE_DIR, EURO_SOURCE_DIR, FED_SOURCE_DIR
 from macro_import_manifest import MACRO_IMPORTS, get_macro_import_keys
 from services.macro_import_service import (
     apply_macro_import,
@@ -19,13 +19,20 @@ from services.macro_import_service import (
 
 
 class MacroImportManifestTests(unittest.TestCase):
-    def test_manifest_covers_all_current_source_files(self):
+    def test_manifest_covers_all_import_contracts(self):
         self.assertEqual(11, len(get_macro_import_keys("FED")))
         self.assertEqual(17, len(get_macro_import_keys("EURO")))
         self.assertEqual(28, len(MACRO_IMPORTS))
 
         for import_key, contract in MACRO_IMPORTS.items():
-            self.assertTrue(Path(contract["csv_path"]).exists(), import_key)
+            expected_source_dir = (
+                FED_SOURCE_DIR if contract["group"] == "FED" else EURO_SOURCE_DIR
+            )
+            self.assertEqual(
+                expected_source_dir,
+                Path(contract["csv_path"]).parent,
+                import_key,
+            )
             self.assertTrue((BASE_DIR / contract["script_name"]).exists(), import_key)
             self.assertTrue(contract["source_reference"].startswith("https://"))
 
