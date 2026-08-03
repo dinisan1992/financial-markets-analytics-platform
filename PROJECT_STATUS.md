@@ -4,7 +4,7 @@ Last updated: 3 August 2026
 
 ## Current Version
 
-**Macro-Financial Risk & Market Behaviour Analytics Platform v0.5.3**
+**Macro-Financial Risk & Market Behaviour Analytics Platform v0.5.4**
 
 ## Executive Summary
 
@@ -22,7 +22,7 @@ It combines:
 - interactive dashboarding;
 - data quality validation.
 
-The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.5.3 completes the FED key remediation: all 11 FED imports now have unique observation-date contracts and backup-gated upserts. EURO writes remain blocked until their multidimensional key contracts are remediated.
+The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.5.4 adds a reusable, read-only EURO schema auditor after the FED key remediation. All 11 FED imports retain unique observation-date contracts and backup-gated upserts. EURO writes remain blocked while six historical-loss schemas are prepared for controlled rebuilds and six additional tables are reviewed for composite keys.
 
 ## Completed and Functional Modules
 
@@ -219,17 +219,19 @@ Main file:
 
 ## Latest Documented Validation
 
-Version 0.5.3 local validation included:
+Version 0.5.4 local validation included:
 
-- 103/103 deterministic unit tests passed.
-- 201 active Python files parsed successfully and `pip check` reported no broken requirements.
+- 107/107 deterministic unit tests passed.
+- 204 active Python files parsed successfully and `pip check` reported no broken requirements.
 - 28/28 FED and EURO CSV source contracts passed controlled preview with no writes.
 - All 28 active importer entrypoints imported without opening MySQL or starting a CSV load.
 - Full-source and SQL-read-only checks classified all 11 FED imports as write-ready.
-- All 17 EURO writes are blocked pending complete multidimensional mappings; 12 also lack a unique `(key_code, time_period)` key.
+- A deep read-only audit classified the 17 EURO schemas as five contract-ready, six key-addition candidates and six controlled rebuilds.
+- All 17 EURO tables contain zero null business keys; only `euro_atm_pos_transactions` contains duplicate `(key_code, time_period)` groups.
+- 16/16 configured EURO series are available and 12/12 active EURO/market pairs loaded and aligned successfully.
 - FED writes require `--update-sql`, exact table confirmation and a verified SQL backup containing structure and data.
 - A 181,266-byte scoped SQL backup was verified before adding four unique `observation_date` indexes; row counts, ranges and values were preserved.
-- No FED or EURO CSV import, SQL insert, row update or row deletion was executed.
+- No FED or EURO CSV import, SQL insert, row update, row deletion or EURO schema migration was executed.
 - 15/15 configured FED/market pairs loaded and aligned successfully after the schema migration.
 - 38/38 configured asset tables loaded and recalculated through a SQL-only runner with database writes disabled.
 - 9/9 Streamlit pages rendered without uncaught exceptions.

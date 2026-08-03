@@ -94,10 +94,20 @@
 - Validate all 11 FED import contracts as write-ready
 - Add dry-run, confirmation, post-check and rollback support to the migration command
 
-## High Priority After v0.5.3
+## Completed in v0.5.4
+
+- Audit all 17 EURO CSV/SQL contracts without database writes
+- Validate source aliases and source-period compatibility with SQL types
+- Classify five schemas as ready, six as key-addition candidates and six as rebuilds
+- Confirm zero null business keys and isolate ATM/POS duplicate business keys
+- Confirm 16/16 configured EURO series and 12/12 active market alignments
+- Add reusable audit reports and deterministic safety tests
+
+## High Priority After v0.5.4
 
 - Confirm the seven source contracts still marked as inferred during their next refresh
-- Validate EURO mappings and `(key_code, time_period)` keys in an isolated schema
+- Build and validate the six EURO rebuild candidates in isolated shadow tables
+- Back up and review the six EURO composite-key candidates before any migration
 - Add isolated database-backed synchronization tests
 - Confirm the WTI contract/source for 20 April 2020
 - Classify YUAN, FINANCIAL_CONDITIONS and TED_SPREAD by native frequency

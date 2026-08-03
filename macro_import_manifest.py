@@ -30,7 +30,7 @@ def _fed(
     }
 
 
-def _euro(filename, table_name, script_name):
+def _euro(filename, table_name, script_name, column_aliases=None):
     return {
         "group": "EURO",
         "source_provider": "European Central Bank Data Portal",
@@ -41,7 +41,7 @@ def _euro(filename, table_name, script_name):
         "mode": "multidimensional_series",
         "source_key_columns": ("key_code", "time_period"),
         "target_key_columns": ("key_code", "time_period"),
-        "column_aliases": {"key": "key_code"},
+        "column_aliases": {"key": "key_code", **(column_aliases or {})},
         "required_columns": ("key_code", "time_period", "obs_value"),
         "write_policy": "schema_remediation_required",
         "script_name": script_name,
@@ -130,6 +130,12 @@ MACRO_IMPORTS = {
         "ATM, OTC and POS terminal transactions.csv",
         "euro_atm_pos_transactions",
         "tools/eu/euro_atm_pos_transactions.py",
+        column_aliases={
+            "trmnl_lctn": "terminal_location",
+            "typ_trnsctn": "transaction_type",
+            "rl_trnsctn": "reported_transaction",
+            "inttn_chnnl": "intention_channel",
+        },
     ),
     "EURO_BALANCE_SHEET_ITEMS": _euro(
         "Balance Sheet Items.csv",

@@ -4,6 +4,30 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [v0.5.4] - 2026-08-03 - EURO Schema Audit Baseline
+
+### Added
+
+- A reusable read-only auditor for all 17 EURO CSV-to-MySQL contracts.
+- Period-pattern and SQL-type checks that distinguish annual, monthly, quarterly, semiannual and dated observations.
+- Structured JSON and CSV audit outputs with an explicit no-database-write marker and SHA-256 digest.
+- Deterministic tests for source aliases, period classification, lossy SQL types and report safety.
+
+### Findings
+
+- Classified five EURO tables as write-contract ready, six as composite-key candidates and six as requiring controlled rebuilds.
+- Confirmed zero null business keys across all 17 tables and duplicate business keys only in `euro_atm_pos_transactions`.
+- Identified historical truncation in five key-only tables and lossy semester-to-integer conversion in the ATM/POS table.
+- Confirmed 16/16 configured EURO series and 12/12 active EURO/market pairs remain operational.
+
+### Safety
+
+- The audit opened MySQL only for `SELECT` and schema inspection operations.
+- No EURO row or schema was inserted, updated, deleted or migrated.
+- Raw CSV files and generated audit outputs remain outside Git.
+
+---
+
 ## [v0.5.3] - 2026-08-03 - FED Observation-Date Key Remediation
 
 ### Added
