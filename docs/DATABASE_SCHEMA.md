@@ -1,6 +1,6 @@
 # Database Schema
 
-Current version: v0.5.4
+Current version: v0.5.5
 
 ## Overview
 
@@ -579,11 +579,12 @@ banking sector behaviour;
 European financial system indicators.
 Current Limitations
 
-EU / ECB tables are heterogeneous. The v0.5.4 read-only audit divides the 17
-tables into five write-contract-ready schemas, six safe composite-key
-candidates and six schemas requiring controlled rebuilds.
+EU / ECB tables are heterogeneous. The v0.5.5 post-migration audit divides the
+17 tables into 11 write-contract-ready schemas and six safe composite-key
+candidates, with no remaining rebuild class.
 
-The rebuild group is:
+The following six tables were rebuilt from their complete source files in
+v0.5.5:
 
 - `euro_atm_pos_transactions`;
 - `euro_card_payments_by_merchant_category`;
@@ -592,10 +593,11 @@ The rebuild group is:
 - `euro_credit_transfers`;
 - `euro_emoney_payment_transactions`.
 
-These tables must not be remediated by adding a key in place. The ATM/POS table
-contains lossy integer periods and duplicate business keys. The other five used
-`key_code` as their only key and did not retain complete time-series history.
-The controlled plan is documented in `EURO_SCHEMA_AUDIT.md`.
+They now preserve textual source periods and enforce a unique
+`(key_code, time_period)` contract. Their previous versions remain retained
+locally under versioned `pre_v055` names. The audit baseline is documented in
+`EURO_SCHEMA_AUDIT.md`, and the applied migration is documented in
+`EURO_SCHEMA_REMEDIATION.md`.
 
 They often contain different combinations of:
 

@@ -104,3 +104,23 @@ six historical-loss tables safe to refresh.
    the complete post-migration audit passes.
 
 No step in this document authorizes an automatic multi-table write or deletion.
+
+## Remediation Outcome
+
+Version v0.5.5 executed this plan after explicit approval. The six source files
+provided 1,548,900 unique observations, all of which were loaded into isolated
+shadow tables and compared across every mapped column after SQL storage.
+
+The atomic swap produced:
+
+- 11 `write_contract_ready` EURO schemas;
+- six `key_addition_candidate` schemas;
+- zero `rebuild_required` schemas;
+- zero null business keys;
+- zero duplicate business-key groups;
+- 16/16 configured EURO series available;
+- 12/12 active EURO/market alignments operational.
+
+The original six tables remain retained under versioned `pre_v055` names. See
+`EURO_SCHEMA_REMEDIATION.md` for the before/after counts, backup digest,
+validation method and recovery policy.

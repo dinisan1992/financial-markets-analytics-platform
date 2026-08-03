@@ -1,6 +1,6 @@
 # Controlled Macro Import Safety
 
-Version 0.5.4 places all 11 FED and 17 EURO/ECB source files behind one explicit
+Version 0.5.5 places all 11 FED and 17 EURO/ECB source files behind one explicit
 import contract. Importing a Python module never opens MySQL or starts loading a
 CSV. Running an importer without flags performs a read-only preview.
 
@@ -69,7 +69,7 @@ All 17 EURO writes are intentionally blocked. These files are multidimensional,
 and a safe import requires complete source-to-table mappings plus a unique
 `(key_code, time_period)` business key.
 
-The v0.5.4 deep read-only audit classifies the schemas as:
+The v0.5.4 baseline audit classified the schemas as:
 
 - five `write_contract_ready` tables with a safe period type and composite key;
 - six `key_addition_candidate` tables with no null or duplicate business keys;
@@ -89,6 +89,19 @@ python project_scripts/diagnostics/audit_euro_macro_schema.py --deep --output-di
 
 No EURO table is changed by this command. The detailed baseline and proposed
 shadow-table process are documented in `docs/EURO_SCHEMA_AUDIT.md`.
+
+Version v0.5.5 completed the six required rebuilds using a verified SQL backup,
+isolated shadow tables, full-row source signatures and one atomic swap. The
+current classification is:
+
+- 11 `write_contract_ready` schemas;
+- six `key_addition_candidate` schemas;
+- zero `rebuild_required` schemas.
+
+The original six tables remain retained for rollback. General EURO imports are
+still blocked until a transactional multidimensional updater handles missing
+observations explicitly and passes full-source integration tests. Schema
+remediation alone does not enable automatic writes.
 
 ## Recovery
 

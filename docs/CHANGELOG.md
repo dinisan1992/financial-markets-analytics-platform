@@ -4,6 +4,30 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [v0.5.5] - 2026-08-03 - EURO Historical Schema Remediation
+
+### Added
+
+- A backup-gated EURO rebuild service with separate build and atomic-swap confirmation phrases.
+- Full-row SHA-256 validation between six source CSVs and their shadow tables.
+- Packet-bounded inserts, retained-table rollback and automatic post-swap rollback on validation failure.
+- Seven deterministic tests for backup scope, confirmations, names, row normalization, batching and atomic SQL generation.
+
+### Changed
+
+- Rebuilt six unsafe EURO tables from 1,548,900 source observations using textual period labels and unique `(key_code, time_period)` contracts.
+- Recovered 956,717 historical business keys that the previous schemas could not represent correctly.
+- Improved the EURO schema classification from 5 ready / 6 candidates / 6 rebuilds to 11 ready / 6 candidates / 0 rebuilds.
+
+### Safety
+
+- Verified a 324,480,219-byte structure-and-data SQL dump before creating any shadow table.
+- Compared every mapped value after SQL storage; all six tables reported zero row-hash mismatches, missing rows, null keys and duplicate keys.
+- Swapped all six tables in one atomic `RENAME TABLE` statement.
+- Retained every original table under a versioned `pre_v055` name; no retained table or source CSV was deleted.
+
+---
+
 ## [v0.5.4] - 2026-08-03 - EURO Schema Audit Baseline
 
 ### Added

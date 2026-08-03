@@ -103,11 +103,20 @@
 - Confirm 16/16 configured EURO series and 12/12 active market alignments
 - Add reusable audit reports and deterministic safety tests
 
-## High Priority After v0.5.4
+## Completed in v0.5.5
+
+- Create and validate a scoped structure-and-data backup for six EURO tables
+- Rebuild all six historical-loss schemas through isolated shadow tables
+- Validate 1,548,900 source rows across every mapped column after SQL storage
+- Preserve native textual periods and unique `(key_code, time_period)` contracts
+- Swap the six tables atomically and retain every original table for rollback
+- Confirm 11 ready schemas, six key candidates and zero remaining rebuilds
+
+## High Priority After v0.5.5
 
 - Confirm the seven source contracts still marked as inferred during their next refresh
-- Build and validate the six EURO rebuild candidates in isolated shadow tables
 - Back up and review the six EURO composite-key candidates before any migration
+- Build the transactional multidimensional EURO updater with missing-value policy
 - Add isolated database-backed synchronization tests
 - Confirm the WTI contract/source for 20 April 2020
 - Classify YUAN, FINANCIAL_CONDITIONS and TED_SPREAD by native frequency
