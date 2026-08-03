@@ -92,8 +92,8 @@ def render_asset_kpi_cards(kpis):
 
     with c8:
         pump = kpis.get("pump_dump_count", 0)
-        spoof = kpis.get("spoofing_count", 0)
-        st.metric("Pump/Dump | Spoofing", f"{pump} | {spoof}")
+        rejection = kpis.get("candle_rejection_count", 0)
+        st.metric("Pump/Dump | Candle Rejection", f"{pump} | {rejection}")
 
     c9, c10 = st.columns(2)
 
@@ -169,8 +169,8 @@ def render_suspicion_score(df: pd.DataFrame, window_label: str):
 
     with d3:
         st.metric(
-            "Spoofing Flags",
-            score_data.get("spoofing", 0),
+            "Candle Rejection Flags",
+            score_data.get("candle_rejection", 0),
         )
 
     with d4:

@@ -55,8 +55,11 @@ class AssetIndicatorPreparationV2Tests(unittest.TestCase):
         row = result.iloc[40]
 
         self.assertEqual(row["ohlc_source"], "synthetic")
+        self.assertEqual(row["atr_quality"], "approximate_synthetic")
+        self.assertEqual(row["adx_quality"], "approximate_synthetic")
         self.assertFalse(bool(row["candle_signal_eligible"]))
         self.assertFalse(bool(row["possible_pump_dump"]))
+        self.assertFalse(bool(row["high_volume_candle_rejection"]))
         self.assertFalse(bool(row["possible_spoofing"]))
 
     def test_native_ohlc_can_trigger_pump_dump_signal(self):
@@ -77,7 +80,7 @@ class AssetIndicatorPreparationV2Tests(unittest.TestCase):
         self.assertEqual(result.loc[40, "ohlc_source"], "native")
         self.assertTrue(bool(result.loc[40, "possible_pump_dump"]))
 
-    def test_native_ohlc_can_trigger_spoofing_like_signal(self):
+    def test_native_ohlc_can_trigger_high_volume_candle_rejection(self):
         frame = self._base_frame()
         frame["open"] = frame["price"] - 0.5
         frame["close"] = frame["price"]
@@ -93,7 +96,22 @@ class AssetIndicatorPreparationV2Tests(unittest.TestCase):
         result = prepare_asset_technical_data(frame)
 
         self.assertEqual(result.loc[40, "ohlc_source"], "native")
+        self.assertEqual(result.loc[40, "atr_quality"], "native")
+        self.assertTrue(bool(result.loc[40, "high_volume_candle_rejection"]))
         self.assertTrue(bool(result.loc[40, "possible_spoofing"]))
+
+    def test_liquidity_stress_is_unavailable_when_volume_is_not_expected(self):
+        result = prepare_asset_technical_data(
+            self._base_frame(100),
+            asset_cfg={
+                "periods_per_year": 252,
+                "asset_class": "equity_index",
+                "volume_expected": False,
+            },
+        )
+
+        self.assertFalse(result["liquidity_stress_available"].any())
+        self.assertTrue(result["liquidity_stress"].isna().all())
 
     def test_uses_asset_annualization_metadata(self):
         frame = self._base_frame(70)

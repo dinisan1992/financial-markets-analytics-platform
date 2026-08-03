@@ -105,14 +105,14 @@ def identificar_possivel_manipulacao_forte(df):
         motivo = ""
 
         # =========================
-        # PUMP / DUMP E SPOOFING
+        # PUMP / DUMP AND HIGH-VOLUME CANDLE REJECTION
         # =========================
         if volume_anormal:
             if candle_ratio > 0.5 and variacao_pct > 5:
                 motivo = "Pump/Dump likely"
 
             elif candle_ratio < 0.3 and variacao_pct < 0.5:
-                motivo = "Spoofing likely"
+                motivo = "High-volume candle rejection"
 
         # =========================
         # RSI EXTREMO
@@ -122,10 +122,10 @@ def identificar_possivel_manipulacao_forte(df):
 
             if not pd.isna(rsi_current):
                 if rsi_current > 80:
-                    motivo += " | RSI muito alto"
+                    motivo += " | RSI very high"
 
                 elif rsi_current < 20:
-                    motivo += " | RSI muito baixo"
+                    motivo += " | RSI very low"
 
         # =========================
         # ATR ALTO
@@ -140,7 +140,7 @@ def identificar_possivel_manipulacao_forte(df):
                 and atr_medio_current > 0
                 and atr_current > 1.5 * atr_medio_current
             ):
-                motivo += " | ATR alto"
+                motivo += " | ATR high"
 
         # =========================
         # GUARDAR FLAG

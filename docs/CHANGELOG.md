@@ -4,6 +4,30 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [v0.6.0] - 2026-08-03 - Analytical Semantics and Financial Properties
+
+### Improved
+
+- Normalized rolling return entropy to a documented zero-to-one Shannon scale.
+- Replaced raw-volume liquidity stress with a unit-invariant difference between rolling volatility and volume z-scores.
+- Disabled liquidity stress for assets without expected, meaningful volume and exposed availability explicitly.
+- Added native versus approximate-synthetic quality provenance for ATR, ADX and CCI.
+- Replaced active spoofing-like terminology with the observable `high_volume_candle_rejection` signal.
+- Retained `possible_spoofing` and related summary aliases only for compatibility with historical exports and notebooks.
+- Made flat-series CCI and volume-free OBV explicitly unavailable instead of relying on epsilon arithmetic or implicit missing propagation.
+
+### Validation
+
+- Passed 130/130 deterministic unit tests.
+- Parsed 211/211 active Python files and completed `pip check` without broken requirements.
+- Recalculated 38/38 configured SQL assets with database writes disabled.
+- Rendered 9/9 Streamlit pages through `AppTest` without uncaught exceptions; the running server health endpoint returned HTTP 200.
+- Added property tests for RSI and ADX bounds, Bollinger ordering, normalized entropy, correlation symmetry and Base 100 anchoring.
+- Added regression tests for volume-unit invariance, no-volume behaviour, OHLC-derived indicator quality and event-date direction.
+- No CSV import, SQL write, schema migration or database mutation was performed.
+
+---
+
 ## [v0.5.6] - 2026-08-03 - EURO Source Completeness and Exact Rebuilds
 
 ### Added

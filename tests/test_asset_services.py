@@ -69,7 +69,7 @@ class RiskStatisticsServiceTests(unittest.TestCase):
                 "suspicious_event": [True, True, False, False],
                 "volume_spike": [True, False, False, False],
                 "possible_pump_dump": [True, False, False, False],
-                "possible_spoofing": [False, True, False, False],
+                "high_volume_candle_rejection": [False, True, False, False],
                 "extreme_rsi": [True, False, False, False],
             }
         )
@@ -78,6 +78,7 @@ class RiskStatisticsServiceTests(unittest.TestCase):
 
         self.assertEqual(score["suspicious_events"], 2)
         self.assertEqual(score["pump_dump"], 1)
+        self.assertEqual(score["candle_rejection"], 1)
         self.assertEqual(score["spoofing"], 1)
         self.assertEqual(score["risk_level"], "Extreme")
         self.assertEqual(score["score"], 100)

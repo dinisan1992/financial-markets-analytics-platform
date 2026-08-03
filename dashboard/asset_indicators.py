@@ -172,6 +172,27 @@ def prepare_asset_technical_data(
         periods_per_year=periods_per_year,
     )
 
+    ohlc_quality = np.where(
+        output["ohlc_source"].eq("native"),
+        "native",
+        "approximate_synthetic",
+    )
+    output["atr_quality"] = ohlc_quality
+    output["adx_quality"] = ohlc_quality
+    output["cci_quality"] = ohlc_quality
+
+    volume_expected = asset_cfg.get("volume_expected")
+    if volume_expected is None:
+        volume_expected = output["volume_source"].ne("unavailable").any()
+    liquidity_available = (
+        bool(volume_expected)
+        and output["volume_source"].ne("unavailable").any()
+        and output["volume"].gt(0).any()
+    )
+    output["liquidity_stress_available"] = bool(liquidity_available)
+    if not liquidity_available:
+        output["liquidity_stress"] = np.nan
+
     output["daily_return"] = output["price_change_pct"] / 100
     output["daily_return_pct"] = output["price_change_pct"]
     output["macd_hist"] = output["macd"] - output["macd_signal"]
@@ -199,14 +220,19 @@ def prepare_asset_technical_data(
         & (output["price_change_pct"].abs() > 5)
         & (output["body_to_range"] > 0.5)
     )
-    output["possible_spoofing"] = (
+    output["high_volume_candle_rejection"] = (
         output["candle_signal_eligible"]
         & output["volume_spike"]
         & (output["price_change_pct"].abs() < 0.5)
         & (output["body_to_range"] < 0.3)
     )
+    # Compatibility alias for older exports and downstream notebooks.
+    output["possible_spoofing"] = output["high_volume_candle_rejection"]
     output["extreme_rsi"] = (output["rsi"] > 80) | (output["rsi"] < 20)
-    output["risk_signal"] = output["possible_pump_dump"] | output["possible_spoofing"]
+    output["risk_signal"] = (
+        output["possible_pump_dump"]
+        | output["high_volume_candle_rejection"]
+    )
     output["suspicious_event"] = output["risk_signal"] | output["volume_spike"]
     output["signal_confidence"] = np.where(
         output["candle_signal_eligible"],
@@ -216,7 +242,10 @@ def prepare_asset_technical_data(
 
     output["manipulation_reason"] = ""
     output.loc[output["possible_pump_dump"], "manipulation_reason"] += "Possible pump/dump; "
-    output.loc[output["possible_spoofing"], "manipulation_reason"] += "Possible spoofing; "
+    output.loc[
+        output["high_volume_candle_rejection"],
+        "manipulation_reason",
+    ] += "High-volume candle rejection; "
     output.loc[output["volume_spike"], "manipulation_reason"] += "Volume spike; "
     output.loc[output["rsi"] > 80, "manipulation_reason"] += "RSI very high; "
     output.loc[output["rsi"] < 20, "manipulation_reason"] += "RSI very low; "
@@ -245,7 +274,7 @@ def get_suspicious_events(df: pd.DataFrame) -> pd.DataFrame:
         "ohlc_source",
         "signal_confidence",
         "possible_pump_dump",
-        "possible_spoofing",
+        "high_volume_candle_rejection",
         "volume_spike",
         "extreme_rsi",
         "manipulation_reason",
@@ -272,6 +301,7 @@ def calculate_asset_kpis(df: pd.DataFrame) -> dict:
             "latest_drawdown": None,
             "suspicious_count": 0,
             "pump_dump_count": 0,
+            "candle_rejection_count": 0,
             "spoofing_count": 0,
             "volume_spike_count": 0,
             "native_ohlc_pct": 0,
@@ -292,6 +322,12 @@ def calculate_asset_kpis(df: pd.DataFrame) -> dict:
         if "ohlc_source" in df.columns and len(df)
         else 0
     )
+    if "high_volume_candle_rejection" in df.columns:
+        candle_rejection_count = int(df["high_volume_candle_rejection"].sum())
+    elif "possible_spoofing" in df.columns:
+        candle_rejection_count = int(df["possible_spoofing"].sum())
+    else:
+        candle_rejection_count = 0
 
     return {
         "latest_price": latest_price,
@@ -302,7 +338,8 @@ def calculate_asset_kpis(df: pd.DataFrame) -> dict:
         "latest_drawdown": latest_value("drawdown_pct"),
         "suspicious_count": int(df["suspicious_event"].sum()) if "suspicious_event" in df.columns else 0,
         "pump_dump_count": int(df["possible_pump_dump"].sum()) if "possible_pump_dump" in df.columns else 0,
-        "spoofing_count": int(df["possible_spoofing"].sum()) if "possible_spoofing" in df.columns else 0,
+        "candle_rejection_count": candle_rejection_count,
+        "spoofing_count": candle_rejection_count,
         "volume_spike_count": int(df["volume_spike"].sum()) if "volume_spike" in df.columns else 0,
         "native_ohlc_pct": native_ohlc_pct,
         "periods_per_year": latest_value("volatility_periods_per_year"),

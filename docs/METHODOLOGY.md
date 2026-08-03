@@ -156,7 +156,7 @@ This method is an approximation.
 
 It does not represent real intraday high and low prices.
 
-Therefore, candle-shape-dependent pump/dump and spoofing flags are disabled on synthetic rows. The following values remain approximate when their input row is synthetic:
+Therefore, candle-shape-dependent pump/dump and high-volume candle rejection flags are disabled on synthetic rows. The following values remain approximate when their input row is synthetic:
 
 ATR is approximate;
 ADX is approximate;
@@ -338,16 +338,17 @@ detect stress periods;
 support future regime classification.
 5.4 Liquidity Stress
 
-Liquidity stress is calculated as:
+Liquidity stress is calculated only for assets configured to have meaningful volume:
 
-realized_volatility_30d / rolling average volume
+volatility_zscore_30obs - volume_zscore_20obs
 
-The intuition is that high volatility combined with weak liquidity may indicate stress.
+The intuition is that unusually high volatility combined with unusually weak
+volume may indicate stress. Because both inputs are standardized within the
+asset, multiplying volume by a different unit does not change the result.
 
-Current limitation:
-
-raw volume scales differ across assets;
-this metric may need normalization before intermarket comparison.
+The output is `NaN` and `liquidity_stress_available = False` for assets where
+volume is unavailable or not expected. This remains a screening feature, not a
+market-impact or Amihud illiquidity estimate.
 5.5 Drawdown Duration
 
 Drawdown duration counts how many consecutive periods an asset remains below its previous peak.
@@ -359,7 +360,7 @@ distinguish temporary drops from persistent weakness;
 support future regime classification.
 5.6 Market Entropy
 
-Market entropy measures the dispersion/uncertainty of recent returns.
+Market entropy measures the dispersion of recent returns across histogram bins.
 
 Higher entropy may suggest more unstable or less predictable market behaviour.
 
@@ -367,7 +368,11 @@ Current method:
 
 calculate returns;
 divide recent returns into histogram bins;
-calculate entropy from the probability distribution.
+calculate Shannon entropy from non-empty bin probabilities;
+divide by `log(number_of_bins)` to normalize the output between zero and one.
+
+It describes distributional dispersion. It is not a direct measure of market
+chaos or predictability.
 
 Future improvement:
 
@@ -398,7 +403,7 @@ The project identifies abnormal volume using:
 
 volume > rolling_mean_20 + 2.5 * rolling_std_20
 
-This means volume must be significantly above recent normal behaviour before any Pump/Dump or Spoofing-like signal is considered.
+This means volume must be significantly above recent normal behaviour before any Pump/Dump or high-volume candle rejection signal is considered.
 
 6.2 Pump/Dump-Like Signal
 
@@ -426,9 +431,9 @@ This indicates a strong abnormal movement with high volume and significant price
 
 It does not prove manipulation.
 
-6.3 Spoofing-Like Signal
+6.3 High-Volume Candle Rejection
 
-A Spoofing-like signal is flagged when:
+A high-volume candle rejection signal is flagged when:
 
 abnormal volume
 +
@@ -442,15 +447,15 @@ volume_anormal = True
 candle_ratio < 0.3
 price_change_abs < 0.5%
 
-The output label is:
-
-Spoofing likely
+The output label is `High-volume candle rejection`.
 
 Interpretation:
 
 This indicates abnormal volume without meaningful price movement.
 
-It may represent unusual market activity, but it does not prove spoofing.
+It may represent unusual market activity, absorption or rejection. Daily OHLC
+and volume cannot identify order placement or cancellation, so this signal does
+not claim to detect spoofing.
 
 6.4 RSI Context
 

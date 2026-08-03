@@ -380,20 +380,20 @@ def make_price_chart(
             else pd.DataFrame()
         )
 
-        spoofing_df = (
-            plot_df[plot_df["possible_spoofing"]].copy()
-            if "possible_spoofing" in plot_df.columns
+        candle_rejection_df = (
+            plot_df[plot_df["high_volume_candle_rejection"]].copy()
+            if "high_volume_candle_rejection" in plot_df.columns
             else pd.DataFrame()
         )
 
         if all(
             col in plot_df.columns
-            for col in ["volume_spike", "possible_pump_dump", "possible_spoofing"]
+            for col in ["volume_spike", "possible_pump_dump", "high_volume_candle_rejection"]
         ):
             volume_spike_df = plot_df[
                 (plot_df["volume_spike"])
                 & (~plot_df["possible_pump_dump"])
-                & (~plot_df["possible_spoofing"])
+                & (~plot_df["high_volume_candle_rejection"])
             ].copy()
         elif "volume_spike" in plot_df.columns:
             volume_spike_df = plot_df[plot_df["volume_spike"]].copy()
@@ -425,20 +425,20 @@ def make_price_chart(
                 col=1
             )
 
-        if not spoofing_df.empty:
+        if not candle_rejection_df.empty:
             custom_cols = ["price_change_pct", "volume_zscore", "manipulation_reason"]
             for col in custom_cols:
-                if col not in spoofing_df.columns:
-                    spoofing_df[col] = np.nan if col != "manipulation_reason" else ""
+                if col not in candle_rejection_df.columns:
+                    candle_rejection_df[col] = np.nan if col != "manipulation_reason" else ""
 
             fig.add_trace(
                 go.Scatter(
-                    x=spoofing_df["snapped_at"],
-                    y=spoofing_df["high"] * 1.015,
+                    x=candle_rejection_df["snapped_at"],
+                    y=candle_rejection_df["high"] * 1.015,
                     mode="markers",
-                    name="Possible Spoofing",
+                    name="High-Volume Candle Rejection",
                     marker=dict(symbol="diamond", size=11, color="orange"),
-                    customdata=spoofing_df[custom_cols],
+                    customdata=candle_rejection_df[custom_cols],
                     hovertemplate=(
                         "Date: %{x}<br>"
                         "Price Change: %{customdata[0]:.2f}%<br>"
@@ -1235,7 +1235,7 @@ def make_suspicious_events_bar_chart(df: pd.DataFrame, display_name: str):
     events = {
         "Volume Spike": int(df["volume_spike"].sum()) if "volume_spike" in df.columns else 0,
         "Possible Pump/Dump": int(df["possible_pump_dump"].sum()) if "possible_pump_dump" in df.columns else 0,
-        "Possible Spoofing": int(df["possible_spoofing"].sum()) if "possible_spoofing" in df.columns else 0,
+        "High-Volume Candle Rejection": int(df["high_volume_candle_rejection"].sum()) if "high_volume_candle_rejection" in df.columns else 0,
         "Extreme RSI": int(df["extreme_rsi"].sum()) if "extreme_rsi" in df.columns else 0,
     }
 
@@ -1290,8 +1290,11 @@ def make_volume_price_scatter(df: pd.DataFrame, display_name: str):
     if "possible_pump_dump" in scatter_df.columns:
         scatter_df.loc[scatter_df["possible_pump_dump"], "event_type"] = "Possible Pump/Dump"
 
-    if "possible_spoofing" in scatter_df.columns:
-        scatter_df.loc[scatter_df["possible_spoofing"], "event_type"] = "Possible Spoofing"
+    if "high_volume_candle_rejection" in scatter_df.columns:
+        scatter_df.loc[
+            scatter_df["high_volume_candle_rejection"],
+            "event_type",
+        ] = "High-Volume Candle Rejection"
 
     fig = go.Figure()
 
@@ -1299,7 +1302,7 @@ def make_volume_price_scatter(df: pd.DataFrame, display_name: str):
         "Normal": "rgba(120, 130, 255, 0.55)",
         "Volume Spike": "rgba(255, 215, 0, 0.85)",
         "Possible Pump/Dump": "rgba(255, 80, 80, 0.9)",
-        "Possible Spoofing": "rgba(255, 170, 60, 0.9)"
+        "High-Volume Candle Rejection": "rgba(255, 170, 60, 0.9)"
     }
 
     for event_type in scatter_df["event_type"].unique():

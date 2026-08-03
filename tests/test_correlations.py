@@ -3,8 +3,10 @@ import unittest
 import pandas as pd
 
 from dashboard.correlation_data import (
+    calculate_correlation_matrix,
     calculate_returns,
     calculate_rolling_correlation,
+    normalize_base_100,
 )
 from services.correlation_quality_service import (
     build_pair_correlation_statistics,
@@ -87,6 +89,35 @@ class CorrelationCalculationTests(unittest.TestCase):
         self.assertTrue(pd.isna(result["correlation"]))
         self.assertEqual(result["confidence"], "INSUFFICIENT")
         self.assertTrue(result["potential_bias"])
+
+    def test_correlation_matrix_is_symmetric_and_bounded(self):
+        returns_df = pd.DataFrame(
+            {
+                "snapped_at": pd.date_range("2024-01-01", periods=40, freq="D"),
+                "A": [index / 1000 for index in range(40)],
+                "B": [(-1) ** index * index / 1000 for index in range(40)],
+                "C": [index / 2000 for index in range(40)],
+            }
+        )
+
+        matrix = calculate_correlation_matrix(returns_df, min_periods=30)
+
+        pd.testing.assert_frame_equal(matrix, matrix.T)
+        self.assertTrue(matrix.stack().between(-1, 1).all())
+
+    def test_base_100_starts_each_available_series_at_100(self):
+        prices = pd.DataFrame(
+            {
+                "snapped_at": pd.date_range("2024-01-01", periods=3, freq="D"),
+                "A": [10.0, 11.0, 12.0],
+                "B": [None, 20.0, 21.0],
+            }
+        )
+
+        result = normalize_base_100(prices)
+
+        self.assertEqual(result["A"].dropna().iloc[0], 100)
+        self.assertEqual(result["B"].dropna().iloc[0], 100)
 
 
 if __name__ == "__main__":

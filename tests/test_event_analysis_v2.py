@@ -44,6 +44,25 @@ class EventAnalysisV2Tests(unittest.TestCase):
 
         self.assertAlmostEqual(result.iloc[0]["Return +5D %"], 1.0)
 
+    def test_event_market_date_never_precedes_event_date(self):
+        events = pd.DataFrame(
+            {
+                "event_date": pd.to_datetime(["2024-01-06"]),
+                "date_precision": ["exact"],
+                "event_title": ["Weekend Event"],
+            }
+        )
+        market_prices = pd.DataFrame(
+            {
+                "snapped_at": pd.to_datetime(["2024-01-05", "2024-01-08", "2024-01-09"]),
+                "close": [100.0, 101.0, 102.0],
+            }
+        )
+
+        result = calculate_event_forward_returns(events, market_prices, horizons=(1,))
+
+        self.assertGreaterEqual(result.iloc[0]["Market Date"], result.iloc[0]["Event Date"])
+
     def test_recovery_analysis_finds_trough_and_recovery(self):
         event = {"event_date": "2024-01-01", "date_precision": "exact"}
 

@@ -36,7 +36,7 @@ This project aims to answer questions such as:
 - Can abnormal market behaviour be flagged using price, volume and technical indicators?
 - How do FED and EURO macro indicators relate to market performance?
 - Which assets react more strongly during risk-off regimes?
-- Can suspicious events such as potential pump/dump, spoofing-like behaviour or volume spikes be identified?
+- Can unusual events such as potential pump/dump, high-volume candle rejection or volume spikes be identified?
 
 ---
 
@@ -207,9 +207,9 @@ Example logic:
 volume_zscore > 2.5
 absolute price change > 5%
 body_to_range > 0.5
-Possible Spoofing-Like Behaviour
+High-Volume Candle Rejection
 
-A possible spoofing-like event is flagged when there is:
+A high-volume candle rejection event is flagged when there is:
 
 high volume spike
 small price movement
@@ -230,7 +230,7 @@ RSI < 20
 Each suspicious event receives a human-readable explanation such as:
 
 Possible pump/dump
-Possible spoofing
+High-volume candle rejection
 Volume spike
 RSI very high
 RSI very low
@@ -344,7 +344,7 @@ Stochastic RSI
 MACD
 suspicious event markers
 pump/dump flags
-spoofing flags
+candle rejection flags
 volume spike detection
 suspicious events table
 

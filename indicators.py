@@ -159,7 +159,8 @@ def calcular_cci(high, low, close, window=20):
         raw=True
     )
 
-    cci = (tp - ma) / ((0.015 * md) + 1e-9)
+    denominator = (0.015 * md).replace(0, np.nan)
+    cci = (tp - ma) / denominator
 
     return cci
 
@@ -170,6 +171,11 @@ def calcular_cci(high, low, close, window=20):
 def calcular_obv(close, volume):
     if close.empty or volume.empty:
         return pd.Series(dtype="float64", index=close.index)
+
+    close = pd.to_numeric(close, errors="coerce")
+    volume = pd.to_numeric(volume, errors="coerce")
+    if not volume.notna().any():
+        return pd.Series(np.nan, index=close.index, dtype="float64")
 
     direction = np.sign(close.diff())
     direction.iloc[0] = 0
@@ -183,6 +189,9 @@ def calcular_obv(close, volume):
 # ENTROPIA DE MERCADO
 # =========================
 def calcular_market_entropy(close, window=30, bins=10):
+    """Return normalized Shannon entropy of rolling return histograms."""
+    if bins < 2:
+        raise ValueError("bins must be at least two")
     close = pd.to_numeric(close, errors="coerce")
     returns = close.pct_change(fill_method=None)
     returns = returns.replace([np.inf, -np.inf], np.nan)
@@ -207,19 +216,16 @@ def calcular_market_entropy(close, window=30, bins=10):
             entropy_values.append(np.nan)
             continue
 
-        hist, _ = np.histogram(
+        counts, _ = np.histogram(
             subset,
             bins=bins,
-            density=True
         )
 
-        hist = hist + 1e-9
-
-        probabilities = hist / hist.sum()
+        probabilities = counts[counts > 0] / counts.sum()
 
         entropy_value = -np.sum(
             probabilities * np.log(probabilities)
-        )
+        ) / np.log(bins)
 
         entropy_values.append(entropy_value)
 
@@ -235,7 +241,7 @@ def calcular_market_entropy(close, window=30, bins=10):
 def calcular_drawdown_duration(close):
     rolling_max = close.cummax()
 
-    drawdown = (close - rolling_max) / (rolling_max + 1e-9)
+    drawdown = (close - rolling_max) / rolling_max.replace(0, np.nan)
 
     durations = []
     duration = 0
@@ -442,11 +448,26 @@ def calcular_indicadores(df, periods_per_year=252):
     # =========================
     # LIQUIDITY STRESS
     # =========================
-    df["liquidity_stress"] = (
-        df["realized_volatility_30d"]
-        /
-        (df["volume"].rolling(30).mean() + 1e-9)
+    volatility_mean_30 = df["realized_volatility_30d"].rolling(
+        30,
+        min_periods=20,
+    ).mean()
+    volatility_std_30 = df["realized_volatility_30d"].rolling(
+        30,
+        min_periods=20,
+    ).std()
+    df["volatility_zscore_30obs"] = (
+        (df["realized_volatility_30d"] - volatility_mean_30)
+        / volatility_std_30.replace(0, np.nan)
     )
+    usable_volume = pd.to_numeric(df["volume"], errors="coerce") > 0
+    df["liquidity_stress"] = (
+        df["volatility_zscore_30obs"] - df["volume_zscore"]
+    ).where(usable_volume)
+    df["liquidity_stress_method"] = (
+        "volatility_zscore_30obs_minus_volume_zscore_20obs"
+    )
+    df["obv_available"] = usable_volume
 
     # =========================
     # DRAWDOWN DURATION

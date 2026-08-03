@@ -20,7 +20,7 @@ Functional local platform with:
 - Data quality and validation tools.
 - Automated syntax checks and unit tests through GitHub Actions.
 
-Current project version: **v0.5.6**
+Current project version: **v0.6.0**
 
 ## Main Analytical Capabilities
 
@@ -109,7 +109,7 @@ A future fraud analytics layer is planned for card fraud, credit transfer fraud,
 The central indicator engine calculates:
 
 - Native OHLC preservation when valid, with synthetic OHLC only for missing or invalid rows.
-- Row-level `ohlc_source` provenance and candle-signal eligibility.
+- Row-level `ohlc_source`, ATR, ADX and CCI quality provenance.
 - Daily returns and price change percentages.
 - EMA 9, 12, 20, 26, 50, 100 and 200.
 - Bollinger Bands.
@@ -124,8 +124,8 @@ The central indicator engine calculates:
 - Rolling and realized volatility.
 - Drawdown and drawdown duration.
 - Volume moving averages and volume z-score.
-- Liquidity stress.
-- Market entropy.
+- Unit-invariant liquidity stress for assets with meaningful volume.
+- Normalized market entropy on a 0-to-1 scale.
 
 ## Risk and Anomaly Screening
 
@@ -133,11 +133,13 @@ The project includes a heuristic screening layer for:
 
 - Abnormal volume spikes.
 - Possible pump/dump patterns.
-- Possible spoofing-like behaviour.
+- High-volume candle rejection patterns.
 - Extreme RSI conditions.
 - Abnormal price, volume, candle and volatility combinations.
 
-These signals are analytical alerts only. They do not prove market manipulation and are not trading recommendations.
+These signals are analytical alerts only. A high-volume candle rejection is a
+small-body candle with abnormal volume; it is not order-book spoofing detection.
+The signals do not prove market manipulation and are not trading recommendations.
 
 ## Architecture
 
@@ -298,9 +300,19 @@ registered CSV sources. See `docs/EURO_SCHEMA_AUDIT.md`,
 
 ## Validation Snapshot
 
-The v0.5.6 validation includes:
+The v0.6.0 code-only validation includes:
 
-- 121/121 deterministic unit tests pass, 211 active Python files parse successfully and `pip check` reports no broken requirements.
+- 130/130 deterministic unit tests pass.
+- 211/211 active Python files parse successfully and `pip check` reports no broken requirements.
+- 38/38 configured SQL assets recalculate successfully with database writes disabled.
+- 9/9 Streamlit pages render without uncaught exceptions and the running server reports HTTP 200 health.
+- Financial property tests cover indicator bounds, Bollinger ordering, correlation symmetry, Base 100 anchoring and event-date direction.
+- Regression tests cover normalized entropy, volume-unit invariance, unavailable volume metrics and OHLC-derived indicator quality.
+- No CSV import, SQL write, schema migration or database mutation was performed.
+
+The retained v0.5.6 database validation includes:
+
+- 121/121 deterministic unit tests passed at that checkpoint, 211 active Python files parsed successfully and `pip check` reported no broken requirements.
 - 28/28 FED and EURO CSV contracts pass controlled preview; all entrypoint modules import without opening a database connection.
 - Full-source and SQL contract checks identify all 11 FED imports as write-ready; EURO schema status is 14 contract-ready and three controlled rebuilds.
 - Four FED tables received a unique `observation_date` key after duplicate/null checks and a verified scoped SQL backup; no source rows were changed or removed.

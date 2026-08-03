@@ -40,6 +40,7 @@ def _empty_suspicion_score():
         "suspicious_events": 0,
         "volume_spikes": 0,
         "pump_dump": 0,
+        "candle_rejection": 0,
         "spoofing": 0,
         "extreme_rsi": 0,
         "days_count": 0,
@@ -61,13 +62,20 @@ def calculate_suspicion_score(df: pd.DataFrame):
     suspicious_events = int(risk_df["suspicious_event"].sum()) if "suspicious_event" in risk_df.columns else 0
     volume_spikes = int(risk_df["volume_spike"].sum()) if "volume_spike" in risk_df.columns else 0
     pump_dump = int(risk_df["possible_pump_dump"].sum()) if "possible_pump_dump" in risk_df.columns else 0
-    spoofing = int(risk_df["possible_spoofing"].sum()) if "possible_spoofing" in risk_df.columns else 0
+    if "high_volume_candle_rejection" in risk_df.columns:
+        candle_rejection = int(risk_df["high_volume_candle_rejection"].sum())
+    else:
+        candle_rejection = (
+            int(risk_df["possible_spoofing"].sum())
+            if "possible_spoofing" in risk_df.columns
+            else 0
+        )
     extreme_rsi = int(risk_df["extreme_rsi"].sum()) if "extreme_rsi" in risk_df.columns else 0
 
     suspicious_rate = suspicious_events / days_count
     volume_spike_rate = volume_spikes / days_count
     pump_dump_rate = pump_dump / days_count
-    spoofing_rate = spoofing / days_count
+    candle_rejection_rate = candle_rejection / days_count
     extreme_rsi_rate = extreme_rsi / days_count
 
     score = 0
@@ -75,7 +83,7 @@ def calculate_suspicion_score(df: pd.DataFrame):
     score += min(suspicious_rate * 100 * 2.0, 30)
     score += min(volume_spike_rate * 100 * 1.5, 20)
     score += min(pump_dump_rate * 100 * 4.0, 20)
-    score += min(spoofing_rate * 100 * 4.0, 20)
+    score += min(candle_rejection_rate * 100 * 4.0, 20)
     score += min(extreme_rsi_rate * 100 * 1.0, 10)
 
     if days_count <= 30 and suspicious_events >= 5:
@@ -84,7 +92,7 @@ def calculate_suspicion_score(df: pd.DataFrame):
     if pump_dump >= 1:
         score += 5
 
-    if spoofing >= 1:
+    if candle_rejection >= 1:
         score += 5
 
     score = round(min(score, 100), 1)
@@ -104,7 +112,8 @@ def calculate_suspicion_score(df: pd.DataFrame):
         "suspicious_events": suspicious_events,
         "volume_spikes": volume_spikes,
         "pump_dump": pump_dump,
-        "spoofing": spoofing,
+        "candle_rejection": candle_rejection,
+        "spoofing": candle_rejection,
         "extreme_rsi": extreme_rsi,
         "days_count": days_count,
         "suspicious_rate": suspicious_rate,

@@ -121,7 +121,18 @@
 - Reclassify three incomplete target histories instead of adding misleading keys
 - Confirm 14 ready schemas, zero key candidates and three controlled rebuilds
 
-## High Priority After v0.5.6
+## Completed in v0.6.0
+
+- Normalize rolling market entropy to a documented zero-to-one scale
+- Replace raw-volume liquidity stress with a unit-invariant z-score measure
+- Disable liquidity stress where meaningful volume is not expected or available
+- Expose native versus approximate-synthetic quality for ATR, ADX and CCI
+- Replace active spoofing-like labels with high-volume candle rejection terminology
+- Preserve compatibility aliases for historical exports and notebooks
+- Add financial property and analytical regression tests
+- Pass 130 deterministic tests, 38 SQL-only asset recalculations and 9 Streamlit page renders without any database write
+
+## High Priority After v0.6.0
 
 - Confirm the seven source contracts still marked as inferred during their next refresh
 - Implement memory-bounded full-row validation for multi-million-row EURO sources

@@ -122,7 +122,7 @@ The current risk detection layer uses heuristic rules to identify possible abnor
 Signals include:
 
 Pump/Dump-like movement
-Spoofing-like abnormal volume
+High-volume candle rejection
 RSI extreme context
 ATR high-volatility context
 

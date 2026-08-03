@@ -330,7 +330,7 @@ def _render_risk_tab(deps: AssetExplorerDeps, tech_df, display_name):
     total_suspicious = int(risk_df["suspicious_event"].sum()) if "suspicious_event" in risk_df.columns else 0
     volume_spikes = int(risk_df["volume_spike"].sum()) if "volume_spike" in risk_df.columns else 0
     pump_dump = int(risk_df["possible_pump_dump"].sum()) if "possible_pump_dump" in risk_df.columns else 0
-    spoofing = int(risk_df["possible_spoofing"].sum()) if "possible_spoofing" in risk_df.columns else 0
+    candle_rejection = int(risk_df["high_volume_candle_rejection"].sum()) if "high_volume_candle_rejection" in risk_df.columns else 0
     extreme_rsi = int(risk_df["extreme_rsi"].sum()) if "extreme_rsi" in risk_df.columns else 0
 
     r1, r2, r3, r4, r5 = st.columns(5)
@@ -345,7 +345,7 @@ def _render_risk_tab(deps: AssetExplorerDeps, tech_df, display_name):
         st.metric("Pump/Dump", pump_dump)
 
     with r4:
-        st.metric("Spoofing", spoofing)
+        st.metric("Candle Rejection", candle_rejection)
 
     with r5:
         st.metric("Extreme RSI", extreme_rsi)
@@ -411,7 +411,7 @@ def _render_suspicious_table_view(deps: AssetExplorerDeps, risk_df):
             "All",
             "Volume Spike",
             "Possible Pump/Dump",
-            "Possible Spoofing",
+            "High-Volume Candle Rejection",
             "Extreme RSI",
         ],
     )
@@ -424,8 +424,8 @@ def _render_suspicious_table_view(deps: AssetExplorerDeps, risk_df):
     elif event_type_filter == "Possible Pump/Dump" and "possible_pump_dump" in filtered_df.columns:
         filtered_df = filtered_df[filtered_df["possible_pump_dump"]]
 
-    elif event_type_filter == "Possible Spoofing" and "possible_spoofing" in filtered_df.columns:
-        filtered_df = filtered_df[filtered_df["possible_spoofing"]]
+    elif event_type_filter == "High-Volume Candle Rejection" and "high_volume_candle_rejection" in filtered_df.columns:
+        filtered_df = filtered_df[filtered_df["high_volume_candle_rejection"]]
 
     elif event_type_filter == "Extreme RSI" and "extreme_rsi" in filtered_df.columns:
         filtered_df = filtered_df[filtered_df["extreme_rsi"]]

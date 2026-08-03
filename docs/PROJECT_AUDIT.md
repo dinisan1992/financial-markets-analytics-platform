@@ -134,7 +134,7 @@ The previous calculation cleanup remains in place:
 - RSI edge cases corrected for constant/up-only/down-only price series.
 - `pct_change(fill_method=None)` used to avoid artificial gap returns.
 - Dashboard indicators aligned with the central `indicators.py` implementation.
-- Suspicious-event counts now focus on pump/dump and spoofing-like signals, with volume spikes and RSI extremes kept as separate context.
+- Suspicious-event counts now focus on pump/dump and high-volume candle rejection signals, with volume spikes and RSI extremes kept as separate context.
 - Correlation calculations avoid forward-filling by default when building market return frames.
 
 ## Current Risks / Issues

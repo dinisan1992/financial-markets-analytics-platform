@@ -84,7 +84,7 @@ Detect abnormal market behaviour using rule-based analytical signals.
 
 - Volume spike detection
 - Possible pump/dump flags
-- Possible spoofing-like flags
+- High-volume candle rejection flags
 - Extreme RSI flags
 - Human-readable event reasons
 - Suspicious events table
