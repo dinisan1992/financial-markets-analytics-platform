@@ -38,11 +38,7 @@ def main():
         # =========================
         # IMPORTAR CSV NOVO
         # =========================
-        importar_csv_e_update_mysql(
-            csv_path=CSV_PATH,
-            conn=conn,
-            cursor=cursor
-        )
+        print("CSV import skipped. Use sync_market_data.py BTC --update-sql explicitly.")
 
         # =========================
         # LER DADOS DO MYSQL
@@ -114,11 +110,7 @@ def main():
         # ATUALIZAR INDICADORES NO SQL
         # Only legacy indicators that already exist in the table.
         # =========================
-        update_indicadores_sql(
-            df=df,
-            cursor=cursor,
-            conn=conn
-        )
+        print("Legacy SQL indicator writes are disabled; indicators remain in memory.")
 
         # =========================
         # MANIPULATION DETECTION
@@ -136,11 +128,7 @@ def main():
         # =========================
         # UPDATE MANIPULATION FLAGS IN SQL
         # =========================
-        update_manipulacao_sql(
-            df=df,
-            cursor=cursor,
-            conn=conn
-        )
+        print("Legacy SQL manipulation-flag writes are disabled.")
 
         # =========================
         # DASHBOARD

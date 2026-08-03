@@ -20,7 +20,7 @@ Functional local platform with:
 - Data quality and validation tools.
 - Automated syntax checks and unit tests through GitHub Actions.
 
-Current project version: **v0.4.3**
+Current project version: **v0.5.0**
 
 ## Main Analytical Capabilities
 
@@ -252,6 +252,7 @@ Supported variables:
 - `DB_NAME`
 - `PROJECT_DATA_DIR`
 - `PROJECT_NEW_MARKET_DATA_DIR`
+- `PROJECT_MARKET_CLEAN_DIR`
 - `PROJECT_SOURCE_DATA_DIR`
 - `FED_SOURCE_DIR`
 - `EURO_SOURCE_DIR`
@@ -259,20 +260,34 @@ Supported variables:
 - `CRYPTOPANIC_API_TOKEN`
 - `DEFAULT_UPDATE_SQL`
 
-The default local database is `btc_data` on `localhost:3306`. SQL writes are disabled by default through `DEFAULT_UPDATE_SQL=false`.
+The default local database is `btc_data` on `localhost:3306`. Dashboard and validation paths are read-only. CSV synchronization is a separate explicit command and requires `--update-sql` for one named asset.
+
+Preview one asset without writing:
+
+```powershell
+python project_scripts/assets/sync_market_data.py SP500
+```
+
+Apply a reviewed plan:
+
+```powershell
+python project_scripts/assets/sync_market_data.py SP500 --update-sql
+```
+
+Bulk writes are intentionally disabled. See `docs/DATA_PIPELINE.md` for the backup, dry-run and remediation workflow.
 
 ## Validation Snapshot
 
-The v0.4.3 validation includes:
+The v0.5.0 validation includes:
 
-- 9/9 Streamlit pages rendered without uncaught exceptions, including graceful database-offline handling.
-- Active Python files compiled successfully.
-- Native/synthetic OHLC, 252/365 annualization, rolling correlation, pair confidence, events, recovery, macro alignment, data quality, regimes and legacy import planning are covered by 63 deterministic tests.
-- EURO, YUAN, LIBRA and SSECOMPOSITE base CSV imports are disabled by default and expose only an explicit read-only `--dry-run-import` preview.
-- Read-only diagnostics identified 210,364 surplus observations by date. Price and volume match in every group, but 36,729 groups differ in technical columns; 173,633 rows are exact full-row copies.
-- News modules import without starting network loops or SQL activity.
-- No SQL writes, migrations, CSV importers or database mutations were executed during this upgrade.
-- The read-only database audit loaded 37 assets, evaluated 666 pairs and 66 events, and produced `audit_outputs/audit_outputs.zip`.
+- 78/78 deterministic unit tests pass and 187 active Python files parse successfully.
+- 37/37 configured asset tables load and recalculate successfully through the SQL-only global validator.
+- 9/9 Streamlit pages render without uncaught exceptions; BTC loading, Data Quality and rolling correlation were exercised in the browser.
+- The post-remediation audit reports 37 assets, 666 pairs, 66 events, zero duplicate assets and no load errors.
+- EURO, YUAN, LIBRA and SSECOMPOSITE now contain one row per date with unique temporal keys.
+- SP500 was rebuilt from its source CSV to remove a confirmed one-day legacy date shift.
+- BTC, SP500, STOXX600, GOLD, DXY, EURO, YUAN, LIBRA and SSECOMPOSITE are idempotent against their current CSV files.
+- A scoped SQL backup was verified before the migration, and all seven replaced tables remain available locally under `__pre_v050_20260803` names.
 
 The previous database-enabled validation covered 37/37 configured assets, 11/11 FED series and 12/12 active EURO loaders. See `PROJECT_STATUS.md` for details.
 

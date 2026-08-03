@@ -65,6 +65,54 @@ class DataAccessServiceTests(unittest.TestCase):
         self.assertEqual(result["close"].tolist(), [100.0, 102.5])
 
     @patch("services.data_access_service.pd.read_sql")
+    def test_load_asset_data_keeps_one_complete_row_per_timestamp(self, read_sql):
+        read_sql.return_value = pd.DataFrame(
+            {
+                "snapped_at": ["2024-01-01", "2024-01-01", "2024-01-02"],
+                "price": [100.0, 100.0, 102.0],
+                "open": [None, 99.0, 101.0],
+                "high": [None, 101.0, 103.0],
+                "low": [None, 98.0, 100.0],
+                "close": [None, 100.0, 102.0],
+            }
+        )
+
+        result = data_access_service.load_asset_data(
+            engine=object(),
+            assets_config={"TEST": {"table_name": "test_prices"}},
+            asset_key="TEST",
+            get_table_columns_func=lambda table: [
+                "snapped_at",
+                "price",
+                "open",
+                "high",
+                "low",
+                "close",
+            ],
+        )
+
+        self.assertEqual(len(result), 2)
+        self.assertTrue(result["snapped_at"].is_unique)
+        self.assertEqual(result.iloc[0]["open"], 99.0)
+
+    def test_market_observations_are_normalized_to_one_daily_key(self):
+        frame = pd.DataFrame(
+            {
+                "snapped_at": [
+                    "2024-01-01 00:00:00",
+                    "2024-01-01 23:30:00",
+                ],
+                "price": [100.0, 101.0],
+            }
+        )
+
+        result = data_access_service.deduplicate_market_observations(frame)
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result.iloc[0]["snapped_at"], pd.Timestamp("2024-01-01"))
+        self.assertEqual(result.iloc[0]["price"], 101.0)
+
+    @patch("services.data_access_service.pd.read_sql")
     def test_load_world_historical_events_formats_expected_columns(self, read_sql):
         read_sql.return_value = pd.DataFrame(
             {

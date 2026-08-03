@@ -382,11 +382,8 @@ def main():
         # =========================
         # CSV IMPORT
         # =========================
-        novos_data_importados = importar_csv_stoxx600(
-            csv_path=CSV_PATH,
-            conn=conn,
-            cursor=cursor
-        )
+        novos_data_importados = False
+        print("CSV import skipped. Use sync_market_data.py STOXX600 --update-sql explicitly.")
 
         # =========================
         # LER DADOS MYSQL

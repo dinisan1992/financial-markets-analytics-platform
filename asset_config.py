@@ -1,4 +1,4 @@
-from config import CLEAN_DATA_DIR, NEW_MARKET_CLEAN_DIR
+from config import MARKET_CLEAN_DIR
 
 
 # =========================
@@ -13,7 +13,7 @@ ASSETS = {
     "BTC": {
         "display_name": "Bitcoin",
         "script_name": "project_scripts/assets/main.py",
-        "csv_path": CLEAN_DATA_DIR / "btc_data.csv",
+        "csv_path": MARKET_CLEAN_DIR / "btc_data.csv",
         "table_name": "btc_analysis",
         "market_type": "crypto",
         "symbol": "BTC"
@@ -22,7 +22,7 @@ ASSETS = {
     "SP500": {
         "display_name": "S&P 500",
         "script_name": "project_scripts/assets/sp500.py",
-        "csv_path": CLEAN_DATA_DIR / "sp500_data.csv",
+        "csv_path": MARKET_CLEAN_DIR / "sp500_data.csv",
         "table_name": "sp500_analysis_clean",
         "market_type": "equity_index",
         "symbol": "SP500"
@@ -31,7 +31,7 @@ ASSETS = {
     "STOXX600": {
         "display_name": "STOXX 600",
         "script_name": "project_scripts/assets/stoxx600.py",
-        "csv_path": CLEAN_DATA_DIR / "stoxx600_data.csv",
+        "csv_path": MARKET_CLEAN_DIR / "stoxx600_data.csv",
         "table_name": "stoxx600_analysis",
         "market_type": "equity_index",
         "symbol": "STOXX600"
@@ -40,7 +40,7 @@ ASSETS = {
     "FTSE100": {
         "display_name": "FTSE 100",
         "script_name": "project_scripts/assets/ftse100.py",
-        "csv_path": CLEAN_DATA_DIR / "ftse100_data.csv",
+        "csv_path": MARKET_CLEAN_DIR / "ftse100_data.csv",
         "table_name": "ftse100_analysis",
         "market_type": "equity_index",
         "symbol": "FTSE100"
@@ -49,7 +49,7 @@ ASSETS = {
     "GOLD": {
         "display_name": "Gold",
         "script_name": "project_scripts/assets/gold.py",
-        "csv_path": CLEAN_DATA_DIR / "gold_data.csv",
+        "csv_path": MARKET_CLEAN_DIR / "gold_data.csv",
         "table_name": "gold_analysis_clean",
         "market_type": "commodity",
         "symbol": "GOLD"
@@ -58,7 +58,7 @@ ASSETS = {
     "DXY": {
         "display_name": "DXY / US Dollar Index",
         "script_name": "project_scripts/assets/dollaramericano.py",
-        "csv_path": CLEAN_DATA_DIR / "dxy_data.csv",
+        "csv_path": MARKET_CLEAN_DIR / "dxy_data.csv",
         "table_name": "dxy_analysis_clean",
         "market_type": "currency_index",
         "symbol": "DXY"
@@ -67,7 +67,7 @@ ASSETS = {
     "EURO": {
         "display_name": "Euro",
         "script_name": "project_scripts/assets/euro.py",
-        "csv_path": CLEAN_DATA_DIR / "euro_data.csv",
+        "csv_path": MARKET_CLEAN_DIR / "euro_data.csv",
         "table_name": "euro_analysis",
         "market_type": "currency",
         "symbol": "EUR"
@@ -76,7 +76,7 @@ ASSETS = {
     "YUAN": {
         "display_name": "Chinese Yuan",
         "script_name": "project_scripts/assets/yuan.py",
-        "csv_path": CLEAN_DATA_DIR / "yuan_data.csv",
+        "csv_path": MARKET_CLEAN_DIR / "yuan_data.csv",
         "table_name": "yuan_analysis",
         "market_type": "currency",
         "symbol": "CNY"
@@ -85,7 +85,7 @@ ASSETS = {
     "LIBRA": {
         "display_name": "British Pound",
         "script_name": "project_scripts/assets/libra.py",
-        "csv_path": CLEAN_DATA_DIR / "libra_data.csv",
+        "csv_path": MARKET_CLEAN_DIR / "libra_data.csv",
         "table_name": "libra_analysis",
         "market_type": "currency",
         "symbol": "GBP"
@@ -94,7 +94,7 @@ ASSETS = {
     "SSECOMPOSITE": {
         "display_name": "SSE Composite",
         "script_name": "project_scripts/assets/ssecomposite.py",
-        "csv_path": CLEAN_DATA_DIR / "ssecomposite_data.csv",
+        "csv_path": MARKET_CLEAN_DIR / "ssecomposite_data.csv",
         "table_name": "ssecomposite_analysis",
         "market_type": "equity_index",
         "symbol": "SSE"
@@ -107,7 +107,7 @@ ASSETS = {
     "NASDAQ100": {
         "display_name": "NASDAQ 100",
         "script_name": "project_scripts/assets/nasdaq100.py",
-        "csv_path": NEW_MARKET_CLEAN_DIR / "nasdaq100_data_clean.csv",
+        "csv_path": MARKET_CLEAN_DIR / "nasdaq100_data_clean.csv",
         "table_name": "nasdaq100_analysis",
         "market_type": "equity_index",
         "symbol": "NASDAQ100"
@@ -116,7 +116,7 @@ ASSETS = {
     "DOWJONES": {
         "display_name": "Dow Jones Industrial Average",
         "script_name": "project_scripts/assets/dowjones.py",
-        "csv_path": NEW_MARKET_CLEAN_DIR / "dowjones_data_clean.csv",
+        "csv_path": MARKET_CLEAN_DIR / "dowjones_data_clean.csv",
         "table_name": "dowjones_analysis",
         "market_type": "equity_index",
         "symbol": "DOWJONES"
@@ -125,7 +125,7 @@ ASSETS = {
     "RUSSELL2000": {
         "display_name": "Russell 2000",
         "script_name": "project_scripts/assets/russell2000.py",
-        "csv_path": NEW_MARKET_CLEAN_DIR / "russell2000_data_clean.csv",
+        "csv_path": MARKET_CLEAN_DIR / "russell2000_data_clean.csv",
         "table_name": "russell2000_analysis",
         "market_type": "equity_index",
         "symbol": "RUSSELL2000"
@@ -134,7 +134,7 @@ ASSETS = {
     "EUROSTOXX50": {
         "display_name": "Euro Stoxx 50",
         "script_name": "project_scripts/assets/eurostoxx50.py",
-        "csv_path": NEW_MARKET_CLEAN_DIR / "eurostoxx50_data_clean.csv",
+        "csv_path": MARKET_CLEAN_DIR / "eurostoxx50_data_clean.csv",
         "table_name": "eurostoxx50_analysis",
         "market_type": "equity_index",
         "symbol": "EUROSTOXX50"
@@ -143,7 +143,7 @@ ASSETS = {
     "DAX": {
         "display_name": "DAX",
         "script_name": "project_scripts/assets/dax.py",
-        "csv_path": NEW_MARKET_CLEAN_DIR / "dax_data_clean.csv",
+        "csv_path": MARKET_CLEAN_DIR / "dax_data_clean.csv",
         "table_name": "dax_analysis",
         "market_type": "equity_index",
         "symbol": "DAX"
@@ -152,7 +152,7 @@ ASSETS = {
     "CAC40": {
         "display_name": "CAC 40",
         "script_name": "project_scripts/assets/cac40.py",
-        "csv_path": NEW_MARKET_CLEAN_DIR / "cac40_data_clean.csv",
+        "csv_path": MARKET_CLEAN_DIR / "cac40_data_clean.csv",
         "table_name": "cac40_analysis",
         "market_type": "equity_index",
         "symbol": "CAC40"
@@ -161,7 +161,7 @@ ASSETS = {
     "NIKKEI225": {
         "display_name": "Nikkei 225",
         "script_name": "project_scripts/assets/nikkei225.py",
-        "csv_path": NEW_MARKET_CLEAN_DIR / "nikkei225_data_clean.csv",
+        "csv_path": MARKET_CLEAN_DIR / "nikkei225_data_clean.csv",
         "table_name": "nikkei225_analysis",
         "market_type": "equity_index",
         "symbol": "NIKKEI225"
@@ -170,7 +170,7 @@ ASSETS = {
     "EMERGING_MARKETS": {
         "display_name": "MSCI Emerging Markets / EEM",
         "script_name": "project_scripts/assets/emerging_markets.py",
-        "csv_path": NEW_MARKET_CLEAN_DIR / "emerging_markets_data_clean.csv",
+        "csv_path": MARKET_CLEAN_DIR / "emerging_markets_data_clean.csv",
         "table_name": "emerging_markets_analysis",
         "market_type": "equity_index",
         "symbol": "EEM"
@@ -183,7 +183,7 @@ ASSETS = {
     "VIX": {
         "display_name": "VIX Volatility Index",
         "script_name": "project_scripts/assets/vix.py",
-        "csv_path": NEW_MARKET_CLEAN_DIR / "vix_data_clean.csv",
+        "csv_path": MARKET_CLEAN_DIR / "vix_data_clean.csv",
         "table_name": "vix_analysis",
         "market_type": "volatility",
         "symbol": "VIX"
@@ -192,7 +192,7 @@ ASSETS = {
     "MOVE_INDEX": {
         "display_name": "MOVE Index",
         "script_name": "project_scripts/assets/move_index.py",
-        "csv_path": NEW_MARKET_CLEAN_DIR / "move_index_data_clean.csv",
+        "csv_path": MARKET_CLEAN_DIR / "move_index_data_clean.csv",
         "table_name": "move_index_analysis",
         "market_type": "volatility",
         "symbol": "MOVE"
@@ -205,7 +205,7 @@ ASSETS = {
     "BRENT_OIL": {
         "display_name": "Brent Crude Oil",
         "script_name": "project_scripts/assets/brent_oil.py",
-        "csv_path": NEW_MARKET_CLEAN_DIR / "brent_oil_data_clean.csv",
+        "csv_path": MARKET_CLEAN_DIR / "brent_oil_data_clean.csv",
         "table_name": "brent_oil_analysis",
         "market_type": "commodity",
         "symbol": "BRENT"
@@ -214,7 +214,7 @@ ASSETS = {
     "WTI_OIL": {
         "display_name": "WTI Crude Oil",
         "script_name": "project_scripts/assets/wti_oil.py",
-        "csv_path": NEW_MARKET_CLEAN_DIR / "wti_oil_data_clean.csv",
+        "csv_path": MARKET_CLEAN_DIR / "wti_oil_data_clean.csv",
         "table_name": "wti_oil_analysis",
         "market_type": "commodity",
         "symbol": "WTI",
@@ -224,7 +224,7 @@ ASSETS = {
     "NATURAL_GAS": {
         "display_name": "Natural Gas",
         "script_name": "project_scripts/assets/natural_gas.py",
-        "csv_path": NEW_MARKET_CLEAN_DIR / "natural_gas_data_clean.csv",
+        "csv_path": MARKET_CLEAN_DIR / "natural_gas_data_clean.csv",
         "table_name": "natural_gas_analysis",
         "market_type": "commodity",
         "symbol": "NATGAS"
@@ -233,7 +233,7 @@ ASSETS = {
     "COPPER": {
         "display_name": "Copper",
         "script_name": "project_scripts/assets/copper.py",
-        "csv_path": NEW_MARKET_CLEAN_DIR / "copper_data_clean.csv",
+        "csv_path": MARKET_CLEAN_DIR / "copper_data_clean.csv",
         "table_name": "copper_analysis",
         "market_type": "commodity",
         "symbol": "COPPER"
@@ -242,7 +242,7 @@ ASSETS = {
     "SILVER": {
         "display_name": "Silver",
         "script_name": "project_scripts/assets/silver.py",
-        "csv_path": NEW_MARKET_CLEAN_DIR / "silver_data_clean.csv",
+        "csv_path": MARKET_CLEAN_DIR / "silver_data_clean.csv",
         "table_name": "silver_analysis",
         "market_type": "commodity",
         "symbol": "SILVER"
@@ -251,7 +251,7 @@ ASSETS = {
     "WHEAT": {
         "display_name": "Wheat",
         "script_name": "project_scripts/assets/wheat.py",
-        "csv_path": NEW_MARKET_CLEAN_DIR / "wheat_data_clean.csv",
+        "csv_path": MARKET_CLEAN_DIR / "wheat_data_clean.csv",
         "table_name": "wheat_analysis",
         "market_type": "commodity",
         "symbol": "WHEAT"
@@ -260,7 +260,7 @@ ASSETS = {
     "CORN": {
         "display_name": "Corn",
         "script_name": "project_scripts/assets/corn.py",
-        "csv_path": NEW_MARKET_CLEAN_DIR / "corn_data_clean.csv",
+        "csv_path": MARKET_CLEAN_DIR / "corn_data_clean.csv",
         "table_name": "corn_analysis",
         "market_type": "commodity",
         "symbol": "CORN"
@@ -273,7 +273,7 @@ ASSETS = {
     "YEN": {
         "display_name": "Japanese Yen",
         "script_name": "project_scripts/assets/yen.py",
-        "csv_path": NEW_MARKET_CLEAN_DIR / "yen_data_clean.csv",
+        "csv_path": MARKET_CLEAN_DIR / "yen_data_clean.csv",
         "table_name": "yen_analysis",
         "market_type": "currency",
         "symbol": "JPY"
@@ -282,7 +282,7 @@ ASSETS = {
     "SWISS_FRANC": {
         "display_name": "Swiss Franc",
         "script_name": "project_scripts/assets/swiss_franc.py",
-        "csv_path": NEW_MARKET_CLEAN_DIR / "swiss_franc_data_clean.csv",
+        "csv_path": MARKET_CLEAN_DIR / "swiss_franc_data_clean.csv",
         "table_name": "swiss_franc_analysis",
         "market_type": "currency",
         "symbol": "CHF"
@@ -295,7 +295,7 @@ ASSETS = {
     "US10Y": {
         "display_name": "US 10-Year Treasury Yield",
         "script_name": "project_scripts/assets/us10y.py",
-        "csv_path": NEW_MARKET_CLEAN_DIR / "us10y_data_clean.csv",
+        "csv_path": MARKET_CLEAN_DIR / "us10y_data_clean.csv",
         "table_name": "us10y_analysis",
         "market_type": "yield",
         "symbol": "US10Y"
@@ -304,7 +304,7 @@ ASSETS = {
     "US2Y": {
         "display_name": "US 2-Year Treasury Yield",
         "script_name": "project_scripts/assets/us2y.py",
-        "csv_path": NEW_MARKET_CLEAN_DIR / "us2y_data_clean.csv",
+        "csv_path": MARKET_CLEAN_DIR / "us2y_data_clean.csv",
         "table_name": "us2y_analysis",
         "market_type": "yield",
         "symbol": "US2Y"
@@ -313,7 +313,7 @@ ASSETS = {
     "US30Y": {
         "display_name": "US 30-Year Treasury Yield",
         "script_name": "project_scripts/assets/us30y.py",
-        "csv_path": NEW_MARKET_CLEAN_DIR / "us30y_data_clean.csv",
+        "csv_path": MARKET_CLEAN_DIR / "us30y_data_clean.csv",
         "table_name": "us30y_analysis",
         "market_type": "yield",
         "symbol": "US30Y"
@@ -322,7 +322,7 @@ ASSETS = {
     "GERMANY10Y": {
         "display_name": "Germany 10-Year Bund Yield",
         "script_name": "project_scripts/assets/germany10y.py",
-        "csv_path": NEW_MARKET_CLEAN_DIR / "germany10y_data_clean.csv",
+        "csv_path": MARKET_CLEAN_DIR / "germany10y_data_clean.csv",
         "table_name": "germany10y_analysis",
         "market_type": "yield",
         "symbol": "GERMANY10Y",
@@ -333,7 +333,7 @@ ASSETS = {
     "UK10Y": {
         "display_name": "UK 10-Year Gilt Yield",
         "script_name": "project_scripts/assets/uk10y.py",
-        "csv_path": NEW_MARKET_CLEAN_DIR / "uk10y_data_clean.csv",
+        "csv_path": MARKET_CLEAN_DIR / "uk10y_data_clean.csv",
         "table_name": "uk10y_analysis",
         "market_type": "yield",
         "symbol": "UK10Y",
@@ -344,7 +344,7 @@ ASSETS = {
     "JAPAN10Y": {
         "display_name": "Japan 10-Year Government Bond Yield",
         "script_name": "project_scripts/assets/japan10y.py",
-        "csv_path": NEW_MARKET_CLEAN_DIR / "japan10y_data_clean.csv",
+        "csv_path": MARKET_CLEAN_DIR / "japan10y_data_clean.csv",
         "table_name": "japan10y_analysis",
         "market_type": "yield",
         "symbol": "JAPAN10Y",
@@ -359,7 +359,7 @@ ASSETS = {
     "FINANCIAL_CONDITIONS": {
         "display_name": "Financial Conditions Index",
         "script_name": "project_scripts/assets/financial_conditions.py",
-        "csv_path": NEW_MARKET_CLEAN_DIR / "financial_conditions_data_clean.csv",
+        "csv_path": MARKET_CLEAN_DIR / "financial_conditions_data_clean.csv",
         "table_name": "financial_conditions_analysis",
         "market_type": "financial_stress",
         "symbol": "NFCI",
@@ -370,7 +370,7 @@ ASSETS = {
     "TED_SPREAD": {
         "display_name": "TED Spread",
         "script_name": "project_scripts/assets/ted_spread.py",
-        "csv_path": NEW_MARKET_CLEAN_DIR / "ted_spread_data_clean.csv",
+        "csv_path": MARKET_CLEAN_DIR / "ted_spread_data_clean.csv",
         "table_name": "ted_spread_analysis",
         "market_type": "financial_stress",
         "symbol": "TED"

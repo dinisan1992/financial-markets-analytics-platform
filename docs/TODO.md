@@ -56,14 +56,25 @@
 - Identify 173,633 exact full-row copies
 - Re-run all reference tests: 63/63 passed
 
-## High Priority After v0.4.3
+## Completed in v0.5.0
 
-- Validate stale asset sources and updater behaviour one asset at a time
-- Define the technical-column keep/recalculation rule before any approved duplicate cleanup
+- Create one locale-aware market CSV parser and idempotent synchronization planner
+- Make dry-run the default and reject bulk SQL writes
+- Consolidate EURO, YUAN, LIBRA and SSECOMPOSITE to one daily row
+- Correct the SP500 one-day legacy shift from the source CSV
+- Add unique daily keys to the seven remediated market tables
+- Update BTC, STOXX600 and SSECOMPOSITE from reviewed synchronization plans
+- Verify a scoped SQL backup and retain the seven pre-remediation tables
+- Re-run the post-remediation audit with zero duplicate assets
+- Validate 37/37 market assets, 9/9 Streamlit pages and 78/78 tests
+
+## High Priority After v0.5.0
+
+- Create a source-download manifest with URL, filename, frequency and refresh owner
+- Move FED and EURO importers behind explicit dry-run and write commands
+- Add isolated database-backed synchronization tests
 - Confirm the WTI contract/source for 20 April 2020
 - Classify YUAN, FINANCIAL_CONDITIONS and TED_SPREAD by native frequency
-- Extend read-only previews to the remaining SQL-capable importers
-- Apply database changes only after explicit approval and backup
 - Compare every post-update audit with an archived baseline
 
 ---
@@ -87,9 +98,8 @@
 
 ## SQL / Database
 
-- Review all table primary keys and unique constraints
-- Identify tables without unique date constraints
-- Check for duplicated dates in market tables
+- Review primary keys and unique constraints in FED/EURO macro tables
+- Preserve the one-daily-row invariant in market tables
 - Check for duplicated observation dates in macro tables
 - Prepare future controlled SQL migrations
 - Decide which advanced indicators should be stored in SQL
@@ -105,16 +115,16 @@ Current status:
 
 - Individual asset scripts are standardized and functional
 - Fast in-memory calculation mode is implemented
-- SQL updates are optional through `UPDATE_SQL`
+- Market SQL writes use one explicit, reviewed synchronization command
 
 Future tasks:
 
 - Create generic `asset_processor.py`
 - Improve `asset_config.py`
 - Reduce duplicated logic across asset scripts
-- Centralize CSV parsing rules
+- Extend centralized CSV parsing rules to macro importers
 - Add optional chart display mode
-- Add optional SQL update mode from command line
+- Add isolated test-schema support for synchronization tests
 - Add optional asset selection in runner
 
 ---

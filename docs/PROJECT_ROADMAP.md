@@ -150,6 +150,16 @@ Improve reliability of the analytical data layer.
 - Added explicit base-value and full-row classifications
 - Added a seventh importer-safety test, bringing the suite to 63 tests
 
+### Completed v0.5.0 Improvements
+
+- Added centralized, locale-aware and idempotent market CSV synchronization
+- Replaced implicit and bulk market writes with one explicit single-asset command
+- Consolidated four duplicated legacy tables and corrected the SP500 date shift
+- Added unique daily keys to seven remediated market tables
+- Added scoped backup and reversible shadow-table migration tooling
+- Re-audited all 37 assets with zero duplicate assets
+- Validated 9/9 Streamlit pages and expanded the suite to 78 tests
+
 ---
 
 ## Phase 5 — FED Macro Layer

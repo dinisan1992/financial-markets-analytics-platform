@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 
 from indicators import calcular_indicadores
+from services.data_access_service import deduplicate_market_observations
 
 
 OHLC_COLUMNS = ["open", "high", "low", "close"]
@@ -151,8 +152,7 @@ def prepare_asset_technical_data(
     if "price" in output.columns:
         output["price"] = pd.to_numeric(output["price"], errors="coerce")
 
-    output = output.dropna(subset=["snapped_at"]).copy()
-    output = output.sort_values("snapped_at").reset_index(drop=True)
+    output = deduplicate_market_observations(output, date_column="snapped_at")
     output = _prepare_volume(output)
     output = _prepare_ohlc(
         output,

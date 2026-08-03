@@ -39,6 +39,14 @@ Runnable scripts are organized under `project_scripts/`:
 
 Each moved script includes a small bootstrap that adds the repository root to `sys.path`, so imports such as `from config import ...` still work when the script is launched directly.
 
+Market data maintenance entry points:
+
+- `project_scripts/assets/sync_market_data.py` - dry-run or explicit single-asset CSV synchronization.
+- `project_scripts/assets/run_all_assets.py` - SQL-only validation for all configured assets.
+- `project_scripts/diagnostics/backup_market_tables.py` - scoped SQL backup without exposing credentials.
+- `project_scripts/diagnostics/remediate_market_tables.py` - reversible shadow-table remediation.
+- `services/market_data_sync_service.py` - shared parsing, planning, key checks and transactional upsert logic.
+
 ## Tools
 
 `tools/` contains import/maintenance utilities:

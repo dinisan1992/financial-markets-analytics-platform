@@ -13,6 +13,7 @@ if str(PROJECT_ROOT) not in sys.path:
 from asset_config import ASSETS
 from config import get_sqlalchemy_database_url
 from indicators import calcular_indicadores
+from services.data_access_service import deduplicate_market_observations
 
 
 REQUIRED_CSV_COLUMNS = [
@@ -87,78 +88,6 @@ def prepare_csv_dataframe(csv_path):
     return df
 
 
-def create_market_table(engine, table_name):
-    query = f"""
-    CREATE TABLE IF NOT EXISTS `{table_name}` (
-        snapped_at DATE PRIMARY KEY,
-        price DOUBLE,
-        open DOUBLE,
-        high DOUBLE,
-        low DOUBLE,
-        close DOUBLE,
-        adj_close DOUBLE,
-        total_volume DOUBLE NULL,
-        source_file VARCHAR(255),
-        inserted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-    """
-
-    with engine.begin() as conn:
-        conn.execute(text(query))
-
-
-def none_safe_records(df):
-    df = df.astype(object)
-    df = df.where(pd.notnull(df), None)
-    return df.to_dict(orient="records")
-
-
-def upsert_market_data(engine, table_name, df, chunk_size=500):
-    insert_query = f"""
-    INSERT INTO `{table_name}` (
-        snapped_at,
-        price,
-        open,
-        high,
-        low,
-        close,
-        adj_close,
-        total_volume,
-        source_file
-    )
-    VALUES (
-        :snapped_at,
-        :price,
-        :open,
-        :high,
-        :low,
-        :close,
-        :adj_close,
-        :total_volume,
-        :source_file
-    )
-    ON DUPLICATE KEY UPDATE
-        price = VALUES(price),
-        open = VALUES(open),
-        high = VALUES(high),
-        low = VALUES(low),
-        close = VALUES(close),
-        adj_close = VALUES(adj_close),
-        total_volume = VALUES(total_volume),
-        source_file = VALUES(source_file);
-    """
-
-    records = none_safe_records(df)
-
-    if not records:
-        raise ValueError("No records to insert.")
-
-    with engine.begin() as conn:
-        for start in range(0, len(records), chunk_size):
-            chunk = records[start:start + chunk_size]
-            conn.execute(text(insert_query), chunk)
-
-
 def get_table_columns(engine, table_name):
     query = text(
         """
@@ -213,7 +142,7 @@ def prepare_indicator_frame(df):
             df[col] = pd.to_numeric(df[col], errors="coerce")
 
     df = df.dropna(subset=["snapped_at", "price"])
-    df = df.sort_values("snapped_at").reset_index(drop=True)
+    df = deduplicate_market_observations(df, date_column="snapped_at")
 
     if "close" not in df.columns or df["close"].isna().all():
         df["close"] = df["price"]
@@ -246,6 +175,11 @@ def validate_asset_key(asset_key):
 
 
 def process_asset(asset_key, source="sql", update_sql=False):
+    if update_sql:
+        raise ValueError(
+            "SQL updates moved to sync_market_data.py so every write has a dry-run plan"
+        )
+
     asset_key = validate_asset_key(asset_key)
     asset = ASSETS[asset_key]
     table_name = asset["table_name"]
@@ -259,19 +193,6 @@ def process_asset(asset_key, source="sql", update_sql=False):
     print(f"Source: {source}")
     print(f"Update SQL: {update_sql}")
     print("=" * 70)
-
-    if update_sql:
-        if not csv_path.exists():
-            raise FileNotFoundError(f"CSV not found: {csv_path}")
-
-        csv_df = prepare_csv_dataframe(csv_path)
-
-        if csv_df.empty:
-            raise ValueError(f"CSV has no valid rows: {csv_path}")
-
-        create_market_table(engine, table_name)
-        upsert_market_data(engine, table_name, csv_df)
-        print(f"SQL update completed from CSV rows: {len(csv_df)}")
 
     if source == "csv":
         if not csv_path.exists():
@@ -329,7 +250,7 @@ def build_parser(default_asset_key=None):
     parser.add_argument(
         "--update-sql",
         action="store_true",
-        help="Import/upsert the configured CSV into SQL before validation.",
+        help="Deprecated: use sync_market_data.py after reviewing its dry-run.",
     )
     return parser
 
@@ -340,6 +261,10 @@ def main(default_asset_key=None, argv=None):
 
     if not args.asset_key:
         parser.error("asset_key is required")
+    if args.update_sql:
+        parser.error(
+            "SQL updates moved to sync_market_data.py; run its dry-run before --update-sql"
+        )
 
     process_asset(
         asset_key=args.asset_key,

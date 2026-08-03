@@ -1,6 +1,6 @@
 # Database Schema
 
-Current version: v0.2.1
+Current version: v0.5.0
 
 ## Overview
 
@@ -679,22 +679,11 @@ event_analysis.py
 news_analysis.py
 sentiment_analysis.py
 8. Current Known Issues
-1. Inconsistent Unique Constraints
+1. Market Daily-Key Constraints
 
-Some market tables have strong date uniqueness protection.
+The v0.5.0 remediation cycle consolidated EURO, YUAN, LIBRA and SSECOMPOSITE to one row per date and added unique `snapped_at` keys to SP500, GOLD, DXY and those four legacy tables. BTC, STOXX600 and the newer market tables already use unique daily keys.
 
-Others may not yet have unique constraints on snapped_at.
-
-This should be reviewed carefully before adding SQL migrations.
-
-Recommended future check:
-
-SELECT snapped_at, COUNT(*)
-FROM table_name
-GROUP BY snapped_at
-HAVING COUNT(*) > 1;
-
-Only after confirming there are no duplicates should unique constraints be added.
+The migration was performed through validated shadow tables and an atomic rename. The seven previous tables remain available locally under `__pre_v050_20260803` names for rollback and are not part of the public repository.
 
 2. Row-by-Row SQL Updates
 
@@ -756,21 +745,7 @@ event-market relationship scoring.
 9. Recommended Future SQL Improvements
 Market Tables
 
-Before adding constraints, check duplicates first.
-
-Possible future constraints:
-
-ALTER TABLE sp500_analysis ADD UNIQUE KEY unique_snapped_at (snapped_at);
-ALTER TABLE gold_analysis ADD UNIQUE KEY unique_snapped_at (snapped_at);
-ALTER TABLE dxy_analysis ADD UNIQUE KEY unique_snapped_at (snapped_at);
-ALTER TABLE euro_analysis ADD UNIQUE KEY unique_snapped_at (snapped_at);
-ALTER TABLE yuan_analysis ADD UNIQUE KEY unique_snapped_at (snapped_at);
-ALTER TABLE libra_analysis ADD UNIQUE KEY unique_snapped_at (snapped_at);
-ALTER TABLE ssecomposite_analysis ADD UNIQUE KEY unique_snapped_at (snapped_at);
-
-Important:
-
-Do not apply these migrations before checking for duplicated dates.
+Keep the v0.5.0 daily-key invariant and route future market CSV refreshes through `project_scripts/assets/sync_market_data.py`. Each write must begin with a reviewed dry-run and a scoped backup. Do not restore the legacy import loops that performed unconditional inserts.
 
 FED Tables
 

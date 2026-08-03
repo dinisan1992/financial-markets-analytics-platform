@@ -125,6 +125,24 @@ class AssetIndicatorPreparationV2Tests(unittest.TestCase):
         self.assertTrue((result["high"] >= result[["open", "close"]].max(axis=1)).all())
         self.assertTrue((result["low"] <= result[["open", "close"]].min(axis=1)).all())
 
+    def test_duplicate_dates_do_not_inflate_returns_or_indicators(self):
+        frame = self._base_frame(70)
+        duplicated = pd.concat(
+            [frame, frame.iloc[[35]].assign(rsi=-999.0)],
+            ignore_index=True,
+        )
+
+        expected = prepare_asset_technical_data(frame)
+        result = prepare_asset_technical_data(duplicated)
+
+        self.assertEqual(len(result), len(expected))
+        self.assertTrue(result["snapped_at"].is_unique)
+        pd.testing.assert_series_equal(
+            result["daily_return_pct"],
+            expected["daily_return_pct"],
+            check_names=False,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

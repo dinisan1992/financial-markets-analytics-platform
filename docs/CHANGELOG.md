@@ -4,6 +4,37 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [v0.5.0] - 2026-08-03 - Controlled Market Data Synchronization
+
+### Added
+
+- Idempotent CSV-to-SQL planning and single-asset synchronization with dry-run as the default.
+- Locale-aware price, volume and date parsing, including malformed STOXX600 row recovery.
+- Scoped credential-safe `mysqldump` backup tooling with SHA-256 verification.
+- Reversible shadow-table remediation with an atomic multi-table rename and retained SQL backups.
+- Daily observation normalization before technical calculations and data loading.
+
+### Changed
+
+- Centralized all 37 market CSV paths through `PROJECT_MARKET_CLEAN_DIR`.
+- Converted the global asset runner to SQL-only validation with database writes disabled.
+- Removed implicit CSV imports from the remaining core asset execution paths.
+- Consolidated EURO, YUAN, LIBRA and SSECOMPOSITE to one observation per date.
+- Rebuilt SP500 from its source CSV to correct a confirmed one-day legacy shift.
+- Added unique daily keys to SP500, GOLD, DXY, EURO, YUAN, LIBRA and SSECOMPOSITE.
+- Imported 158 missing STOXX600 rows, restored 80 BTC market-cap values and corrected 4,679 SSE decimal-volume values.
+
+### Validation
+
+- 78/78 deterministic unit tests pass.
+- 187 active Python files parse successfully; `pip check` passes.
+- 37/37 assets pass the SQL-only calculation validator.
+- 9/9 Streamlit pages render without uncaught exceptions.
+- The post-remediation audit reports zero duplicate assets.
+- Nine reviewed tables are idempotent against their current CSV sources.
+
+---
+
 ## [v0.4.3] - 2026-07-31 - Full-Row Duplicate Classification
 
 ### Added

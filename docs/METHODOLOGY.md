@@ -1,6 +1,6 @@
 # Methodology
 
-Current version: v0.2.1
+Current version: v0.5.0
 
 ## Overview
 
@@ -110,19 +110,15 @@ future sentiment or narrative analysis.
 Each adapted market asset follows a standardized processing pipeline:
 
 CSV
-→ Base SQL import/update
-→ Data loading from MySQL
-→ Native OHLC validation or synthetic fallback
-→ Indicator calculation in memory
-→ Manipulation/anomaly detection in memory
-→ Optional SQL update
-→ Plotly dashboard
+→ validation, locale-aware parsing and date deduplication
+→ read-only synchronization plan
+→ explicit single-asset SQL upsert when `--update-sql` is supplied
+→ data loading from MySQL with one normalized daily key
+→ native OHLC validation or synthetic fallback
+→ indicator and anomaly calculation in memory
+→ Plotly/Streamlit dashboard
 
-By default, the current processing mode is:
-
-UPDATE_SQL = False
-
-This means that indicators and anomaly flags are calculated in memory and are not written back to SQL unless explicitly enabled.
+By default, CSV synchronization is a dry-run. Bulk writes are disabled, and one explicit asset key plus `--update-sql` is required. Indicators and anomaly flags remain calculated in memory and are not persisted by the dashboard.
 
 This approach was chosen because it:
 

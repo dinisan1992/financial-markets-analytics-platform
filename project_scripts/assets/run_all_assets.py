@@ -1,184 +1,124 @@
 from pathlib import Path
+import argparse
+import os
+import subprocess
 import sys
+import time
 
-PROJECT_ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "config.py").exists())
+
+PROJECT_ROOT = next(
+    parent
+    for parent in Path(__file__).resolve().parents
+    if (parent / "config.py").exists()
+)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
-import subprocess
-import time
-import os
 
-from asset_config import get_existing_script_names, get_missing_script_names
+from asset_config import get_all_asset_keys
 
 
-# =========================
-# SETTINGS
-# =========================
-
-SCRIPT_DIR = Path(__file__).resolve().parent
-
-ASSET_SCRIPTS = get_existing_script_names()
-MISSING_CONFIGURED_SCRIPTS = get_missing_script_names()
-
-STOP_ON_ERRORR = False
+VALIDATOR_SCRIPT = Path(__file__).resolve().parent / "new_market_asset.py"
 
 
-# =========================
-# EXECUTAR SCRIPT
-# =========================
-def resolve_script_path(script_name):
-    script_path = Path(script_name)
-
-    if script_path.is_absolute():
-        return script_path
-
-    if len(script_path.parts) > 1:
-        return PROJECT_ROOT / script_path
-
-    return SCRIPT_DIR / script_path
+def build_validation_command(asset_key):
+    """Build a SQL-only validation command with no database-write flag."""
+    return [
+        sys.executable,
+        str(VALIDATOR_SCRIPT),
+        asset_key,
+        "--source",
+        "sql",
+    ]
 
 
-def executar_script(script_name):
-    script_path = resolve_script_path(script_name)
-
-    if not script_path.exists():
-        return {
-            "script": script_name,
-            "status": "missing",
-            "duration": 0,
-            "returncode": None,
-            "error": f"File not found: {script_path}"
-        }
-
+def validate_asset(asset_key):
     print("\n" + "=" * 70)
-    print(f"Running: {script_name}")
+    print(f"Validating: {asset_key}")
     print("=" * 70)
-
-    start_time = time.time()
-
-    env = os.environ.copy()
-    env["PYTHONIOENCODING"] = "utf-8"
+    started = time.time()
+    environment = os.environ.copy()
+    environment["PYTHONIOENCODING"] = "utf-8"
 
     try:
         result = subprocess.run(
-            [sys.executable, str(script_path)],
+            build_validation_command(asset_key),
             cwd=str(PROJECT_ROOT),
             text=True,
             capture_output=True,
             encoding="utf-8",
             errors="replace",
-            env=env
+            env=environment,
         )
-
-        duration = round(time.time() - start_time, 2)
-
-        if result.stdout:
-            print(result.stdout)
-
-        if result.stderr:
-            print("WARNINGS / STDERR:")
-            print(result.stderr)
-
-        if result.returncode == 0:
-            print(f"OK: {script_name} completed successfully em {duration}s.")
-
-            return {
-                "script": script_name,
-                "status": "success",
-                "duration": duration,
-                "returncode": result.returncode,
-                "error": None
-            }
-
-        else:
-            print(f"ERROR: {script_name} finished with code {result.returncode}.")
-
-            return {
-                "script": script_name,
-                "status": "error",
-                "duration": duration,
-                "returncode": result.returncode,
-                "error": result.stderr
-            }
-
-    except Exception as e:
-        duration = round(time.time() - start_time, 2)
-
-        print(f"Unexpected error while running {script_name}: {e}")
-
+    except Exception as exc:
         return {
-            "script": script_name,
+            "asset": asset_key,
             "status": "exception",
-            "duration": duration,
+            "duration": round(time.time() - started, 2),
             "returncode": None,
-            "error": str(e)
+            "error": str(exc),
         }
 
+    if result.stdout:
+        print(result.stdout)
+    if result.stderr:
+        print("WARNINGS / STDERR:")
+        print(result.stderr)
 
-# =========================
-# SUMMARY FINAL
-# =========================
-def mostrar_summary(resultados):
+    return {
+        "asset": asset_key,
+        "status": "success" if result.returncode == 0 else "error",
+        "duration": round(time.time() - started, 2),
+        "returncode": result.returncode,
+        "error": result.stderr or None,
+    }
+
+
+def print_summary(results):
     print("\n" + "=" * 70)
-    print("SUMMARY FINAL")
+    print("FINAL SUMMARY")
     print("=" * 70)
-
-    total = len(resultados)
-    success = sum(1 for r in resultados if r["status"] == "success")
-    errors = sum(1 for r in resultados if r["status"] in ["error", "exception"])
-    missing = sum(1 for r in resultados if r["status"] == "missing")
-
-    print(f"Total scripts: {total}")
+    success = sum(result["status"] == "success" for result in results)
+    failures = len(results) - success
+    print(f"Assets: {len(results)}")
     print(f"Success: {success}")
-    print(f"Errors: {errors}")
-    print(f"Em falta: {missing}")
-
-    print("\nDetalhe:")
-
-    for r in resultados:
+    print(f"Failures: {failures}")
+    print("Database writes: disabled")
+    for result in results:
         print(
-            f"{r['script']} | "
-            f"status={r['status']} | "
-            f"tempo={r['duration']}s"
+            f"{result['asset']} | status={result['status']} | "
+            f"duration={result['duration']}s"
         )
 
-    print("=" * 70)
+
+def build_parser():
+    parser = argparse.ArgumentParser(
+        description="Validate all configured asset tables without importing CSV data."
+    )
+    parser.add_argument(
+        "--stop-on-error",
+        action="store_true",
+        help="Stop after the first failed asset validation.",
+    )
+    return parser
 
 
-# =========================
-# MAIN FUNCTION
-# =========================
-def main():
-    print("\nA iniciar execution de todos os assets...")
-    print(f"Pasta base: {PROJECT_ROOT}")
-    print(f"Pasta dos scripts: {SCRIPT_DIR}")
-    print(f"Executable scripts found: {len(ASSET_SCRIPTS)}")
-    print(f"Configured scripts still missing: {len(MISSING_CONFIGURED_SCRIPTS)}")
+def main(argv=None):
+    args = build_parser().parse_args(argv)
+    print("Starting SQL-only validation for configured assets...")
+    print(f"Project: {PROJECT_ROOT}")
+    print("Database writes: disabled")
 
-    if MISSING_CONFIGURED_SCRIPTS:
-        print("\nAssets sem script de update dedicado:")
-
-        for asset_key, script_name in MISSING_CONFIGURED_SCRIPTS:
-            print(f"- {asset_key}: {script_name}")
-
-    resultados = []
-
-    for script in ASSET_SCRIPTS:
-        resultado = executar_script(script)
-        resultados.append(resultado)
-
-        if STOP_ON_ERRORR and resultado["status"] != "success":
-            print("\nSTOP_ON_ERRORR=True -> execution interrompida.")
+    results = []
+    for asset_key in get_all_asset_keys():
+        result = validate_asset(asset_key)
+        results.append(result)
+        if args.stop_on_error and result["status"] != "success":
             break
 
-    mostrar_summary(resultados)
+    print_summary(results)
+    if any(result["status"] != "success" for result in results):
+        raise SystemExit(1)
 
-    print("\nExecution global completed.")
 
-
-# =========================
-# EXECUTION
-# =========================
 if __name__ == "__main__":
     main()
-

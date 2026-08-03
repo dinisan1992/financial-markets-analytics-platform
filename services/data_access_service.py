@@ -35,6 +35,53 @@ def detect_column(columns, candidates):
     return None
 
 
+def deduplicate_market_observations(
+    df,
+    date_column="snapped_at",
+    normalize_date=True,
+):
+    """Return one deterministic, maximally complete market row per timestamp."""
+    if df is None or df.empty or date_column not in df.columns:
+        return df.copy() if isinstance(df, pd.DataFrame) else pd.DataFrame()
+
+    output = df.copy()
+    output[date_column] = pd.to_datetime(output[date_column], errors="coerce")
+    output = output.dropna(subset=[date_column]).copy()
+    if normalize_date:
+        output[date_column] = output[date_column].dt.normalize()
+    output["_source_order"] = range(len(output))
+
+    preferred_columns = [
+        column
+        for column in (
+            "price",
+            "open",
+            "high",
+            "low",
+            "close",
+            "adj_close",
+            "total_volume",
+            "volume",
+        )
+        if column in output.columns
+    ]
+    if preferred_columns:
+        output["_source_completeness"] = output[preferred_columns].notna().sum(axis=1)
+    else:
+        output["_source_completeness"] = 0
+
+    output = (
+        output.sort_values(
+            [date_column, "_source_completeness", "_source_order"],
+            kind="mergesort",
+        )
+        .drop_duplicates(date_column, keep="last")
+        .drop(columns=["_source_order", "_source_completeness"])
+        .reset_index(drop=True)
+    )
+    return output
+
+
 def table_exists(engine, table_name):
     query = """
     SELECT COUNT(*) AS table_exists
@@ -339,8 +386,7 @@ def load_asset_data(
         errors="coerce",
     )
 
-    df = df.dropna(subset=["snapped_at"]).copy()
-    df = df.sort_values("snapped_at").reset_index(drop=True)
+    df = deduplicate_market_observations(df, date_column="snapped_at")
 
     if "close" not in df.columns and "price" in df.columns:
         df["close"] = pd.to_numeric(df["price"], errors="coerce")
