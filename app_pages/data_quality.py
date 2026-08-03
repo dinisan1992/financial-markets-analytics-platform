@@ -109,6 +109,7 @@ def _render_asset_audit(asset_audit: pd.DataFrame):
             ),
             "zero_return_pct": st.column_config.NumberColumn("Zero Returns", format="%.2f%%"),
             "native_ohlc_pct": st.column_config.NumberColumn("Native OHLC", format="%.2f%%"),
+            "source_reference": st.column_config.LinkColumn("Source"),
         },
     )
 
@@ -133,6 +134,7 @@ def _render_freshness(freshness: pd.DataFrame):
             "stale_days": st.column_config.NumberColumn("Age (days)", format="%d"),
             "stale_limit_days": st.column_config.NumberColumn("Limit (days)", format="%d"),
             "days_overdue": st.column_config.NumberColumn("Overdue (days)", format="%d"),
+            "source_reference": st.column_config.LinkColumn("Source"),
         },
     )
 

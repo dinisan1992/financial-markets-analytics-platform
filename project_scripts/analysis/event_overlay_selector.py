@@ -126,6 +126,7 @@ ASSET_GROUPS = {
         "name": "Government Bond Yields",
         "description": "US, Germany, UK and Japan yields.",
         "assets": [
+            "US3M",
             "US2Y",
             "US10Y",
             "US30Y",

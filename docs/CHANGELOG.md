@@ -4,6 +4,38 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [v0.5.1] - 2026-08-03 - Treasury Source Identity and Provenance
+
+### Added
+
+- Executable source contracts for every configured market asset, including provider, identifier, URL, frequency, acquisition method and OHLC expectation.
+- Official Federal Reserve H.15 downloader and parser for `RIFLGFCY02_N.B` / FRED `DGS2`.
+- Dry-run-first official-source refresh command and a reversible Treasury identity migration tool.
+- US3M as a separate analytical asset for Yahoo `^IRX`, the 13-week Treasury bill yield.
+- Source provider, series identifier and verification status in Data Quality outputs.
+
+### Corrected
+
+- Reclassified the 16,600-row history previously labelled US2Y after an exact overlap test confirmed it was Yahoo `^IRX`.
+- Replaced US2Y with 12,537 official two-year constant-maturity observations from 1976-06-01 through 2026-07-30.
+- Preserved native Yahoo OHLC for US3M and left official US2Y OHLC empty in storage so the analytical engine identifies it as synthetic.
+
+### Safety
+
+- Verified a 1,482,349-byte SQL backup containing structure and data before database writes.
+- Retained the pre-migration SQL table and an external copy of the original CSV.
+- Built and validated a shadow table before the atomic `US2Y`/`US3M` rename; no source rows were deleted.
+
+### Validation
+
+- Passed 85/85 deterministic tests, parsed 194 active Python files and completed `pip check` without broken requirements.
+- Loaded and recalculated 38/38 configured assets with database writes disabled.
+- Rendered 9/9 Streamlit pages without uncaught exceptions and exercised US2Y, US3M and Data Quality in a real browser.
+- Audited 38 assets, 703 correlation pairs and 66 events with no duplicate-date assets, invalid-price assets or load errors.
+- Downloaded and validated the official H.15 US2Y package in dry-run mode without writing CSV or SQL data.
+
+---
+
 ## [v0.5.0] - 2026-08-03 - Controlled Market Data Synchronization
 
 ### Added

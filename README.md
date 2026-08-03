@@ -20,7 +20,7 @@ Functional local platform with:
 - Data quality and validation tools.
 - Automated syntax checks and unit tests through GitHub Actions.
 
-Current project version: **v0.5.0**
+Current project version: **v0.5.1**
 
 ## Main Analytical Capabilities
 
@@ -34,7 +34,7 @@ The platform is configured to analyse:
 - Asian and global equity indices: NIKKEI225, SSECOMPOSITE and EMERGING_MARKETS.
 - Commodities: GOLD, SILVER, COPPER, BRENT_OIL, WTI_OIL, NATURAL_GAS, WHEAT and CORN.
 - FX and currency indicators: DXY, EURO, YUAN, LIBRA, YEN and SWISS_FRANC.
-- Sovereign yields: US2Y, US10Y, US30Y, GERMANY10Y, UK10Y and JAPAN10Y.
+- Sovereign yields: US3M, US2Y, US10Y, US30Y, GERMANY10Y, UK10Y and JAPAN10Y.
 - Volatility and stress indicators: VIX, MOVE_INDEX, FINANCIAL_CONDITIONS and TED_SPREAD.
 
 ### FED Macro Layer
@@ -276,20 +276,23 @@ python project_scripts/assets/sync_market_data.py SP500 --update-sql
 
 Bulk writes are intentionally disabled. See `docs/DATA_PIPELINE.md` for the backup, dry-run and remediation workflow.
 
+Provider, ticker/series identity, source URL, native frequency and OHLC contracts
+are documented in `docs/DATA_SOURCES.md` and enforced by
+`market_source_manifest.py`.
+
 ## Validation Snapshot
 
-The v0.5.0 validation includes:
+The v0.5.1 validation includes:
 
-- 78/78 deterministic unit tests pass and 187 active Python files parse successfully.
-- 37/37 configured asset tables load and recalculate successfully through the SQL-only global validator.
-- 9/9 Streamlit pages render without uncaught exceptions; BTC loading, Data Quality and rolling correlation were exercised in the browser.
-- The post-remediation audit reports 37 assets, 666 pairs, 66 events, zero duplicate assets and no load errors.
-- EURO, YUAN, LIBRA and SSECOMPOSITE now contain one row per date with unique temporal keys.
-- SP500 was rebuilt from its source CSV to remove a confirmed one-day legacy date shift.
-- BTC, SP500, STOXX600, GOLD, DXY, EURO, YUAN, LIBRA and SSECOMPOSITE are idempotent against their current CSV files.
-- A scoped SQL backup was verified before the migration, and all seven replaced tables remain available locally under `__pre_v050_20260803` names.
+- 85/85 deterministic unit tests pass, 194 active Python files parse successfully and `pip check` reports no broken requirements.
+- 38/38 configured asset tables load and recalculate successfully through the SQL-only global validator with database writes disabled.
+- 9/9 Streamlit pages render without uncaught exceptions; US2Y, US3M and Data Quality were exercised in a real browser session.
+- The post-migration audit reports 38 assets, 703 correlation pairs, 66 events, zero duplicate assets, zero invalid price assets and no load errors.
+- US2Y refreshes from the official Federal Reserve H.15 package in dry-run mode and validates 12,537 unique observations without writing CSV or SQL data.
+- US2Y and US3M are idempotent against their current CSV files and have unique temporal keys.
+- A 1,482,349-byte SQL backup containing structure and data was verified before the Treasury migration; the original SQL table and CSV remain available locally for recovery.
 
-The previous database-enabled validation covered 37/37 configured assets, 11/11 FED series and 12/12 active EURO loaders. See `PROJECT_STATUS.md` for details.
+The previous database-enabled validation covered all then-configured assets, 11/11 FED series and 12/12 active EURO loaders. See `PROJECT_STATUS.md` for details.
 
 ## Data and Reproducibility
 

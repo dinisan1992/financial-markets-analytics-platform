@@ -8,6 +8,7 @@ from asset_config import (
     get_missing_script_names,
 )
 from config import BASE_DIR
+from market_source_manifest import MARKET_SOURCE_MANIFEST
 
 
 class ProjectConfigTests(unittest.TestCase):
@@ -21,7 +22,12 @@ class ProjectConfigTests(unittest.TestCase):
             "positive_values_expected",
             "negative_values_possible",
             "source_type",
+            "source_provider",
+            "source_identifier",
             "source_reference",
+            "source_frequency",
+            "source_identity_status",
+            "source_native_ohlc_expected",
         }
         for asset_key, config in ASSETS.items():
             self.assertTrue(required.issubset(config), asset_key)
@@ -58,6 +64,21 @@ class ProjectConfigTests(unittest.TestCase):
 
     def test_all_configured_asset_scripts_exist(self):
         self.assertEqual([], get_missing_script_names())
+
+    def test_market_source_manifest_matches_configured_assets(self):
+        self.assertEqual(set(ASSETS), set(MARKET_SOURCE_MANIFEST))
+        for asset_key, source in MARKET_SOURCE_MANIFEST.items():
+            self.assertTrue(source["source_provider"], asset_key)
+            self.assertTrue(source["source_identifier"], asset_key)
+            self.assertTrue(source["source_reference"].startswith("https://"), asset_key)
+
+    def test_us_treasury_series_identities_are_distinct(self):
+        self.assertEqual("^IRX", ASSETS["US3M"]["source_identifier"])
+        self.assertIn("RIFLGFCY02_N.B", ASSETS["US2Y"]["source_identifier"])
+        self.assertNotEqual(
+            ASSETS["US3M"]["table_name"],
+            ASSETS["US2Y"]["table_name"],
+        )
 
 
 if __name__ == "__main__":

@@ -1,4 +1,5 @@
 from config import MARKET_CLEAN_DIR
+from market_source_manifest import MARKET_SOURCE_MANIFEST
 
 
 # =========================
@@ -301,6 +302,15 @@ ASSETS = {
         "symbol": "US10Y"
     },
 
+    "US3M": {
+        "display_name": "US 13-Week Treasury Bill Yield",
+        "script_name": "project_scripts/assets/us3m.py",
+        "csv_path": MARKET_CLEAN_DIR / "us3m_data_clean.csv",
+        "table_name": "us3m_analysis",
+        "market_type": "yield",
+        "symbol": "US3M"
+    },
+
     "US2Y": {
         "display_name": "US 2-Year Treasury Yield",
         "script_name": "project_scripts/assets/us2y.py",
@@ -460,7 +470,7 @@ MARKET_TYPE_METADATA = {
 
 def _apply_financial_metadata():
     """Enrich every asset with explicit calculation and calendar metadata."""
-    for asset in ASSETS.values():
+    for asset_key, asset in ASSETS.items():
         market_type = asset.get("market_type")
         defaults = MARKET_TYPE_METADATA.get(
             market_type,
@@ -478,12 +488,11 @@ def _apply_financial_metadata():
         for key, value in defaults.items():
             asset.setdefault(key, value)
 
-        csv_path = asset.get("csv_path")
-        asset.setdefault("source_type", "configured_csv_pipeline")
-        asset.setdefault(
-            "source_reference",
-            getattr(csv_path, "name", str(csv_path)) if csv_path else "",
-        )
+        source = MARKET_SOURCE_MANIFEST.get(asset_key)
+        if source is None:
+            raise ValueError(f"Missing market source contract for {asset_key}")
+        for key, value in source.items():
+            asset.setdefault(key, value)
 
 
 _apply_financial_metadata()

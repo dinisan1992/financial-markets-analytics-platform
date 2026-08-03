@@ -60,4 +60,9 @@ The remediation script creates parallel tables, validates row counts and raw val
 
 ## Scope Boundary
 
-This workflow currently governs the 37 market assets. FED and EURO/ECB importers are a separate ingestion layer and still require migration to the same explicit dry-run/write contract.
+This workflow currently governs the 38 market assets. FED and EURO/ECB importers are a separate ingestion layer and still require migration to the same explicit dry-run/write contract.
+
+The canonical provider, identifier, URL, native frequency and OHLC expectation
+for each market asset are defined in `market_source_manifest.py` and documented
+in `docs/DATA_SOURCES.md`. A local filename alone must never be used to infer a
+financial series identity.

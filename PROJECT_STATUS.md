@@ -4,7 +4,7 @@ Last updated: 3 August 2026
 
 ## Current Version
 
-**Macro-Financial Risk & Market Behaviour Analytics Platform v0.5.0**
+**Macro-Financial Risk & Market Behaviour Analytics Platform v0.5.1**
 
 ## Executive Summary
 
@@ -22,7 +22,7 @@ It combines:
 - interactive dashboarding;
 - data quality validation.
 
-The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.5.0 adds a controlled CSV-to-SQL synchronization layer, enforces one daily observation in the analytical path and completes the first reversible market-table remediation cycle.
+The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.5.1 adds an executable source registry and corrects a material Treasury-series identity issue: the historical Yahoo `^IRX` observations are now preserved as US3M, while US2Y uses the official Federal Reserve H.15 two-year constant-maturity series.
 
 ## Completed and Functional Modules
 
@@ -41,7 +41,7 @@ Configured coverage includes:
 - Sovereign yields.
 - Volatility and financial stress indicators.
 
-A total of 37 configured assets were included in the latest local validation.
+A total of 38 configured assets are included in the current local validation.
 
 ### Technical Indicator Engine
 
@@ -219,21 +219,19 @@ Main file:
 
 ## Latest Documented Validation
 
-Version 0.5.0 local validation included:
+Version 0.5.1 local validation included:
 
-- 78/78 deterministic unit tests passed.
-- 187 active Python files parsed successfully and `pip check` reported no broken requirements.
-- 37/37 configured asset tables loaded and recalculated through a SQL-only runner with database writes disabled.
+- 85/85 deterministic unit tests passed.
+- 194 active Python files parsed successfully and `pip check` reported no broken requirements.
+- 38/38 configured asset tables loaded and recalculated through a SQL-only runner with database writes disabled.
 - 9/9 Streamlit pages rendered without uncaught exceptions.
-- BTC Asset Explorer, Data Quality and BTC/SP500 rolling correlation were exercised in a real browser session.
-- The browser and Streamlit logs contained no runtime errors.
-- A 47,022,488-byte scoped SQL backup containing nine market tables was verified before remediation.
-- EURO, YUAN, LIBRA and SSECOMPOSITE were consolidated to one row per date.
-- SP500 was rebuilt from its CSV after confirming a one-day legacy date shift in 13,803 matching observations.
-- Unique `snapped_at` keys were added to SP500, GOLD, DXY, EURO, YUAN, LIBRA and SSECOMPOSITE.
-- 158 missing STOXX600 observations were imported, 80 missing BTC market-cap values were restored and 4,679 misparsed SSE volume values were corrected.
-- All nine reviewed market tables are now idempotent against their current CSV sources.
-- The seven pre-remediation SQL tables remain retained locally with `__pre_v050_20260803` suffixes.
+- US2Y, US3M and Data Quality were exercised in a real browser session.
+- The browser console and Streamlit error log contained no runtime errors.
+- The official H.15 US2Y refresh command downloaded and validated 12,537 unique observations in dry-run mode without CSV or SQL writes.
+- US2Y and US3M synchronization plans reported zero inserts, zero updates and unique temporal keys.
+- A 1,482,349-byte SQL backup containing structure and data was verified before the Treasury migration.
+- The former Yahoo `^IRX` history is preserved as US3M and the official H.15 history is stored as US2Y.
+- The original SQL table and CSV remain retained locally for recovery; no source rows were deleted.
 
 Previous v0.4.3 code-only validation included:
 
@@ -251,14 +249,14 @@ Previous v0.4.3 code-only validation included:
 
 ### Data Audit Snapshots
 
-The post-remediation audit generated on 3 August 2026 reports:
+The post-migration v0.5.1 audit generated on 3 August 2026 reports:
 
-- 37 assets audited with no load errors;
+- 38 assets audited with no load errors;
 - zero assets with duplicate dates;
-- zero automatically invalidated price series and one WTI historical price-review case;
-- 666 correlation pairs, of which 148 have low-overlap bias warnings;
+- zero assets with invalid prices and one WTI historical price-review case;
+- 703 correlation pairs, of which 152 have low-overlap bias warnings;
 - 66 historical events, including 35 year-only approximate dates;
-- all 37 assets marked stale relative to the audit date because freshness is a separate source-download concern.
+- 37 assets marked stale relative to the audit date; the official US2Y series is current through 30 July 2026.
 
 The 31 July 2026 v0.4.0 baseline loaded all 37 configured asset tables without load errors. Its recorded SHA-256 is `8BF5A15AC44043E567442E7522626B15F4321B5CB4C449CA081E5ABD9C656531`. Version 0.4.1 archives the previous local ZIP under `audit_outputs/baselines/` before generating a new Git-ignored audit.
 
@@ -362,12 +360,12 @@ Planned work:
 
 The project already contains a validated multi-asset, FED macro and EURO macro analytical layer.
 
-The current priority is the second controlled data-engineering cycle:
+The current priority is the next controlled data-engineering cycle:
 
-1. formalize source-download manifests with source URL, expected filename, frequency and last successful refresh;
-2. migrate FED and EURO importers to explicit `dry-run`/`--update-sql` entry points without import-time execution;
-3. add a freshness dashboard action that identifies which CSV must be downloaded next without performing network access;
-4. confirm the WTI_OIL source contract for 20 April 2020 without changing the valid historical negative value automatically;
-5. classify YUAN, FINANCIAL_CONDITIONS and TED_SPREAD by native source frequency;
-6. add database-backed synchronization tests in an isolated test schema;
+1. migrate FED and EURO importers to explicit `dry-run`/`--update-sql` entry points without import-time execution;
+2. add a freshness dashboard action that identifies which source must be refreshed next without performing network access;
+3. verify the seven legacy market-source contracts currently marked as inferred during their next controlled refresh;
+4. document the WTI_OIL source contract for 20 April 2020 without changing the valid historical negative value automatically;
+5. add database-backed synchronization tests in an isolated test schema;
+6. compare future audit outputs against the retained v0.5.1 baseline;
 7. begin machine-learning experiments only after data freshness and feature governance are stable.

@@ -68,9 +68,18 @@
 - Re-run the post-remediation audit with zero duplicate assets
 - Validate 37/37 market assets, 9/9 Streamlit pages and 78/78 tests
 
-## High Priority After v0.5.0
+## Completed in v0.5.1
 
-- Create a source-download manifest with URL, filename, frequency and refresh owner
+- Create a source registry with provider, identifier, URL, frequency and OHLC contract
+- Reclassify Yahoo `^IRX` from the incorrect US2Y label to US3M
+- Import the official Federal Reserve H.15 two-year yield as US2Y
+- Preserve external SQL/CSV backups and a retained pre-migration SQL table
+- Add a dry-run-first official US2Y refresh command
+- Expose provider and series identity in the Data Quality outputs
+
+## High Priority After v0.5.1
+
+- Confirm the seven source contracts still marked as inferred during their next refresh
 - Move FED and EURO importers behind explicit dry-run and write commands
 - Add isolated database-backed synchronization tests
 - Confirm the WTI contract/source for 20 April 2020

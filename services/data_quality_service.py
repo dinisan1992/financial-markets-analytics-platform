@@ -234,6 +234,9 @@ def audit_asset_frame(
         "native_ohlc_rows": native_ohlc_rows,
         "native_ohlc_pct": native_ohlc_pct,
         "source_type": asset_cfg.get("source_type", "configured_pipeline"),
+        "source_provider": asset_cfg.get("source_provider", ""),
+        "source_identifier": asset_cfg.get("source_identifier", ""),
+        "source_identity_status": asset_cfg.get("source_identity_status", "unknown"),
         "source_reference": asset_cfg.get("source_reference", ""),
         "updater_script": asset_cfg.get("script_name", ""),
         "forward_fill_risk": coverage_pct < 90 or longest_gap_days > 10 or zero_return_pct > 15,
@@ -305,6 +308,11 @@ def run_asset_audit(engine, assets_config, as_of=None):
                     "asset": asset_key,
                     "table": asset_cfg.get("table_name"),
                     "asset_class": asset_cfg.get("asset_class"),
+                    "source_provider": asset_cfg.get("source_provider", ""),
+                    "source_identifier": asset_cfg.get("source_identifier", ""),
+                    "source_identity_status": asset_cfg.get(
+                        "source_identity_status", "unknown"
+                    ),
                     "status": "ERROR",
                     "warnings": "load_failed",
                     "error": str(exc),
@@ -443,6 +451,9 @@ def build_freshness_report(asset_audit: pd.DataFrame):
         "days_overdue",
         "freshness_status",
         "source_type",
+        "source_provider",
+        "source_identifier",
+        "source_identity_status",
         "source_reference",
         "updater_script",
     ]

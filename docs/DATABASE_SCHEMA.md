@@ -48,6 +48,8 @@ euro_analysis
 yuan_analysis
 libra_analysis
 ssecomposite_analysis
+us3m_analysis
+us2y_analysis
 Common Purpose
 
 These tables are used to store:
@@ -94,6 +96,12 @@ manipulation
 price_change_pct
 
 Some tables may not contain all columns or may differ slightly depending on when they were created.
+
+Treasury source identity in v0.5.1:
+
+- `us3m_analysis` stores Yahoo `^IRX`, identified by Yahoo as the 13-week Treasury bill yield, including native OHLC;
+- `us2y_analysis` stores Federal Reserve H.15 `RIFLGFCY02_N.B` / FRED `DGS2`; source OHLC is null and is synthesized only inside the analytical engine;
+- `us2y_analysis__pre_v051_20260803_172148` is a retained local recovery copy of the pre-correction table and is not used by the application.
 
 Table: btc_analysis
 

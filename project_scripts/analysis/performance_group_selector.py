@@ -130,6 +130,7 @@ GROUPS = {
         "name": "Government Bond Yields",
         "description": "US, Germany, UK and Japan yields.",
         "assets": [
+            "US3M",
             "US2Y",
             "US10Y",
             "US30Y",
@@ -141,8 +142,9 @@ GROUPS = {
 
     "us_yield_curve": {
         "name": "US Yield Curve",
-        "description": "US 2Y, 10Y and 30Y yields.",
+        "description": "US 3M, 2Y, 10Y and 30Y yields.",
         "assets": [
+            "US3M",
             "US2Y",
             "US10Y",
             "US30Y"

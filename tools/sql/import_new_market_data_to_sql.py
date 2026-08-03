@@ -59,6 +59,7 @@ NEW_ASSET_KEYS = [
     "YEN",
     "SWISS_FRANC",
 
+    "US3M",
     "US10Y",
     "US2Y",
     "US30Y",
