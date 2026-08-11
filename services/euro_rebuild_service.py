@@ -5,6 +5,8 @@ from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from hashlib import sha256
 from pathlib import Path
 import json
+import re
+import struct
 
 import pandas as pd
 from sqlalchemy import inspect, text
@@ -247,16 +249,51 @@ def normalize_row(columns, values):
     return record, tuple(invalid_numeric)
 
 
-def canonical_row_hash(columns, record):
+def normalize_numeric_for_storage(value, target_type):
+    decimal_value, invalid = _decimal_value(value)
+    if invalid:
+        raise ValueError(f"Invalid decimal value: {value}")
+    if decimal_value is None or not target_type:
+        return decimal_value
+    target_type = str(target_type).upper()
+    decimal_match = re.search(
+        r"(?:DECIMAL|NUMERIC)\(\d+\s*,\s*(\d+)\)",
+        target_type,
+    )
+    if decimal_match:
+        scale = int(decimal_match.group(1))
+        normalized = decimal_value.quantize(
+            Decimal(10) ** -scale,
+            rounding=ROUND_HALF_UP,
+        )
+    elif target_type.startswith(("FLOAT", "REAL")):
+        try:
+            float32_value = struct.unpack(
+                "!f",
+                struct.pack("!f", float(decimal_value)),
+            )[0]
+        except (OverflowError, struct.error) as exc:
+            raise ValueError(f"Value exceeds FLOAT storage: {value}") from exc
+        normalized = Decimal.from_float(float32_value)
+    elif target_type.startswith("DOUBLE"):
+        normalized = Decimal(format(float(decimal_value), ".15g"))
+    else:
+        normalized = decimal_value
+    return normalized.copy_abs() if normalized == 0 else normalized
+
+
+def canonical_row_hash(columns, record, column_types=None):
+    column_types = column_types or {}
     values = []
     for column in columns:
         value = record.get(column)
         if value is None:
             values.append(None)
         elif column in DECIMAL_COLUMNS:
-            decimal_value, invalid = _decimal_value(value)
-            if invalid:
-                raise ValueError(f"Invalid decimal value in {column}: {value}")
+            decimal_value = normalize_numeric_for_storage(
+                value,
+                column_types.get(column),
+            )
             values.append(format(decimal_value, "f") if decimal_value is not None else None)
         elif column in INTEGER_COLUMNS:
             integer_value, invalid = _integer_value(value)
@@ -264,7 +301,8 @@ def canonical_row_hash(columns, record):
                 raise ValueError(f"Invalid integer value in {column}: {value}")
             values.append(integer_value)
         else:
-            values.append(str(value))
+            text_value = str(value).strip()
+            values.append(text_value or None)
     payload = json.dumps(
         values,
         ensure_ascii=False,

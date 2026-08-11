@@ -11,6 +11,7 @@ from sqlalchemy import inspect, text
 from macro_import_manifest import get_macro_import
 from services.euro_rebuild_service import (
     BUSINESS_KEY,
+    DECIMAL_COLUMNS,
     canonical_row_hash,
     mapped_source_columns,
     normalize_row,
@@ -34,6 +35,7 @@ TARGET_IMPORT_KEYS = (
 )
 DEFAULT_CHUNK_SIZE = 25_000
 DEFAULT_SAMPLE_LIMIT = 10
+DEFAULT_SAMPLE_STRATEGY = "ordered"
 MIN_WORKSPACE_FREE_BYTES = 2 * 1024**3
 MAX_TARGET_FETCH_ROWS = 5_000
 
@@ -44,6 +46,7 @@ class EuroStreamingValidation:
     target_table: str
     source_path: str
     source_columns: tuple[str, ...]
+    target_column_types: dict[str, str]
     source_period_patterns: tuple[str, ...]
     target_period_type: str | None
     period_type_safe: bool
@@ -71,6 +74,7 @@ class EuroStreamingValidation:
     target_first_period: str | None
     target_last_period: str | None
     chunk_size: int
+    sample_strategy: str
     max_source_chunk_rows: int
     max_target_chunk_rows: int
     comparison_store_bytes: int
@@ -118,9 +122,14 @@ def _target_query(engine, table_name, columns):
     if not inspector.has_table(table_name):
         raise ValueError(f"Target table not found: {table_name}")
 
+    target_schema = inspector.get_columns(table_name)
     actual_columns = {
         normalize_column_name(column["name"]): column["name"]
-        for column in inspector.get_columns(table_name)
+        for column in target_schema
+    }
+    column_types = {
+        normalize_column_name(column["name"]): str(column["type"])
+        for column in target_schema
     }
     missing = sorted(set(columns) - set(actual_columns))
     if missing:
@@ -131,7 +140,14 @@ def _target_query(engine, table_name, columns):
     for column in columns:
         actual = validate_identifier(actual_columns[column])
         alias = validate_identifier(column)
-        selections.append(f"`{actual}` AS `{alias}`")
+        expression = f"`{actual}`"
+        if (
+            column in DECIMAL_COLUMNS
+            and engine.dialect.name in {"mysql", "mariadb"}
+            and column_types[column].upper().startswith(("FLOAT", "REAL"))
+        ):
+            expression = f"CAST({expression} AS DOUBLE)"
+        selections.append(f"{expression} AS `{alias}`")
     return text(f"SELECT {', '.join(selections)} FROM `{table_name}`")
 
 
@@ -168,6 +184,7 @@ def audit_euro_source_against_target(
     chunk_size=DEFAULT_CHUNK_SIZE,
     workspace_dir=None,
     sample_limit=DEFAULT_SAMPLE_LIMIT,
+    sample_strategy=DEFAULT_SAMPLE_STRATEGY,
     minimum_free_bytes=MIN_WORKSPACE_FREE_BYTES,
     progress_callback=None,
     fingerprint_store=None,
@@ -189,10 +206,29 @@ def audit_euro_source_against_target(
         raise FileNotFoundError(f"EURO source CSV not found: {source_path}")
     chunk_size = max(1, int(chunk_size))
     sample_limit = max(0, int(sample_limit))
+    if sample_strategy not in {"ordered", "hash"}:
+        raise ValueError(f"Unsupported sample strategy: {sample_strategy}")
     columns = mapped_source_columns(contract)
     target_table = validate_identifier(contract["table_name"])
-    target_query = _target_query(sql_connection or engine, target_table, columns)
-    target_schema = inspect(sql_connection or engine).get_columns(target_table)
+    if sql_connection is None:
+        schema_connection = engine.connect()
+        try:
+            target_query = _target_query(
+                schema_connection,
+                target_table,
+                columns,
+            )
+            target_schema = inspect(schema_connection).get_columns(target_table)
+        finally:
+            schema_connection.invalidate()
+            schema_connection.close()
+    else:
+        target_query = _target_query(sql_connection, target_table, columns)
+        target_schema = inspect(sql_connection).get_columns(target_table)
+    target_column_types = {
+        normalize_column_name(column["name"]): str(column["type"])
+        for column in target_schema
+    }
     target_period_type = next(
         (
             str(column["type"])
@@ -252,7 +288,11 @@ def audit_euro_source_against_target(
                         (
                             key[0],
                             key[1],
-                            bytes.fromhex(canonical_row_hash(columns, record)),
+                            bytes.fromhex(canonical_row_hash(
+                                columns,
+                                record,
+                                target_column_types,
+                            )),
                         )
                     )
                 store.insert_records(SOURCE_DATASET, records)
@@ -288,7 +328,11 @@ def audit_euro_source_against_target(
                             (
                                 key[0],
                                 key[1],
-                                bytes.fromhex(canonical_row_hash(columns, record)),
+                                bytes.fromhex(canonical_row_hash(
+                                    columns,
+                                    record,
+                                    target_column_types,
+                                )),
                             )
                         )
                     store.insert_records(TARGET_DATASET, records)
@@ -303,16 +347,30 @@ def audit_euro_source_against_target(
             mismatches = comparison["row_hash_mismatches"]
             store_bytes = store.size_bytes
 
-            missing_samples = store.key_samples("missing", sample_limit)
-            extra_samples = store.key_samples("extra", sample_limit)
-            mismatch_samples = store.key_samples("mismatch", sample_limit)
+            missing_samples = store.key_samples(
+                "missing",
+                sample_limit,
+                strategy=sample_strategy,
+            )
+            extra_samples = store.key_samples(
+                "extra",
+                sample_limit,
+                strategy=sample_strategy,
+            )
+            mismatch_samples = store.key_samples(
+                "mismatch",
+                sample_limit,
+                strategy=sample_strategy,
+            )
             source_duplicate_samples = store.key_samples(
                 "source_duplicate",
                 sample_limit,
+                strategy=sample_strategy,
             )
             target_duplicate_samples = store.key_samples(
                 "target_duplicate",
                 sample_limit,
+                strategy=sample_strategy,
             )
 
     free_after = shutil.disk_usage(workspace_root).free
@@ -322,6 +380,10 @@ def audit_euro_source_against_target(
         target_table=target_table,
         source_path=str(source_path),
         source_columns=tuple(columns),
+        target_column_types={
+            column: target_column_types[column]
+            for column in columns
+        },
         source_period_patterns=source_period_patterns,
         target_period_type=target_period_type,
         period_type_safe=period_type_is_safe(
@@ -352,6 +414,7 @@ def audit_euro_source_against_target(
         target_first_period=target_summary["first_period"],
         target_last_period=target_summary["last_period"],
         chunk_size=chunk_size,
+        sample_strategy=sample_strategy,
         max_source_chunk_rows=max_source_chunk_rows,
         max_target_chunk_rows=max_target_chunk_rows,
         comparison_store_bytes=store_bytes,

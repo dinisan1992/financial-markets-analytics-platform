@@ -1,6 +1,6 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 import unittest
 
 import pandas as pd
@@ -8,12 +8,33 @@ from sqlalchemy import create_engine, event, text
 
 from services.euro_streaming_validation_service import (
     MAX_TARGET_FETCH_ROWS,
+    _target_query,
     _target_value_batches,
     audit_euro_source_against_target,
 )
 
 
 class EuroStreamingValidationTests(unittest.TestCase):
+    @patch("services.euro_streaming_validation_service.inspect")
+    def test_mysql_float_target_is_selected_through_double_cast(self, inspect_mock):
+        inspector = inspect_mock.return_value
+        inspector.has_table.return_value = True
+        inspector.get_columns.return_value = [
+            {"name": "key_code", "type": "VARCHAR(100)"},
+            {"name": "time_period", "type": "VARCHAR(20)"},
+            {"name": "obs_value", "type": "FLOAT"},
+        ]
+        engine = Mock()
+        engine.dialect.name = "mysql"
+
+        query = _target_query(
+            engine,
+            "euro_test",
+            ("key_code", "time_period", "obs_value"),
+        )
+
+        self.assertIn("CAST(`obs_value` AS DOUBLE)", query.text)
+
     def _audit(self, source_rows, target_rows, chunk_size=2):
         temp_dir = TemporaryDirectory()
         self.addCleanup(temp_dir.cleanup)
@@ -170,6 +191,50 @@ class EuroStreamingValidationTests(unittest.TestCase):
             all(statement.startswith(("SELECT", "PRAGMA")) for statement in statements),
             statements,
         )
+
+    def test_hash_comparison_respects_target_float_precision(self):
+        temp_dir = TemporaryDirectory()
+        self.addCleanup(temp_dir.cleanup)
+        root = Path(temp_dir.name)
+        source_path = root / "source.csv"
+        target_path = root / "target.sqlite3"
+        pd.DataFrame([{
+            "key_code": "A",
+            "time_period": "2024-01",
+            "obs_value": "122.79865325",
+        }]).to_csv(source_path, index=False)
+        engine = create_engine(f"sqlite:///{target_path}")
+        with engine.begin() as connection:
+            connection.execute(text(
+                "CREATE TABLE euro_test ("
+                "key_code TEXT, time_period TEXT, obs_value FLOAT)"
+            ))
+            connection.execute(text(
+                "INSERT INTO euro_test VALUES "
+                "('A', '2024-01', 122.79865264892578)"
+            ))
+        contract = {
+            "group": "EURO",
+            "csv_path": source_path,
+            "table_name": "euro_test",
+            "column_aliases": {},
+            "required_columns": ("key_code", "time_period", "obs_value"),
+        }
+        with patch(
+            "services.euro_streaming_validation_service.get_macro_import",
+            return_value=contract,
+        ):
+            validation = audit_euro_source_against_target(
+                engine,
+                "EURO_TEST",
+                workspace_dir=root,
+                minimum_free_bytes=0,
+            )
+        engine.dispose()
+
+        self.assertTrue(validation.valid)
+        self.assertEqual(0, validation.row_hash_mismatches)
+        self.assertEqual("FLOAT", validation.target_column_types["obs_value"])
 
     def test_mysqlconnector_uses_unbuffered_bounded_cursor(self):
         class Cursor:

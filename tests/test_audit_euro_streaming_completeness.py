@@ -23,6 +23,16 @@ class EuroStreamingAuditCliTests(unittest.TestCase):
 
         self.assertEqual([TARGET_IMPORT_KEYS[1]], args.import_keys)
 
+    def test_any_registered_euro_import_can_be_selected_explicitly(self):
+        import_key = "EURO_CARD_PAYMENTS"
+        with patch(
+            "sys.argv",
+            ["audit_euro_streaming_completeness.py", import_key],
+        ):
+            args = parse_args()
+
+        self.assertEqual([import_key], args.import_keys)
+
 
 if __name__ == "__main__":
     unittest.main()

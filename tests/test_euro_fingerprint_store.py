@@ -98,6 +98,34 @@ class EuroFingerprintStoreTests(unittest.TestCase):
                 self.assertEqual("C", store.key_samples("missing", 1)[0]["key_code"])
                 self.assertGreater(store.size_bytes, 0)
 
+    def test_hash_sample_is_deterministic_and_not_key_ordered(self):
+        with TemporaryDirectory() as temp_dir:
+            with temporary_fingerprint_store(
+                "EURO_TEST",
+                workspace_dir=temp_dir,
+                minimum_free_bytes=0,
+            ) as store:
+                store.insert_records(
+                    SOURCE_DATASET,
+                    [
+                        ("A", "2024-01", b"z" * 32),
+                        ("B", "2024-01", b"a" * 32),
+                    ],
+                )
+                store.insert_records(
+                    TARGET_DATASET,
+                    [
+                        ("A", "2024-01", b"x" * 32),
+                        ("B", "2024-01", b"y" * 32),
+                    ],
+                )
+
+                ordered = store.key_samples("mismatch", 1)
+                hashed = store.key_samples("mismatch", 1, strategy="hash")
+
+        self.assertEqual("A", ordered[0]["key_code"])
+        self.assertEqual("B", hashed[0]["key_code"])
+
     def test_temporary_store_is_removed_after_context_exit(self):
         with TemporaryDirectory() as temp_dir:
             with temporary_fingerprint_store(

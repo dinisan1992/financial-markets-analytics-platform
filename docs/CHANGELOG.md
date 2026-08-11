@@ -4,6 +4,48 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [v0.7.3] - 2026-08-11 - EURO Storage-Aware Synchronization
+
+### Added
+
+- Added deterministic hash-distributed mismatch sampling to the disk-backed
+  EURO comparison store.
+- Added a field-level SELECT-only auditor that classifies null, whitespace,
+  case, numeric-representation, storage-precision and substantive changes.
+- Added sanitized JSON and CSV evidence with source filenames instead of local
+  absolute paths.
+
+### Fixed
+
+- Made EURO row hashes aware of MySQL `FLOAT` representation and `DECIMAL`
+  scale, including signed zero.
+- Ignored outer text whitespace in row fingerprints while preserving strict
+  business-key and substantive-value comparisons.
+- Discarded the schema-inspection connection before long MySQL target scans to
+  prevent MySQL Connector `Unread result found` failures.
+- Allowed the streaming audit CLI to validate any registered EURO contract
+  explicitly while retaining its conservative default set.
+
+### Read-Only Evidence
+
+- Generated a fresh 38-asset quality baseline with zero duplicate assets, zero
+  invalid-price assets, one retained WTI review case and 38 stale-source flags.
+- Compared 9,791,737 source rows with the same number of target rows across
+  Card Payments, Bank Lending Survey and Balance Sheet Items.
+- Reduced apparent updates from 459,207 to 15, 222,668 to one and 3,132,298 to
+  54 respectively, with zero missing or extra business keys.
+- Confirmed six Card Payments numeric-text representation differences, nine
+  Card Payments stored-FLOAT differences, one Bank Lending Survey stored-FLOAT
+  difference and 54 Balance Sheet Items sixth-decimal differences.
+- Performed zero database writes.
+
+### Validation
+
+- Passed 216/216 deterministic unit tests, Ruff, complete Python compilation,
+  `pip check`, 42% branch coverage and 9/9 Streamlit page renders.
+
+---
+
 ## [v0.7.2] - 2026-08-11 - Cross-Platform CI Compatibility
 
 ### Fixed

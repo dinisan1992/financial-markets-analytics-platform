@@ -4,7 +4,7 @@ Last updated: 11 August 2026
 
 ## Current Version
 
-**Macro-Financial Risk & Market Behaviour Analytics Platform v0.7.2**
+**Macro-Financial Risk & Market Behaviour Analytics Platform v0.7.3**
 
 ## Executive Summary
 
@@ -22,7 +22,7 @@ It combines:
 - interactive dashboarding;
 - data quality validation.
 
-The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.7.0 completed the controlled Direct Debits rebuild. Version 0.7.1 separated the eight direct runtime dependencies from development tooling and expanded CI. Version 0.7.2 removes the three Windows-only assumptions exposed by the first Linux matrix run and updates the workflow actions to their Node 24-compatible major versions. The validated 121,564-row `VARCHAR(20)` Direct Debits table remains active and the former 75,647-row `YEAR(4)` table remains retained for rollback.
+The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.7.0 completed the controlled Direct Debits rebuild. Version 0.7.1 separated the eight direct runtime dependencies from development tooling and expanded CI. Version 0.7.2 removed the Windows-only assumptions exposed by the first Linux matrix run. Version 0.7.3 makes EURO synchronization fingerprints aware of SQL storage precision and adds SELECT-only field-difference diagnostics. The validated 121,564-row `VARCHAR(20)` Direct Debits table remains active and the former 75,647-row `YEAR(4)` table remains retained for rollback.
 
 ## Completed and Functional Modules
 
@@ -220,12 +220,12 @@ Main file:
 
 ## Latest Documented Validation
 
-Version 0.7.2 validation included:
+Version 0.7.3 validation included:
 
-- 207/207 deterministic unit tests passed.
-- 254/254 active Python files parsed successfully and `pip check` reported no broken requirements.
+- 216/216 deterministic unit tests passed.
+- The complete active Python tree compiled successfully and `pip check` reported no broken requirements.
 - Ruff passed over the complete active Python tree.
-- Branch coverage measured 41% across `app`, `app_pages`, `dashboard` and `services`, with a 40% regression gate.
+- Branch coverage measured 42% across `app`, `app_pages`, `dashboard` and `services`, with a 40% regression gate.
 - CI covers Windows and Linux under Python 3.11 and 3.12, with a separate static and macro-import-safety job.
 - 38/38 configured SQL assets recalculated successfully with database writes disabled.
 - 9/9 Streamlit pages rendered through `AppTest` without uncaught exceptions; the running server returned HTTP 200 health.
@@ -263,6 +263,18 @@ Version 0.7.2 validation included:
 - Ran an idempotent post-swap plan with zero inserts, updates, target-only rows or blockers.
 - Reclassified the live EURO schema baseline as 17/17 write-contract-ready and 16/16 configured series available.
 - Added progress reporting for long source, target and write scans.
+- Added deterministic hash-distributed mismatch sampling and a field-level
+  SELECT-only EURO diagnostic with explicit SQL read-safety tests.
+- Normalized row fingerprints to the target SQL type: MySQL `FLOAT` storage,
+  `DECIMAL` scale, signed zero and outer text whitespace no longer create
+  non-idempotent false updates.
+- Revalidated 9,791,737 source and target rows across Card Payments, Bank
+  Lending Survey and Balance Sheet Items with equal cardinality, unique keys,
+  no missing keys and no database writes.
+- Reduced apparent updates from 459,207 to 15 Card Payments rows, from 222,668
+  to one Bank Lending Survey row, and from 3,132,298 to 54 Balance Sheet Items
+  values at the sixth-decimal boundary.
+- Rendered 9/9 Streamlit pages successfully after the precision changes.
 - Synchronized `VERSION` with the runtime project version and added a regression test for future releases.
 - Reused the disk-backed store for full-row shadow validation, while preserving the legacy path for earlier migration checkpoints.
 - Added isolated `v062` shadow, retained and failed-table names plus exact build and swap confirmations for each large import.
@@ -317,6 +329,15 @@ Previous v0.4.3 code-only validation included:
 - No SQL writes, migrations, CSV imports or database mutations were executed.
 
 ### Data Audit Snapshots
+
+The v0.7.3 read-only freshness baseline generated on 11 August 2026 reports:
+
+- 38 assets audited with no duplicate assets or invalid-price assets;
+- all 38 assets beyond their configured freshness limit;
+- US2Y current through 30 July 2026 and only two days beyond its tolerance;
+- most market assets current through May 2026, while several FX/index sources
+  end in October 2025 and TED Spread ends on 21 January 2022;
+- one retained WTI historical price-review case and zero database writes.
 
 The post-migration v0.5.1 audit generated on 3 August 2026 reports:
 
@@ -428,9 +449,9 @@ The project already contains a validated multi-asset, FED macro and EURO macro a
 
 The isolated MySQL acceptance gate and the full Direct Debits diagnosis, backup, shadow, atomic swap and post-swap validation chain are complete. The current priority returns to controlled platform hardening and source maintenance:
 
-1. review field-level differences for Card Payments, Bank Lending Survey and Balance Sheet Items;
-2. treat the Government Finance expansion as a dedicated migration with a fresh scoped backup and capacity preflight;
-3. confirm the seven inferred source contracts during their next refresh;
-4. continue WTI source identity and native-frequency remediation in parallel;
+1. refresh the three reviewed ECB CSV snapshots from the official portal and rerun the read-only plans;
+2. create fresh scoped backups before deciding whether to apply the 15 Card Payments, one Bank Lending Survey and 54 Balance Sheet Items corrections;
+3. treat the Government Finance expansion as a dedicated migration with a fresh scoped backup and capacity preflight;
+4. update stale market sources, beginning with the explicitly supported official feeds, and confirm the seven inferred source contracts;
 5. design Event Study v2 with benchmark and abnormal-return contracts;
 6. calibrate risk thresholds by asset history and class.

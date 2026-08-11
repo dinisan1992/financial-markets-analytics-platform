@@ -16,6 +16,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from config import get_sqlalchemy_database_url
+from macro_import_manifest import get_macro_import_keys
 from services.euro_streaming_validation_service import (
     DEFAULT_CHUNK_SIZE,
     TARGET_IMPORT_KEYS,
@@ -38,6 +39,15 @@ def parse_args():
     parser.add_argument("--chunk-size", type=int, default=DEFAULT_CHUNK_SIZE)
     parser.add_argument("--sample-limit", type=int, default=10)
     parser.add_argument(
+        "--sample-strategy",
+        choices=("ordered", "hash"),
+        default="ordered",
+        help=(
+            "Use 'hash' for a deterministic sample distributed across differing "
+            "rows instead of the first business keys."
+        ),
+    )
+    parser.add_argument(
         "--output-dir",
         type=Path,
         default=ROOT / "audit_outputs" / "euro_streaming_validation",
@@ -56,13 +66,14 @@ def parse_args():
     args = parser.parse_args()
     if not args.import_keys:
         args.import_keys = list(TARGET_IMPORT_KEYS)
-    invalid = sorted(set(args.import_keys) - set(TARGET_IMPORT_KEYS))
+    supported_import_keys = set(get_macro_import_keys("EURO"))
+    invalid = sorted(set(args.import_keys) - supported_import_keys)
     if invalid:
         parser.error(
             "unsupported import key(s): "
             + ", ".join(invalid)
             + "; choose from "
-            + ", ".join(TARGET_IMPORT_KEYS)
+            + ", ".join(sorted(supported_import_keys))
         )
     return args
 
@@ -106,6 +117,7 @@ def main():
                     chunk_size=args.chunk_size,
                     workspace_dir=workspace_dir,
                     sample_limit=args.sample_limit,
+                    sample_strategy=args.sample_strategy,
                     progress_callback=progress,
                 )
             except Exception as exc:

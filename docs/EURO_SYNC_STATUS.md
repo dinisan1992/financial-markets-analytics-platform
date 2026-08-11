@@ -1,6 +1,6 @@
 # EURO Synchronization Status
 
-Version: v0.7.0
+Version: v0.7.3
 
 Date: 11 August 2026
 
@@ -18,7 +18,21 @@ state can be consolidated without reading a source CSV or connecting to MySQL:
 python project_scripts/diagnostics/consolidate_euro_sync_status.py
 ```
 
-## Results
+## v0.7.3 Precision Review
+
+The three equal-cardinality changed contracts were revalidated with hashes
+normalized to their active SQL storage types. Card Payments fell from 459,207
+apparent updates to 15 rows, Bank Lending Survey fell from 222,668 to one, and
+Balance Sheet Items fell from 3,132,298 to 54
+sixth-decimal differences. Source and target keys remain exact in all three
+contracts and no database writes were performed. See
+`EURO_PRECISION_AUDIT.md`.
+
+Government Finance was not reclassified in this precision cycle because its
+main issue is a 3,822,937-row source-universe expansion, not equal-cardinality
+field differences.
+
+## v0.7.0 Planning Baseline
 
 | Contract | Status | Source | Target | Inserts | Updates | Target only |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
@@ -66,14 +80,14 @@ Items plan then completed against 7,812,208 target rows.
 - `EXACT` means the registered source and target are fully idempotent.
 - `CHANGES` means the plan has no structural blocker, not that it is approved.
 - `BLOCKED` means apply mode rejects the plan before opening a write transaction.
-- Direct Debits no longer has an unexplained key revision. A complete key
-  comparison explains all 77,025 source-only and 31,108 target-only rows as
-  the result of lossy `YEAR` storage. It requires a controlled shadow rebuild,
-  not transactional upsert against the current table.
+- Direct Debits no longer has an unexplained key revision. Its controlled
+  shadow rebuild and promotion replaced the lossy `YEAR` target with the
+  validated `VARCHAR(20)` history while retaining the former table for rollback.
 - Government Finance is a 3,822,937-row source-universe expansion and requires
   a separate capacity review, scoped backup and controlled migration decision.
-- Card Payments, Bank Lending Survey and Balance Sheet Items require field-level
-  mismatch review before any write authorization.
+- Card Payments, Bank Lending Survey and Balance Sheet Items completed their
+  field-level review. Fresh ECB snapshots and scoped backups are still required
+  before any of the 15, one and 54 remaining actions can be authorized.
 
 Version v0.7.0 completed the separately authorized Direct Debits promotion. Its
 latest plan is exact and idempotent with 121,564 unchanged rows, zero actions,

@@ -20,7 +20,7 @@ Functional local platform with:
 - Data quality and validation tools.
 - Cross-platform lint, import-safety, dependency, coverage and unit-test checks through GitHub Actions.
 
-Current project version: **v0.7.2**
+Current project version: **v0.7.3**
 
 ## Main Analytical Capabilities
 
@@ -315,6 +315,7 @@ See `docs/EURO_SCHEMA_AUDIT.md`,
 `docs/EURO_TRANSACTIONAL_SYNC.md` for refresh policies,
 `docs/EURO_MYSQL_ACCEPTANCE.md` for the isolated MySQL evidence,
 `docs/EURO_SYNC_STATUS.md` for the complete 17-contract planning baseline,
+`docs/EURO_PRECISION_AUDIT.md` for the storage-aware field-difference review,
 `docs/EURO_DIRECT_DEBITS_REMEDIATION.md` for the confirmed period-loss defect,
 `docs/EURO_DIRECT_DEBITS_BACKUP.md` for the independently restored backup,
 `docs/EURO_DIRECT_DEBITS_SHADOW.md` for the validated non-active replacement,
@@ -323,12 +324,12 @@ and `docs/MACRO_IMPORT_SAFETY.md` for importer controls.
 
 ## Validation Snapshot
 
-The v0.7.2 validation includes:
+The v0.7.3 validation includes:
 
-- 207/207 deterministic unit tests pass.
-- 254/254 active Python files parse successfully and `pip check` reports no broken requirements.
+- 216/216 deterministic unit tests pass.
+- The complete active Python tree compiles successfully and `pip check` reports no broken requirements.
 - Ruff passes across the active Python tree with no lint errors.
-- Branch coverage is measured across `app`, `app_pages`, `dashboard` and `services`, with a 40% regression gate over the current 41% baseline.
+- Branch coverage is measured across `app`, `app_pages`, `dashboard` and `services`, with a 40% regression gate over the current 42% baseline.
 - GitHub Actions runs static/import-safety checks and a four-environment unit-test matrix covering Windows, Linux, Python 3.11 and Python 3.12.
 - 38/38 configured SQL assets recalculate successfully with database writes disabled.
 - 9/9 Streamlit pages render without uncaught exceptions and the running server reports HTTP 200 health.
@@ -354,6 +355,15 @@ The v0.7.2 validation includes:
 - Version v0.7.0 atomically promoted that shadow and retained the former 75,647-row table under `euro_direct_debits__pre_v069_20260811_163215` for rollback.
 - The post-swap plan is exact and idempotent: 121,564 unchanged rows, zero inserts, updates, target-only rows or blockers; the schema audit now classifies 17/17 EURO contracts as write-ready.
 - MySQL Connector target scans use an explicitly unbuffered cursor capped at 5,000 rows; the 7,812,208-row balance-sheet plan completed without buffering the result set into memory.
+- EURO row fingerprints now respect target `FLOAT` and `DECIMAL` precision,
+  normalize signed zero and ignore outer text whitespace, preventing permanent
+  false updates caused by SQL storage representation.
+- Complete read-only revalidation reduced Card Payments from 459,207 apparent
+  updates to 15 rows, Bank Lending Survey from 222,668 to one row, and Balance
+  Sheet Items from 3,132,298 to 54 sixth-decimal differences.
+- A deterministic hash-sampled field auditor reports the exact differing
+  columns and examples through SELECT-only SQL access without publishing local
+  source paths.
 - Data Quality exposes the latest saved status, source freshness, planned actions and blockers for every EURO contract without rescanning CSVs or querying MySQL.
 
 The retained v0.5.6 database validation includes:

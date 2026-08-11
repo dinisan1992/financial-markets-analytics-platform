@@ -101,6 +101,34 @@ class EuroRebuildServiceTests(unittest.TestCase):
         )
         self.assertEqual("1.234567891234", format(record["obs_value"], "f"))
 
+    def test_canonical_hash_respects_storage_precision_and_outer_whitespace(self):
+        columns = ("key_code", "time_period", "obs_value", "title")
+        source, _ = normalize_row(
+            columns,
+            ("A", "2024-01", "9.171205", "Example "),
+        )
+        target, _ = normalize_row(
+            columns,
+            ("A", "2024-01", "9.171204566955566", "Example"),
+        )
+        column_types = {"obs_value": "FLOAT"}
+
+        self.assertEqual(
+            canonical_row_hash(columns, source, column_types),
+            canonical_row_hash(columns, target, column_types),
+        )
+
+    def test_canonical_hash_treats_signed_storage_zero_as_zero(self):
+        columns = ("key_code", "time_period", "obs_value")
+        source, _ = normalize_row(columns, ("A", "2024-01", "-0.0000001"))
+        target, _ = normalize_row(columns, ("A", "2024-01", "0"))
+        column_types = {"obs_value": "DECIMAL(20, 6)"}
+
+        self.assertEqual(
+            canonical_row_hash(columns, source, column_types),
+            canonical_row_hash(columns, target, column_types),
+        )
+
     def test_record_batches_bound_mysql_packet_size(self):
         batches = list(record_batches(list(range(11)), 4))
 

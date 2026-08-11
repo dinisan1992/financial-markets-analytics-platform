@@ -128,50 +128,74 @@ class EuroFingerprintStore:
             "row_hash_mismatches": mismatches,
         }
 
-    def key_samples(self, difference, limit):
+    def key_samples(self, difference, limit, strategy="ordered"):
+        if strategy not in {"ordered", "hash"}:
+            raise ValueError(f"Unsupported sample strategy: {strategy}")
+        order_by = {
+            "missing": {
+                "ordered": "source.key_code, source.time_period",
+                "hash": "source.row_hash, source.key_code, source.time_period",
+            },
+            "extra": {
+                "ordered": "target.key_code, target.time_period",
+                "hash": "target.row_hash, target.key_code, target.time_period",
+            },
+            "mismatch": {
+                "ordered": "source.key_code, source.time_period",
+                "hash": "source.row_hash, source.key_code, source.time_period",
+            },
+            "source_duplicate": {
+                "ordered": "key_code, time_period",
+                "hash": "row_hash, key_code, time_period",
+            },
+            "target_duplicate": {
+                "ordered": "key_code, time_period",
+                "hash": "row_hash, key_code, time_period",
+            },
+        }
         queries = {
-            "missing": """
+            "missing": f"""
                 SELECT source.key_code, source.time_period
                 FROM source_rows AS source
                 LEFT JOIN target_rows AS target
                   ON target.key_code = source.key_code
                  AND target.time_period = source.time_period
                 WHERE target.key_code IS NULL
-                ORDER BY source.key_code, source.time_period
+                ORDER BY {order_by["missing"][strategy]}
                 LIMIT ?
             """,
-            "extra": """
+            "extra": f"""
                 SELECT target.key_code, target.time_period
                 FROM target_rows AS target
                 LEFT JOIN source_rows AS source
                   ON source.key_code = target.key_code
                  AND source.time_period = target.time_period
                 WHERE source.key_code IS NULL
-                ORDER BY target.key_code, target.time_period
+                ORDER BY {order_by["extra"][strategy]}
                 LIMIT ?
             """,
-            "mismatch": """
+            "mismatch": f"""
                 SELECT source.key_code, source.time_period
                 FROM source_rows AS source
                 JOIN target_rows AS target
                   ON target.key_code = source.key_code
                  AND target.time_period = source.time_period
                 WHERE target.row_hash <> source.row_hash
-                ORDER BY source.key_code, source.time_period
+                ORDER BY {order_by["mismatch"][strategy]}
                 LIMIT ?
             """,
-            "source_duplicate": """
+            "source_duplicate": f"""
                 SELECT key_code, time_period
                 FROM source_rows
                 WHERE occurrences > 1
-                ORDER BY key_code, time_period
+                ORDER BY {order_by["source_duplicate"][strategy]}
                 LIMIT ?
             """,
-            "target_duplicate": """
+            "target_duplicate": f"""
                 SELECT key_code, time_period
                 FROM target_rows
                 WHERE occurrences > 1
-                ORDER BY key_code, time_period
+                ORDER BY {order_by["target_duplicate"][strategy]}
                 LIMIT ?
             """,
         }
