@@ -22,6 +22,7 @@ from services.euro_fingerprint_store import (
     TARGET_DATASET,
     temporary_fingerprint_store,
 )
+from services.euro_schema_audit_service import classify_period, period_type_is_safe
 from services.macro_import_service import normalize_column_name
 from services.market_data_sync_service import validate_identifier
 
@@ -43,6 +44,9 @@ class EuroStreamingValidation:
     target_table: str
     source_path: str
     source_columns: tuple[str, ...]
+    source_period_patterns: tuple[str, ...]
+    target_period_type: str | None
+    period_type_safe: bool
     source_rows: int
     target_rows: int
     source_unique_business_keys: int
@@ -188,6 +192,15 @@ def audit_euro_source_against_target(
     columns = mapped_source_columns(contract)
     target_table = validate_identifier(contract["table_name"])
     target_query = _target_query(sql_connection or engine, target_table, columns)
+    target_schema = inspect(sql_connection or engine).get_columns(target_table)
+    target_period_type = next(
+        (
+            str(column["type"])
+            for column in target_schema
+            if normalize_column_name(column["name"]) == "time_period"
+        ),
+        None,
+    )
 
     source_rows = 0
     target_rows = 0
@@ -199,6 +212,7 @@ def audit_euro_source_against_target(
     target_invalid_numeric = 0
     max_source_chunk_rows = 0
     max_target_chunk_rows = 0
+    source_period_patterns = set()
 
     store_context = (
         nullcontext(fingerprint_store)
@@ -228,6 +242,8 @@ def audit_euro_source_against_target(
                         source_invalid_numeric += 1
                         continue
                     source_non_null += record.get("obs_value") is not None
+                    if record.get("time_period") is not None:
+                        source_period_patterns.add(classify_period(record["time_period"]))
                     key = tuple(record[column] for column in BUSINESS_KEY)
                     if any(value is None for value in key):
                         source_null_keys += 1
@@ -300,11 +316,18 @@ def audit_euro_source_against_target(
             )
 
     free_after = shutil.disk_usage(workspace_root).free
+    source_period_patterns = tuple(sorted(source_period_patterns))
     return EuroStreamingValidation(
         import_key=import_key,
         target_table=target_table,
         source_path=str(source_path),
         source_columns=tuple(columns),
+        source_period_patterns=source_period_patterns,
+        target_period_type=target_period_type,
+        period_type_safe=period_type_is_safe(
+            target_period_type,
+            source_period_patterns,
+        ),
         source_rows=source_rows,
         target_rows=target_rows,
         source_unique_business_keys=source_summary["unique_keys"],

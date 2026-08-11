@@ -1,6 +1,6 @@
 # Controlled Macro Import Safety
 
-Version 0.6.6 places all 11 FED and 17 EURO/ECB source files behind explicit
+Version 0.6.7 places all 11 FED and 17 EURO/ECB source files behind explicit
 import contracts. Importing a Python module never opens MySQL or starts loading
 a CSV. Running an importer without write flags performs a read-only preview.
 
@@ -103,7 +103,7 @@ Version v0.5.5 completed six required rebuilds using a verified SQL backup,
 isolated shadow tables, full-row source signatures and one atomic swap. Version
 v0.5.6 rebuilt three further tables whose stored values were not exact. Version
 v0.6.3 completed the remaining three large rebuilds and exact post-swap audit.
-The current classification is:
+The v0.6.3 classification was:
 
 - 17 `write_contract_ready` schemas;
 - zero `key_addition_candidate` schemas;
@@ -135,6 +135,21 @@ Version v0.6.6 completed one-by-one read-only plans for all 17 EURO contracts:
 target-only rows. The lightweight Data Quality status reader consumes only the
 saved JSON evidence; it does not scan CSVs or connect to MySQL. See
 `docs/EURO_SYNC_STATUS.md` for the full baseline.
+
+Version v0.6.7 corrected one false-safe result in that historical schema
+classification. The first 1,000 Direct Debits source rows were annual, while
+later rows include semiannual and quarterly periods. The audit now combines
+sampled source patterns with distinct target frequencies, and the streaming
+planner captures period patterns across the complete source. Current status:
+
+- 16 `write_contract_ready` schemas;
+- one `rebuild_required` schema (`euro_direct_debits`);
+- zero database writes in the diagnostic or rebuild-plan commands.
+
+The Direct Debits active `YEAR` column explains all 77,025 source-only and
+31,108 target-only keys. Its proposed `VARCHAR(20)` shadow remains plan-only
+until a fresh scoped backup and separate build/swap authorizations exist. See
+`docs/EURO_DIRECT_DEBITS_REMEDIATION.md`.
 
 ## Recovery
 

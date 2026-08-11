@@ -1,15 +1,17 @@
 # EURO Transactional Synchronization
 
-Version: v0.6.6
+Version: v0.6.7
 
 Date: 11 August 2026
 
 ## Purpose
 
-All 17 EURO tables now preserve their complete registered source history and a
-unique `(key_code, time_period)` business key. The synchronization engine
-updates that baseline without returning to destructive full-table imports or
-loading millions of fingerprints into Python memory.
+Sixteen EURO tables preserve their complete registered source history and a
+unique `(key_code, time_period)` business key. Direct Debits is deliberately
+blocked because its active `YEAR` column cannot preserve the source's
+semiannual and quarterly periods. The synchronization engine updates only a
+safe baseline without returning to destructive full-table imports or loading
+millions of fingerprints into Python memory.
 
 The default operation is a read-only plan. One CSV and one target table are
 compared across every mapped column through bounded pandas chunks and a
@@ -28,6 +30,7 @@ The plan reports:
 - unchanged and target-only rows;
 - source and target null, duplicate and invalid-numeric blockers;
 - source/target difference samples;
+- complete source period patterns, target period type and period-type safety;
 - unique business-key availability;
 - expected row count after apply;
 - the exact import-specific confirmation phrase;
@@ -49,6 +52,7 @@ explicit import key is accepted; there is no bulk `ALL --apply` mode.
 | Source duplicate business key | Block |
 | Invalid non-empty numeric value | Block |
 | Target duplicate/null key | Block |
+| Target period type cannot preserve source periods | Block |
 | Delete | Disabled |
 
 The source file is treated as an authoritative snapshot for keys it contains.
@@ -109,6 +113,12 @@ validation. The 7,812,208-row Balance Sheet Items target scan completed without
 the driver's former full-result buffering. Every report records
 `database_write_performed: false`.
 
+Version v0.6.7 added a full-source period guard. It confirms that Direct Debits
+contains `year`, `semester` and `quarter` labels while its target type is
+`YEAR`, so apply mode rejects the plan with `unsafe_time_period_type` before a
+write transaction can open. The corresponding rebuild planner has no write
+mode.
+
 See `docs/EURO_SYNC_STATUS.md` for the complete contract table and next actions.
 
 ## MySQL Acceptance Result
@@ -121,4 +131,5 @@ schema was removed and the active schema's before/after hash was identical.
 
 See `docs/EURO_MYSQL_ACCEPTANCE.md` for the procedure and recorded evidence.
 Production apply remains conditional on a genuinely newer reviewed CSV, a fresh
-read-only plan with no blockers and a new scoped backup.
+read-only plan with no blockers and a new scoped backup. Direct Debits must
+first pass its separately authorized shadow-rebuild workflow.

@@ -47,11 +47,15 @@ Market data maintenance entry points:
 - `project_scripts/diagnostics/backup_market_tables.py` - scoped SQL backup without exposing credentials.
 - `project_scripts/diagnostics/acceptance_test_euro_sync_mysql.py` - isolated backup, commit, idempotency and rollback acceptance drill.
 - `project_scripts/diagnostics/consolidate_euro_sync_status.py` - read-only consolidation of saved EURO plans into local CSV/JSON evidence.
+- `project_scripts/diagnostics/diagnose_euro_direct_debits.py` - SELECT-only diagnosis of Direct Debits period-key loss.
+- `project_scripts/diagnostics/plan_euro_direct_debits_rebuild.py` - read-only Direct Debits shadow DDL, swap and rollback plan with no write mode.
 - `project_scripts/diagnostics/remediate_market_tables.py` - reversible shadow-table remediation.
 - `services/market_data_sync_service.py` - shared parsing, planning, key checks and transactional upsert logic.
 - `project_scripts/ingestion/sync_euro_macro.py` - default-read-only EURO synchronization planner.
 - `services/euro_sync_service.py` - bounded EURO action planning, guarded upsert and in-transaction validation.
 - `services/euro_sync_status_service.py` - lightweight status and freshness view over saved EURO plan reports.
+- `services/euro_direct_debits_diagnostic_service.py` - complete source/target period-alignment evidence.
+- `services/euro_direct_debits_remediation_service.py` - inspectable rebuild plan and mandatory safety gates; no execution path.
 
 ## Tools
 

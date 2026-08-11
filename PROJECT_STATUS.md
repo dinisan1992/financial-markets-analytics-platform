@@ -4,7 +4,7 @@ Last updated: 11 August 2026
 
 ## Current Version
 
-**Macro-Financial Risk & Market Behaviour Analytics Platform v0.6.6**
+**Macro-Financial Risk & Market Behaviour Analytics Platform v0.6.7**
 
 ## Executive Summary
 
@@ -22,7 +22,7 @@ It combines:
 - interactive dashboarding;
 - data quality validation.
 
-The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.6.6 completes read-only synchronization planning for all 17 EURO contracts and exposes the saved evidence in Data Quality without rescanning multi-gigabyte sources. Twelve contracts are exact, four contain planned changes and Direct Debits is blocked by 31,108 target-only rows. A MySQL Connector buffering defect found during the 7,812,208-row balance-sheet scan was corrected with an explicitly unbuffered, bounded cursor. No active database write was executed.
+The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.6.7 resolves the previously unknown Direct Debits mismatch without changing MySQL. The active `YEAR` column collapsed semiannual and quarterly source periods: all 77,025 source-only and 31,108 target-only keys are explained, with zero unexplained differences. Full-source synchronization and schema-audit guards now block this lossy contract, while an inspectable plan defines a future `VARCHAR(20)` shadow, validation, swap and rollback workflow. The current classification is 16 write-ready EURO contracts and one controlled rebuild. No active database write was executed.
 
 ## Completed and Functional Modules
 
@@ -220,10 +220,10 @@ Main file:
 
 ## Latest Documented Validation
 
-Version 0.6.6 validation included:
+Version 0.6.7 validation included:
 
-- 184/184 deterministic unit tests passed.
-- 234/234 active Python files parsed successfully and `pip check` reported no broken requirements.
+- 187/187 deterministic unit tests passed.
+- 240/240 active Python files parsed successfully and `pip check` reported no broken requirements.
 - 38/38 configured SQL assets recalculated successfully with database writes disabled.
 - 9/9 Streamlit pages rendered through `AppTest` without uncaught exceptions; the running server returned HTTP 200 health.
 - Added financial property tests for indicator bounds, Bollinger ordering, correlation symmetry, Base 100 normalization and event-date direction.
@@ -242,6 +242,10 @@ Version 0.6.6 validation included:
 - Completed the 7,812,208-row Balance Sheet Items comparison after replacing MySQL Connector's buffered result path with a 5,000-row unbuffered cursor.
 - Added a lightweight report consolidator and a Data Quality `EURO Sync` view; neither path scans source CSVs nor connects to MySQL.
 - Exercised the Data Quality audit and EURO Sync tab in a real browser, confirmed the 17/12/4/1/0 status, ZIP export control and zero console errors.
+- Proved through complete source/target key comparison that Direct Debits history loss is entirely caused by a `YEAR` target column receiving annual, semiannual and quarterly periods.
+- Added full-source period-pattern checks to synchronization planning and target-frequency checks to the bounded schema audit.
+- Reclassified Direct Debits as `rebuild_required` while preserving the other 16 EURO contracts as `write_contract_ready`.
+- Generated an inspectable `VARCHAR(20)` shadow-rebuild plan with `write_path_enabled: false`, `database_write_performed: false` and `active_table_changed: false`.
 - Added progress reporting for long source, target and write scans.
 - Synchronized `VERSION` with the runtime project version and added a regression test for future releases.
 - Reused the disk-backed store for full-row shadow validation, while preserving the legacy path for earlier migration checkpoints.
@@ -409,11 +413,12 @@ Planned work:
 
 The project already contains a validated multi-asset, FED macro and EURO macro analytical layer.
 
-The isolated MySQL acceptance gate and full read-only planning baseline are complete. The current priority is controlled data remediation without changing active data prematurely:
+The isolated MySQL acceptance gate, full read-only planning baseline and Direct Debits root-cause diagnosis are complete. The current priority is controlled data remediation without changing active data prematurely:
 
-1. identify the Direct Debits key/dimension revision behind 31,108 target-only rows;
-2. review field-level differences for Card Payments, Bank Lending Survey and Balance Sheet Items;
-3. treat the Government Finance expansion as a dedicated migration with a fresh scoped backup and capacity preflight;
-4. confirm the seven inferred source contracts during their next refresh;
-5. authorize a production refresh only after a new plan, explicit review and a fresh table-scoped backup;
-6. continue WTI source identity and native-frequency remediation in parallel.
+1. create a fresh table-scoped Direct Debits backup on the separate physical volume and verify its hash and restoration before any shadow build;
+2. build and fully validate a `VARCHAR(20)` shadow only after a separate explicit authorization;
+3. authorize an atomic Direct Debits swap separately, retain the current table and immediately run a read-only post-swap plan;
+4. review field-level differences for Card Payments, Bank Lending Survey and Balance Sheet Items;
+5. treat the Government Finance expansion as a dedicated migration with a fresh scoped backup and capacity preflight;
+6. confirm the seven inferred source contracts during their next refresh;
+7. continue WTI source identity and native-frequency remediation in parallel.

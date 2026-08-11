@@ -41,6 +41,9 @@ class EuroSyncPlan:
     source_bytes: int
     source_modified_ns: int
     source_columns: tuple[str, ...]
+    source_period_patterns: tuple[str, ...]
+    target_period_type: str | None
+    period_type_safe: bool
     source_rows: int
     target_rows: int
     source_unique_business_keys: int
@@ -137,6 +140,8 @@ def _plan_from_validation(validation, unique_business_key, source_metadata):
     blockers.extend(reason for count, reason in quality_checks if count)
     if not unique_business_key:
         blockers.append("unique_business_key_missing")
+    if not validation.period_type_safe:
+        blockers.append("unsafe_time_period_type")
     if validation.target_rows_missing_from_source:
         blockers.append("target_only_rows_require_review")
 
@@ -156,6 +161,9 @@ def _plan_from_validation(validation, unique_business_key, source_metadata):
         source_bytes=source_bytes,
         source_modified_ns=source_modified_ns,
         source_columns=validation.source_columns,
+        source_period_patterns=validation.source_period_patterns,
+        target_period_type=validation.target_period_type,
+        period_type_safe=validation.period_type_safe,
         source_rows=validation.source_rows,
         target_rows=validation.target_rows,
         source_unique_business_keys=validation.source_unique_business_keys,

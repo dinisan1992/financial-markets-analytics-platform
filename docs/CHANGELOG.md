@@ -4,6 +4,44 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [v0.6.7] - 2026-08-11 - Direct Debits Temporal Integrity Diagnosis
+
+### Added
+
+- A read-only, full-key Direct Debits diagnostic with frequency and period-format evidence.
+- A plan-only shadow-rebuild command that exposes proposed DDL, retained-table
+  names, future swap and rollback statements, and mandatory authorization gates.
+- Regression tests for annual, semiannual and quarterly period preservation.
+
+### Corrected
+
+- Extended EURO schema auditing beyond the first 1,000 source rows by combining
+  source period patterns with distinct target frequencies.
+- Added full-source period-pattern and target-type evidence to every streaming
+  synchronization plan.
+- Blocked transactional synchronization when the target period type cannot
+  preserve the complete source period vocabulary.
+
+### Findings And Safety
+
+- Confirmed that `euro_direct_debits.time_period YEAR` collapsed all
+  semiannual and quarterly labels into years.
+- Explained all 77,025 source-only and 31,108 target-only business keys, with
+  zero unexplained differences.
+- Reclassified the current EURO schema baseline as 16 write-contract-ready
+  tables and one controlled rebuild.
+- Generated a `VARCHAR(20)` shadow plan with no build/apply/swap option and
+  confirmed that no database table or row changed.
+
+### Validation
+
+- Passed 187/187 deterministic tests and parsed 240/240 active Python files.
+- Preserved 38/38 SQL-only asset checks, 9/9 Streamlit page renders and
+  dependency integrity.
+- Re-ran the 17-contract deep EURO audit with 16 ready and one rebuild result.
+
+---
+
 ## [v0.6.6] - 2026-08-11 - Complete EURO Read-Only Planning
 
 ### Added

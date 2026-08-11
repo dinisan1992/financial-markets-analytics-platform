@@ -1,6 +1,8 @@
 # Database Schema
 
-Project version: v0.6.6. Database schema checkpoint: v0.6.3 (unchanged in v0.6.6).
+Project version: v0.6.7. The applied database schema checkpoint remains v0.6.3;
+v0.6.7 identified one pre-existing unsafe Direct Debits period type without
+changing the database.
 
 ## Overview
 
@@ -579,9 +581,10 @@ banking sector behaviour;
 European financial system indicators.
 Current Limitations
 
-EU / ECB tables are heterogeneous. The v0.6.3 post-migration audit classifies
-all 17 tables as write-contract ready after exact reconstruction of the final
-three incomplete histories.
+EU / ECB tables are heterogeneous. The v0.6.7 deep read-only audit classifies
+16 tables as write-contract ready and `euro_direct_debits` as requiring a
+controlled rebuild. The latter still stores `time_period` as `YEAR`, although
+its registered source contains annual, semiannual and quarterly labels.
 
 The following six tables were rebuilt from their complete source files in
 v0.5.5:
@@ -606,6 +609,15 @@ versions remain under `pre_v056` names. Consumer prices, national accounts and
 MFI interest rates were rebuilt exactly in v0.6.3 and their former versions
 remain under `pre_v062` names. See `EURO_SOURCE_COMPLETENESS.md` and
 `EURO_LARGE_REBUILD_RESULTS.md`.
+
+The Direct Debits source contains 121,564 unique `(key_code, time_period)`
+observations, while the active table contains 75,647. A complete read-only key
+comparison proved that the `YEAR` column collapsed `YYYY-Sn` and `YYYY-Qn`
+labels: all 77,025 source-only and 31,108 target-only keys are explained, with
+zero unexplained differences. The active table has not been changed. The
+planned replacement uses an isolated `VARCHAR(20)` shadow and requires a fresh
+scoped backup plus separate build and swap authorization. See
+`EURO_DIRECT_DEBITS_REMEDIATION.md`.
 
 They often contain different combinations of:
 

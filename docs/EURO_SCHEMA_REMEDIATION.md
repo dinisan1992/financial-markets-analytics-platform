@@ -112,3 +112,17 @@ tables and the new `pre_v062` tables remain retained for rollback.
 General EURO refresh writes remain disabled pending the transactional
 multidimensional updater. See `EURO_LARGE_REBUILD_RESULTS.md` for the final
 counts, backup hashes and recovery statements.
+
+## v0.6.7 Direct Debits Correction
+
+The v0.6.3 completion statement above records the audit result available at
+that checkpoint. Version v0.6.7 found that the bounded source sample had not
+reached the semiannual and quarterly Direct Debits rows. The active
+`euro_direct_debits.time_period YEAR` column is therefore lossy and the current
+classification is 16 write-ready schemas plus one controlled rebuild.
+
+No corrective database operation was executed in v0.6.7. The replacement is
+planned as an isolated `VARCHAR(20)` shadow with full source/shadow validation,
+a retained active table and atomic rollback. Backup verification, shadow build
+and swap remain separate approval gates. See
+`EURO_DIRECT_DEBITS_REMEDIATION.md`.

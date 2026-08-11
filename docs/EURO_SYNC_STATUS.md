@@ -1,6 +1,6 @@
 # EURO Synchronization Status
 
-Version: v0.6.6
+Version: v0.6.7
 
 Date: 11 August 2026
 
@@ -45,6 +45,10 @@ zero database writes. The aggregate 3,899,962 planned inserts and 3,843,131
 planned updates include the blocked Direct Debits actions and must not be
 interpreted as an approved migration.
 
+The v0.6.7 full-period guard adds `unsafe_time_period_type` to the Direct
+Debits blockers. Its source uses annual, semiannual and quarterly periods, but
+the target stores `time_period` as `YEAR`.
+
 ## Memory Correction
 
 The first Balance Sheet Items plan exposed a MySQL Connector behavior:
@@ -62,11 +66,14 @@ Items plan then completed against 7,812,208 target rows.
 - `EXACT` means the registered source and target are fully idempotent.
 - `CHANGES` means the plan has no structural blocker, not that it is approved.
 - `BLOCKED` means apply mode rejects the plan before opening a write transaction.
-- Direct Debits requires a source key/dimension investigation because the
-  source and target each contain a substantial exclusive key set.
+- Direct Debits no longer has an unexplained key revision. A complete key
+  comparison explains all 77,025 source-only and 31,108 target-only rows as
+  the result of lossy `YEAR` storage. It requires a controlled shadow rebuild,
+  not transactional upsert against the current table.
 - Government Finance is a 3,822,937-row source-universe expansion and requires
   a separate capacity review, scoped backup and controlled migration decision.
 - Card Payments, Bank Lending Survey and Balance Sheet Items require field-level
   mismatch review before any write authorization.
 
-No active-data remediation is part of v0.6.6.
+No active-data remediation is part of v0.6.7. The diagnostic and rebuild plan
+are read-only; see `EURO_DIRECT_DEBITS_REMEDIATION.md`.

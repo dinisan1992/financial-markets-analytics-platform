@@ -157,3 +157,24 @@ The read-only schema report digest is
 `45596B651D848205E4761DA2B8157DE089A793B8063D169502E0AD74AFE219B4`.
 General EURO writes remain gated by the future transactional updater, not by
 schema or source-completeness defects.
+
+## v0.6.7 Direct Debits Correction
+
+The v0.6.3 result above remains the historical post-migration report, but one
+Direct Debits limitation was hidden by the bounded 1,000-row source sample.
+Those first rows were annual. A complete v0.6.7 scan found annual,
+semiannual and quarterly frequencies while the active period column remains
+`YEAR`.
+
+The schema audit now combines sampled source patterns with distinct target
+frequencies. Its current read-only classification is:
+
+- 16 `write_contract_ready` schemas;
+- one `rebuild_required` schema (`euro_direct_debits`);
+- 16/16 configured EURO application series available;
+- zero database writes.
+
+The report digest is
+`97FCCBDC71571D9BC25194DA9514B80BA396DCAF7A737922E5E95E5807A864A6`.
+See `EURO_DIRECT_DEBITS_REMEDIATION.md` for the complete key evidence and the
+plan-only shadow workflow.

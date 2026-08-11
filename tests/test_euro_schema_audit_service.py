@@ -42,6 +42,8 @@ class EuroSchemaAuditServiceTests(unittest.TestCase):
         self.assertFalse(period_type_is_safe("DATE", ("month",)))
         self.assertTrue(period_type_is_safe("VARCHAR(20)", ("semester",)))
         self.assertTrue(period_type_is_safe("DATE", ("date",)))
+        self.assertTrue(period_type_is_safe("YEAR", ("year",), ("A",)))
+        self.assertFalse(period_type_is_safe("YEAR", ("year",), ("A", "H", "Q")))
 
     def test_incomplete_target_history_requires_rebuild(self):
         self.assertEqual(
@@ -67,6 +69,7 @@ class EuroSchemaAuditServiceTests(unittest.TestCase):
             sample_rows=2,
             invalid_sample_rows=0,
             period_patterns=("month",),
+            target_frequencies=("M",),
             target_period_type="VARCHAR(20)",
             period_type_safe=True,
             primary_key=("key_code", "time_period"),

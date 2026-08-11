@@ -44,6 +44,7 @@ class EuroSchemaAudit:
     sample_rows: int
     invalid_sample_rows: int
     period_patterns: tuple[str, ...]
+    target_frequencies: tuple[str, ...]
     target_period_type: str | None
     period_type_safe: bool
     primary_key: tuple[str, ...]
@@ -104,9 +105,14 @@ def classify_period(value):
     return "other"
 
 
-def period_type_is_safe(target_type, patterns):
+def period_type_is_safe(target_type, patterns, frequencies=()):
     normalized_type = str(target_type or "").upper()
     pattern_set = set(patterns)
+    frequency_set = {
+        str(value).strip().upper()
+        for value in frequencies
+        if value is not None and str(value).strip()
+    }
     if not pattern_set:
         return False
     if any(token in normalized_type for token in ("CHAR", "TEXT")):
@@ -114,6 +120,8 @@ def period_type_is_safe(target_type, patterns):
     if normalized_type.startswith("DATE"):
         return pattern_set <= {"date", "datetime"}
     if normalized_type.startswith("YEAR") or "INT" in normalized_type:
+        if frequency_set - {"A"}:
+            return False
         return pattern_set <= {"year"}
     return False
 
@@ -225,6 +233,7 @@ def audit_euro_schema_contract(
             sample_rows=len(sample),
             invalid_sample_rows=invalid_rows,
             period_patterns=period_patterns,
+            target_frequencies=(),
             target_period_type=None,
             period_type_safe=False,
             primary_key=(),
@@ -259,11 +268,7 @@ def audit_euro_schema_contract(
     required_target_missing = tuple(
         column for column in BUSINESS_KEY + ("obs_value",) if column not in target_columns
     )
-    period_safe = period_type_is_safe(
-        target_types.get("time_period"),
-        period_patterns,
-    )
-
+    target_frequencies = ()
     with engine.connect() as connection:
         target_rows = int(
             connection.execute(
@@ -272,6 +277,16 @@ def audit_euro_schema_contract(
         )
         null_key_rows = None
         duplicate_groups = None
+        if "freq" in target_columns:
+            target_frequencies = tuple(
+                str(value)
+                for value in connection.execute(
+                    text(
+                        f"SELECT DISTINCT `freq` FROM `{table_name}` "
+                        "WHERE `freq` IS NOT NULL ORDER BY `freq`"
+                    )
+                ).scalars()
+            )
         if set(BUSINESS_KEY).issubset(target_columns):
             null_key_rows = int(
                 connection.execute(
@@ -294,6 +309,12 @@ def audit_euro_schema_contract(
                         )
                     ).scalar_one()
                 )
+
+    period_safe = period_type_is_safe(
+        target_types.get("time_period"),
+        period_patterns,
+        target_frequencies,
+    )
 
     audited_source_rows = SOURCE_ROW_BASELINE.get(str(import_key).upper())
     source_rows_missing = (
@@ -339,6 +360,7 @@ def audit_euro_schema_contract(
         sample_rows=len(sample),
         invalid_sample_rows=invalid_rows,
         period_patterns=period_patterns,
+        target_frequencies=target_frequencies,
         target_period_type=target_types.get("time_period"),
         period_type_safe=period_safe,
         primary_key=primary_key,
@@ -424,6 +446,7 @@ def _audit_frame(audits):
             "source_only_columns",
             "target_only_columns",
             "period_patterns",
+            "target_frequencies",
             "primary_key",
             "blockers",
         ):

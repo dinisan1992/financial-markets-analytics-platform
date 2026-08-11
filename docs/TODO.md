@@ -200,9 +200,22 @@
 - Add EURO status to the aggregated data-audit export
 - Pass 184 deterministic tests and parse 234 active Python files
 
-## High Priority After v0.6.6
+## Completed in v0.6.7
 
-- Diagnose the Direct Debits source-key revision without changing MySQL
+- Diagnose Direct Debits through a complete source/target key comparison without changing MySQL
+- Prove that `YEAR` storage collapsed semiannual and quarterly periods
+- Explain all 77,025 source-only and 31,108 target-only keys with no residual mismatch
+- Add lossy-period blockers to the schema audit and transactional synchronization planner
+- Reclassify the EURO schema baseline as 16 write-ready contracts and one controlled rebuild
+- Generate a read-only `VARCHAR(20)` shadow plan with future swap and rollback evidence
+- Keep build, apply and swap unavailable pending backup and separate authorization
+- Pass 187 deterministic tests and parse 240 active Python files
+
+## High Priority After v0.6.7
+
+- Create and verify a fresh table-scoped Direct Debits backup on the separate physical volume
+- Build and fully validate the Direct Debits shadow only after explicit authorization
+- Request a separate authorization before any atomic swap and retain the current table for rollback
 - Review field-level changes in Card Payments, Bank Lending Survey and Balance Sheet Items
 - Prepare a separate capacity and backup plan for the Government Finance expansion
 - Confirm the seven source contracts still marked as inferred during their next refresh
