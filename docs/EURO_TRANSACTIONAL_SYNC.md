@@ -1,6 +1,6 @@
 # EURO Transactional Synchronization
 
-Version: v0.6.5
+Version: v0.6.6
 
 Date: 11 August 2026
 
@@ -101,8 +101,15 @@ Read-only MySQL plans also passed against:
 | EURO fraud losses | 198 | 198 | 0 | 0 | 0 |
 | MFI interest rates | 1,594,491 | 1,594,491 | 0 | 0 | 0 |
 
-The MFI plan completed with 50,000-row chunks, proving the planner on a
-production-scale source. Both reports record `database_write_performed: false`.
+The MFI plan completed with bounded chunks, proving the planner on a
+production-scale source. Version v0.6.6 extended this baseline to all 17
+contracts. The MySQL Connector target path now uses an explicitly unbuffered
+cursor with at most 5,000 fetched rows, including during in-transaction final
+validation. The 7,812,208-row Balance Sheet Items target scan completed without
+the driver's former full-result buffering. Every report records
+`database_write_performed: false`.
+
+See `docs/EURO_SYNC_STATUS.md` for the complete contract table and next actions.
 
 ## MySQL Acceptance Result
 

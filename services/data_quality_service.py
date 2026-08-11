@@ -568,6 +568,8 @@ def build_audit_summary(audit_tables: dict[str, pd.DataFrame]):
     asset_audit = audit_tables.get("asset_audit", pd.DataFrame())
     pair_audit = audit_tables.get("correlation_coverage", pd.DataFrame())
     event_audit = audit_tables.get("event_coverage", pd.DataFrame())
+    euro_sync_status = audit_tables.get("euro_sync_status", pd.DataFrame())
+    euro_statuses = euro_sync_status.get("status", pd.Series(dtype=str))
 
     return {
         "generated_at_utc": pd.Timestamp.utcnow().isoformat(),
@@ -604,6 +606,17 @@ def build_audit_summary(audit_tables: dict[str, pd.DataFrame]):
         "events": len(event_audit),
         "approximate_events": int(
             event_audit.get("date_precision", pd.Series(dtype=str)).ne("exact").sum()
+        ),
+        "euro_contracts": len(euro_sync_status),
+        "euro_exact": int(euro_statuses.eq("EXACT").sum()),
+        "euro_changes": int(euro_statuses.eq("CHANGES").sum()),
+        "euro_blocked": int(euro_statuses.eq("BLOCKED").sum()),
+        "euro_not_audited": int(euro_statuses.eq("NOT_AUDITED").sum()),
+        "euro_plan_database_writes": int(
+            euro_sync_status.get(
+                "database_write_performed",
+                pd.Series(dtype=bool),
+            ).fillna(False).sum()
         ),
     }
 

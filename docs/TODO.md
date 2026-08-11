@@ -189,11 +189,23 @@
 - Remove the generated schema and confirm no acceptance schemas remain
 - Keep local backup, fixtures and reports outside Git
 
-## High Priority After v0.6.5
+## Completed in v0.6.6
 
+- Run one-by-one read-only synchronization plans for all 17 EURO contracts
+- Classify 12 exact, four changed and one blocked contract with zero database writes
+- Prevent MySQL Connector from buffering multi-million-row target scans
+- Complete the 7,812,208-row Balance Sheet Items plan without `MemoryError`
+- Add a reproducible EURO plan consolidator and local CSV/JSON baseline
+- Expose EURO status, freshness, planned actions and blockers in Data Quality
+- Add EURO status to the aggregated data-audit export
+- Pass 184 deterministic tests and parse 234 active Python files
+
+## High Priority After v0.6.6
+
+- Diagnose the Direct Debits source-key revision without changing MySQL
+- Review field-level changes in Card Payments, Bank Lending Survey and Balance Sheet Items
+- Prepare a separate capacity and backup plan for the Government Finance expansion
 - Confirm the seven source contracts still marked as inferred during their next refresh
-- Run read-only plans for the remaining 15 EURO contracts
-- Add EURO source freshness and refresh status to Data Quality
 - Confirm the WTI contract/source for 20 April 2020
 - Classify YUAN, FINANCIAL_CONDITIONS and TED_SPREAD by native frequency
 

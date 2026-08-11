@@ -20,7 +20,7 @@ Functional local platform with:
 - Data quality and validation tools.
 - Automated syntax checks and unit tests through GitHub Actions.
 
-Current project version: **v0.6.5**
+Current project version: **v0.6.6**
 
 ## Main Analytical Capabilities
 
@@ -81,7 +81,7 @@ A future fraud analytics layer is planned for card fraud, credit transfer fraud,
 - **Market Regimes** - rule-based regime classification and regime-conditioned performance.
 - **FED Macro** - all configured FED/market pairs aligned on real market observations.
 - **EURO Macro** - European macroeconomic series aligned on real market observations.
-- **Data Quality** - read-only freshness, duplicate, price-review, remediation, pair-confidence and event-coverage audit with aggregated ZIP export.
+- **Data Quality** - read-only freshness, duplicate, price-review, remediation, pair-confidence, event-coverage and EURO synchronization-status audit with aggregated ZIP export.
 - **Project Status** - current implementation and validation status.
 
 ## Application Screenshots
@@ -291,7 +291,7 @@ python project_scripts/ingestion/refresh_macro_sources.py ALL --check-sql
 The command validates all 28 source contracts and never writes by default. A
 single FED import can use `--update-sql` only with an exact table confirmation,
 a verified SQL backup containing that table and a unique business key. Version
-v0.6.5 qualifies the dedicated, default-read-only EURO synchronization planner
+v0.6.6 qualifies the dedicated, default-read-only EURO synchronization planner
 and one-table transactional apply engine. It classifies inserts, updates,
 unchanged and target-only rows through a disk-backed comparison; deletions are
 disabled, target-only rows block a write, and apply mode requires a scoped
@@ -301,15 +301,16 @@ backup plus an import-specific confirmation. See `docs/EURO_SCHEMA_AUDIT.md`,
 `docs/EURO_LARGE_REBUILD_PLAN.md` for the isolated rebuild runbook,
 `docs/EURO_LARGE_REBUILD_RESULTS.md` for the execution evidence, and
 `docs/EURO_TRANSACTIONAL_SYNC.md` for refresh policies,
-`docs/EURO_MYSQL_ACCEPTANCE.md` for the isolated MySQL evidence, and
+`docs/EURO_MYSQL_ACCEPTANCE.md` for the isolated MySQL evidence,
+`docs/EURO_SYNC_STATUS.md` for the complete 17-contract planning baseline, and
 `docs/MACRO_IMPORT_SAFETY.md` for importer controls.
 
 ## Validation Snapshot
 
-The v0.6.5 validation includes:
+The v0.6.6 validation includes:
 
-- 179/179 deterministic unit tests pass.
-- 231/231 active Python files parse successfully and `pip check` reports no broken requirements.
+- 184/184 deterministic unit tests pass.
+- 234/234 active Python files parse successfully and `pip check` reports no broken requirements.
 - 38/38 configured SQL assets recalculate successfully with database writes disabled.
 - 9/9 Streamlit pages render without uncaught exceptions and the running server reports HTTP 200 health.
 - Financial property tests cover indicator bounds, Bollinger ordering, correlation symmetry, Base 100 anchoring and event-date direction.
@@ -323,6 +324,9 @@ The v0.6.5 validation includes:
 - The isolated MySQL drill committed one insert and two updates, including a source-null overwrite, and the immediate reapply wrote zero rows.
 - A forced post-write mismatch rolled back the complete MySQL transaction; all 198 original rows and their fingerprint were preserved.
 - The active schema was never written, its before/after fingerprint was identical, and no temporary acceptance schema remained.
+- Read-only plans cover 17/17 EURO contracts: 12 exact, four with reviewed changes and one blocked by target-only rows.
+- MySQL Connector target scans use an explicitly unbuffered cursor capped at 5,000 rows; the 7,812,208-row balance-sheet plan completed without buffering the result set into memory.
+- Data Quality exposes the latest saved status, source freshness, planned actions and blockers for every EURO contract without rescanning CSVs or querying MySQL.
 
 The retained v0.5.6 database validation includes:
 
@@ -382,7 +386,9 @@ Planned improvements include:
 - Calibrate risk thresholds by asset class and data provenance.
 - Replace important year-only world events with verified exact dates.
 - Add dry-run and explicit entry points to the remaining SQL-capable ETL scripts.
-- Run read-only EURO plans for the remaining contracts and surface refresh readiness in Data Quality.
+- Resolve the Direct Debits source-key revision that leaves 31,108 target-only rows.
+- Review the four non-idempotent EURO plans before authorizing any active-data refresh.
+- Treat the 3,822,937-row Government Finance source expansion as a separate controlled migration.
 - Simplify the dependency file to direct project dependencies.
 - Develop the deferred EURO fraud analytics layer.
 - Start machine-learning experiments only after feature and label governance is stable.

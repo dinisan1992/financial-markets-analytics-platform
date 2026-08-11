@@ -4,6 +4,34 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [v0.6.6] - 2026-08-11 - Complete EURO Read-Only Planning
+
+### Added
+
+- A lightweight consolidator for the latest saved plan of every EURO contract.
+- A Data Quality `EURO Sync` view with status, source age, row counts, planned
+  actions, blockers, source reference and database-write evidence.
+- EURO synchronization status in the aggregated audit ZIP and JSON summary.
+
+### Corrected
+
+- Replaced the SQLAlchemy MySQL Connector target-result path with an explicitly
+  unbuffered DBAPI cursor capped at 5,000 rows per fetch. This prevents the
+  driver from buffering multi-million-row target scans before validation starts.
+
+### Validation
+
+- Completed read-only plans for 17/17 EURO contracts with zero database writes.
+- Classified 12 plans as exact, four as changed and one as blocked.
+- Completed the 7,812,208-row Balance Sheet Items target scan without the prior
+  `MemoryError`.
+- Passed 184/184 deterministic tests and parsed 234/234 active Python files.
+- Rendered 9/9 Streamlit pages, exercised the complete Data Quality audit in a
+  real browser and confirmed the 17/12/4/1/0 EURO status with no console error.
+- Confirmed dependency integrity and kept all generated reports outside Git.
+
+---
+
 ## [v0.6.5] - 2026-08-11 - Isolated MySQL Acceptance
 
 ### Added

@@ -10,6 +10,7 @@ from services.data_quality_service import (
     build_freshness_report,
     build_remediation_report,
 )
+from services.euro_sync_status_service import summarize_euro_sync_status
 
 
 @dataclass(frozen=True)
@@ -22,7 +23,7 @@ def render_data_quality(deps: DataQualityDeps):
 
     if st.button("Run read-only data audit", width="stretch"):
         try:
-            with st.spinner("Auditing asset, correlation and event coverage..."):
+            with st.spinner("Auditing assets, correlations, events and saved EURO plans..."):
                 st.session_state.data_quality_results = deps.load_data_quality_audit()
         except Exception as exc:
             st.session_state.data_quality_results = None
@@ -57,6 +58,7 @@ def render_data_quality(deps: DataQualityDeps):
             "Remediation",
             "Correlation Coverage",
             "Event Coverage",
+            "EURO Sync",
             "Export",
         ],
         on_change="rerun",
@@ -84,6 +86,10 @@ def render_data_quality(deps: DataQualityDeps):
 
     if tabs[5].open:
         with tabs[5]:
+            _render_euro_sync_status(results.get("euro_sync_status", pd.DataFrame()))
+
+    if tabs[6].open:
+        with tabs[6]:
             _render_export(results)
 
 
@@ -206,6 +212,75 @@ def _render_event_coverage(event_audit: pd.DataFrame):
         st.info("No event coverage rows are available.")
         return
     st.dataframe(event_audit, hide_index=True, width="stretch")
+
+
+def _render_euro_sync_status(status_frame: pd.DataFrame):
+    if status_frame.empty:
+        st.info("No EURO synchronization contracts are available.")
+        return
+
+    summary = summarize_euro_sync_status(status_frame)
+    with st.container(horizontal=True):
+        st.metric("Contracts", summary["contracts"], border=True)
+        st.metric("Exact", summary["exact"], border=True)
+        st.metric("Changes", summary["changes"], border=True)
+        st.metric("Blocked", summary["blocked"], border=True)
+        st.metric("Not Audited", summary["not_audited"], border=True)
+
+    if summary["database_writes_reported"]:
+        st.warning(
+            f"{summary['database_writes_reported']} saved report(s) indicate a database write."
+        )
+    else:
+        st.success("No saved synchronization report records a database write.")
+
+    status_options = status_frame["status"].dropna().unique().tolist()
+    selected_status = st.multiselect(
+        "Synchronization status",
+        status_options,
+        default=status_options,
+    )
+    filtered = status_frame[status_frame["status"].isin(selected_status)]
+    display_columns = [
+        "import_key",
+        "table_name",
+        "status",
+        "source_rows",
+        "target_rows",
+        "planned_inserts",
+        "planned_updates",
+        "target_only_rows",
+        "unchanged_rows",
+        "source_file",
+        "source_age_days",
+        "report_generated_utc",
+        "blockers",
+        "source_reference",
+        "database_write_performed",
+    ]
+    st.dataframe(
+        filtered.loc[:, display_columns],
+        hide_index=True,
+        width="stretch",
+        column_config={
+            "import_key": st.column_config.TextColumn("Contract", pinned=True),
+            "table_name": st.column_config.TextColumn("Table"),
+            "status": st.column_config.TextColumn("Status", pinned=True),
+            "source_rows": st.column_config.NumberColumn("Source Rows", format="%d"),
+            "target_rows": st.column_config.NumberColumn("Target Rows", format="%d"),
+            "planned_inserts": st.column_config.NumberColumn("Inserts", format="%d"),
+            "planned_updates": st.column_config.NumberColumn("Updates", format="%d"),
+            "target_only_rows": st.column_config.NumberColumn("Target Only", format="%d"),
+            "unchanged_rows": st.column_config.NumberColumn("Unchanged", format="%d"),
+            "source_age_days": st.column_config.NumberColumn("Source Age", format="%d days"),
+            "report_generated_utc": st.column_config.DatetimeColumn(
+                "Report Generated (UTC)",
+                format="YYYY-MM-DD HH:mm",
+            ),
+            "source_reference": st.column_config.LinkColumn("Source"),
+            "database_write_performed": st.column_config.CheckboxColumn("DB Write"),
+        },
+    )
 
 
 def _render_export(results: dict[str, pd.DataFrame]):

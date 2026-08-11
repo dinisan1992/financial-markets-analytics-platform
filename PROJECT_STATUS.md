@@ -4,7 +4,7 @@ Last updated: 11 August 2026
 
 ## Current Version
 
-**Macro-Financial Risk & Market Behaviour Analytics Platform v0.6.5**
+**Macro-Financial Risk & Market Behaviour Analytics Platform v0.6.6**
 
 ## Executive Summary
 
@@ -22,7 +22,7 @@ It combines:
 - interactive dashboarding;
 - data quality validation.
 
-The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.6.5 qualifies the guarded EURO synchronization engine on an isolated MariaDB/MySQL schema while preserving the exact v0.6.3 active database baseline. The drill restored a verified backup, committed controlled insert/update/null fixtures only after complete in-transaction validation, proved zero-write idempotency, forced and verified a complete rollback, then removed the temporary schema. The active table's 198 rows and full-row fingerprint were identical before and after; no active database write was executed.
+The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.6.6 completes read-only synchronization planning for all 17 EURO contracts and exposes the saved evidence in Data Quality without rescanning multi-gigabyte sources. Twelve contracts are exact, four contain planned changes and Direct Debits is blocked by 31,108 target-only rows. A MySQL Connector buffering defect found during the 7,812,208-row balance-sheet scan was corrected with an explicitly unbuffered, bounded cursor. No active database write was executed.
 
 ## Completed and Functional Modules
 
@@ -108,6 +108,7 @@ Includes:
 - duplicate-date group counts and affected date range;
 - prioritized non-destructive remediation actions;
 - event coverage and event-date precision;
+- latest saved status, source freshness, planned actions and blockers for all 17 EURO synchronization contracts;
 - aggregated CSV/ZIP export with no raw prices or credentials.
 
 ### Market Analysis
@@ -219,10 +220,10 @@ Main file:
 
 ## Latest Documented Validation
 
-Version 0.6.5 validation included:
+Version 0.6.6 validation included:
 
-- 179/179 deterministic unit tests passed.
-- 231/231 active Python files parsed successfully and `pip check` reported no broken requirements.
+- 184/184 deterministic unit tests passed.
+- 234/234 active Python files parsed successfully and `pip check` reported no broken requirements.
 - 38/38 configured SQL assets recalculated successfully with database writes disabled.
 - 9/9 Streamlit pages rendered through `AppTest` without uncaught exceptions; the running server returned HTTP 200 health.
 - Added financial property tests for indicator bounds, Bollinger ordering, correlation symmetry, Base 100 normalization and event-date direction.
@@ -236,6 +237,11 @@ Version 0.6.5 validation included:
 - Committed one controlled insert and two updates, including a source-null overwrite, then proved a second apply wrote zero rows.
 - Forced the final MySQL comparison to fail and proved the complete transaction rolled back to the original 198-row fingerprint.
 - Confirmed the active database was unchanged and no temporary acceptance schema remained.
+- Completed one-by-one read-only plans for 17/17 EURO contracts with zero database writes.
+- Classified 12 contracts as exact, four as changed and one as blocked.
+- Completed the 7,812,208-row Balance Sheet Items comparison after replacing MySQL Connector's buffered result path with a 5,000-row unbuffered cursor.
+- Added a lightweight report consolidator and a Data Quality `EURO Sync` view; neither path scans source CSVs nor connects to MySQL.
+- Exercised the Data Quality audit and EURO Sync tab in a real browser, confirmed the 17/12/4/1/0 status, ZIP export control and zero console errors.
 - Added progress reporting for long source, target and write scans.
 - Synchronized `VERSION` with the runtime project version and added a regression test for future releases.
 - Reused the disk-backed store for full-row shadow validation, while preserving the legacy path for earlier migration checkpoints.
@@ -403,10 +409,11 @@ Planned work:
 
 The project already contains a validated multi-asset, FED macro and EURO macro analytical layer.
 
-The isolated MySQL acceptance gate is complete. The current priority is controlled refresh readiness without changing active data prematurely:
+The isolated MySQL acceptance gate and full read-only planning baseline are complete. The current priority is controlled data remediation without changing active data prematurely:
 
-1. run read-only plans for the remaining 15 EURO contracts;
-2. expose source freshness, plan status and blockers in Data Quality;
-3. confirm the seven inferred source contracts during their next refresh;
-4. authorize the first production refresh only when a genuinely newer reviewed CSV exists;
-5. continue market-source identity and native-frequency remediation in parallel.
+1. identify the Direct Debits key/dimension revision behind 31,108 target-only rows;
+2. review field-level differences for Card Payments, Bank Lending Survey and Balance Sheet Items;
+3. treat the Government Finance expansion as a dedicated migration with a fresh scoped backup and capacity preflight;
+4. confirm the seven inferred source contracts during their next refresh;
+5. authorize a production refresh only after a new plan, explicit review and a fresh table-scoped backup;
+6. continue WTI source identity and native-frequency remediation in parallel.

@@ -68,6 +68,7 @@ from services.data_quality_service import (
     build_remediation_report,
     run_asset_audit,
 )
+from services.euro_sync_status_service import load_latest_euro_sync_status
 from dashboard.correlation_data import build_multi_asset_price_frame
 from services.export_service import dataframe_to_csv_bytes
 from services.risk_statistics_service import filter_df_by_recent_window
@@ -246,6 +247,7 @@ def load_data_quality_audit():
         "remediation_report": build_remediation_report(asset_audit),
         "correlation_coverage": build_pair_coverage_audit(asset_frames),
         "event_coverage": audit_event_coverage(get_engine(), asset_frames),
+        "euro_sync_status": load_latest_euro_sync_status(),
     }
 
 

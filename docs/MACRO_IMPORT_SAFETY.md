@@ -1,6 +1,6 @@
 # Controlled Macro Import Safety
 
-Version 0.6.5 places all 11 FED and 17 EURO/ECB source files behind explicit
+Version 0.6.6 places all 11 FED and 17 EURO/ECB source files behind explicit
 import contracts. Importing a Python module never opens MySQL or starts loading
 a CSV. Running an importer without write flags performs a read-only preview.
 
@@ -129,6 +129,12 @@ controlled insert/update/null fixtures, proved zero-write idempotency and forced
 a complete rollback in a generated test schema. No active MySQL write was
 executed. A future production refresh still requires a newer reviewed source,
 a blocker-free plan, a fresh scoped backup and exact apply confirmation.
+
+Version v0.6.6 completed one-by-one read-only plans for all 17 EURO contracts:
+12 are exact, four contain planned changes and Direct Debits is blocked by
+target-only rows. The lightweight Data Quality status reader consumes only the
+saved JSON evidence; it does not scan CSVs or connect to MySQL. See
+`docs/EURO_SYNC_STATUS.md` for the full baseline.
 
 ## Recovery
 

@@ -34,6 +34,7 @@ TARGET_IMPORT_KEYS = (
 DEFAULT_CHUNK_SIZE = 25_000
 DEFAULT_SAMPLE_LIMIT = 10
 MIN_WORKSPACE_FREE_BYTES = 2 * 1024**3
+MAX_TARGET_FETCH_ROWS = 5_000
 
 
 @dataclass(frozen=True)
@@ -130,6 +131,32 @@ def _target_query(engine, table_name, columns):
     return text(f"SELECT {', '.join(selections)} FROM `{table_name}`")
 
 
+def _target_value_batches(connection, query, columns, chunk_size):
+    """Yield bounded target tuples, including with buffered mysqlconnector."""
+    fetch_size = min(max(1, int(chunk_size)), MAX_TARGET_FETCH_ROWS)
+    dialect = connection.engine.dialect
+    if dialect.name in {"mysql", "mariadb"} and dialect.driver == "mysqlconnector":
+        driver_connection = connection.connection.driver_connection
+        cursor = driver_connection.cursor(buffered=False)
+        try:
+            cursor.execute(query.text)
+            while rows := cursor.fetchmany(fetch_size):
+                yield rows
+        finally:
+            cursor.close()
+        return
+
+    result = connection.execution_options(
+        stream_results=True,
+        max_row_buffer=fetch_size,
+    ).execute(query).mappings()
+    try:
+        while rows := result.fetchmany(fetch_size):
+            yield [tuple(row[column] for column in columns) for row in rows]
+    finally:
+        result.close()
+
+
 def audit_euro_source_against_target(
     engine,
     import_key,
@@ -222,16 +249,16 @@ def audit_euro_source_against_target(
                 else engine.connect()
             )
             with connection_context as target_connection:
-                result = target_connection.execution_options(
-                    stream_results=True,
-                    max_row_buffer=chunk_size,
-                ).execute(target_query).mappings()
-                while rows := result.fetchmany(chunk_size):
+                for rows in _target_value_batches(
+                    target_connection,
+                    target_query,
+                    columns,
+                    chunk_size,
+                ):
                     max_target_chunk_rows = max(max_target_chunk_rows, len(rows))
                     records = []
-                    for row in rows:
+                    for values in rows:
                         target_rows += 1
-                        values = tuple(row[column] for column in columns)
                         record, invalid_columns = normalize_row(columns, values)
                         if invalid_columns:
                             target_invalid_numeric += 1

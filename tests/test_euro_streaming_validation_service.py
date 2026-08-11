@@ -4,9 +4,11 @@ from unittest.mock import patch
 import unittest
 
 import pandas as pd
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, text
 
 from services.euro_streaming_validation_service import (
+    MAX_TARGET_FETCH_ROWS,
+    _target_value_batches,
     audit_euro_source_against_target,
 )
 
@@ -168,6 +170,68 @@ class EuroStreamingValidationTests(unittest.TestCase):
             all(statement.startswith(("SELECT", "PRAGMA")) for statement in statements),
             statements,
         )
+
+    def test_mysqlconnector_uses_unbuffered_bounded_cursor(self):
+        class Cursor:
+            def __init__(self):
+                self.execute_calls = []
+                self.fetch_sizes = []
+                self.closed = False
+                self.batches = [
+                    [("A", "2024-01", "1")],
+                    [("B", "2024-01", "2")],
+                    [],
+                ]
+
+            def execute(self, statement):
+                self.execute_calls.append(statement)
+
+            def fetchmany(self, size):
+                self.fetch_sizes.append(size)
+                return self.batches.pop(0)
+
+            def close(self):
+                self.closed = True
+
+        class DriverConnection:
+            def __init__(self, cursor):
+                self.test_cursor = cursor
+                self.buffered_arguments = []
+
+            def cursor(self, buffered):
+                self.buffered_arguments.append(buffered)
+                return self.test_cursor
+
+        cursor = Cursor()
+        driver_connection = DriverConnection(cursor)
+        dialect = type(
+            "Dialect",
+            (),
+            {"name": "mysql", "driver": "mysqlconnector"},
+        )()
+        engine = type("Engine", (), {"dialect": dialect})()
+        fairy = type(
+            "ConnectionFairy",
+            (),
+            {"driver_connection": driver_connection},
+        )()
+        connection = type(
+            "Connection",
+            (),
+            {"engine": engine, "connection": fairy},
+        )()
+
+        batches = list(_target_value_batches(
+            connection,
+            text("SELECT key_code, time_period, obs_value FROM euro_test"),
+            ("key_code", "time_period", "obs_value"),
+            MAX_TARGET_FETCH_ROWS * 10,
+        ))
+
+        self.assertEqual(False, driver_connection.buffered_arguments[0])
+        self.assertEqual(2, len(batches))
+        self.assertEqual(MAX_TARGET_FETCH_ROWS, cursor.fetch_sizes[0])
+        self.assertTrue(cursor.closed)
 
 
 if __name__ == "__main__":

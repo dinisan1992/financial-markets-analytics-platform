@@ -8,6 +8,7 @@ import pandas as pd
 
 from services.data_quality_service import (
     audit_asset_frame,
+    build_audit_summary,
     build_audit_zip_bytes,
     build_freshness_report,
     build_pair_coverage_audit,
@@ -64,6 +65,27 @@ class DataQualityServiceTests(unittest.TestCase):
                     "event_coverage.csv",
                 },
             )
+
+    def test_summary_includes_euro_sync_status(self):
+        summary = build_audit_summary(
+            {
+                "euro_sync_status": pd.DataFrame(
+                    [
+                        {"status": "EXACT", "database_write_performed": False},
+                        {"status": "CHANGES", "database_write_performed": False},
+                        {"status": "BLOCKED", "database_write_performed": True},
+                        {"status": "NOT_AUDITED", "database_write_performed": False},
+                    ]
+                )
+            }
+        )
+
+        self.assertEqual(4, summary["euro_contracts"])
+        self.assertEqual(1, summary["euro_exact"])
+        self.assertEqual(1, summary["euro_changes"])
+        self.assertEqual(1, summary["euro_blocked"])
+        self.assertEqual(1, summary["euro_not_audited"])
+        self.assertEqual(1, summary["euro_plan_database_writes"])
 
     def test_negative_yield_is_not_an_invalid_price(self):
         frame = pd.DataFrame(

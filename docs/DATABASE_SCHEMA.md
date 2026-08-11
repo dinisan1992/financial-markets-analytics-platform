@@ -1,6 +1,6 @@
 # Database Schema
 
-Project version: v0.6.5. Database schema checkpoint: v0.6.3 (unchanged in v0.6.5).
+Project version: v0.6.6. Database schema checkpoint: v0.6.3 (unchanged in v0.6.6).
 
 ## Overview
 

@@ -46,10 +46,12 @@ Market data maintenance entry points:
 - `project_scripts/assets/run_all_assets.py` - SQL-only validation for all configured assets.
 - `project_scripts/diagnostics/backup_market_tables.py` - scoped SQL backup without exposing credentials.
 - `project_scripts/diagnostics/acceptance_test_euro_sync_mysql.py` - isolated backup, commit, idempotency and rollback acceptance drill.
+- `project_scripts/diagnostics/consolidate_euro_sync_status.py` - read-only consolidation of saved EURO plans into local CSV/JSON evidence.
 - `project_scripts/diagnostics/remediate_market_tables.py` - reversible shadow-table remediation.
 - `services/market_data_sync_service.py` - shared parsing, planning, key checks and transactional upsert logic.
 - `project_scripts/ingestion/sync_euro_macro.py` - default-read-only EURO synchronization planner.
 - `services/euro_sync_service.py` - bounded EURO action planning, guarded upsert and in-transaction validation.
+- `services/euro_sync_status_service.py` - lightweight status and freshness view over saved EURO plan reports.
 
 ## Tools
 
