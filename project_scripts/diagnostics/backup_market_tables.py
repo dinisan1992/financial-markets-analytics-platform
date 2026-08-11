@@ -3,6 +3,7 @@ from datetime import datetime
 import argparse
 import hashlib
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -67,11 +68,24 @@ def sha256_file(path, chunk_size=1024 * 1024):
     return digest.hexdigest().upper()
 
 
-def create_backup(output_dir, tables=DEFAULT_TABLES, mysqldump_path=None):
+def validate_filename_prefix(value):
+    value = str(value)
+    if not re.fullmatch(r"[A-Za-z0-9_]+", value):
+        raise ValueError(f"Unsafe backup filename prefix: {value}")
+    return value
+
+
+def create_backup(
+    output_dir,
+    tables=DEFAULT_TABLES,
+    mysqldump_path=None,
+    filename_prefix="market_tables_before_v050",
+):
     output_dir = Path(output_dir).expanduser().resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_path = output_dir / f"market_tables_before_v050_{timestamp}.sql"
+    filename_prefix = validate_filename_prefix(filename_prefix)
+    output_path = output_dir / f"{filename_prefix}_{timestamp}.sql"
     executable = resolve_mysqldump(mysqldump_path)
     command = build_mysqldump_command(executable, tables)
     environment = os.environ.copy()
@@ -109,6 +123,10 @@ def build_parser():
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--mysqldump")
     parser.add_argument("--tables", nargs="+", default=list(DEFAULT_TABLES))
+    parser.add_argument(
+        "--filename-prefix",
+        default="market_tables_before_v050",
+    )
     return parser
 
 
@@ -118,6 +136,7 @@ def main(argv=None):
         output_dir=args.output_dir,
         tables=tuple(args.tables),
         mysqldump_path=args.mysqldump,
+        filename_prefix=args.filename_prefix,
     )
 
 

@@ -1,6 +1,8 @@
 # EURO Streaming Validation
 
-Version: v0.6.1
+Audit baseline: v0.6.1
+
+Migration tooling: v0.6.2
 
 Audit date: 11 August 2026
 
@@ -77,20 +79,21 @@ duplicate keys.
 
 ## Migration Gate
 
-This release validates the active source-to-SQL gap but does not authorize or
-perform a rebuild. Before any MySQL change:
+Version 0.6.2 completes the code-side migration gate without authorizing a
+database change. The shadow loader and pre-swap validator now reuse the same
+disk-backed store, operate on one table per command and use isolated `v062`
+names plus table-specific confirmations.
 
-1. Replace the legacy in-memory fingerprint dictionary in the shadow-build path
-   with the disk-backed store.
-2. Process one table per migration checkpoint, starting with consumer prices.
-3. Create and verify a table-scoped structure-and-data SQL backup.
-4. Recheck disk capacity while preserving space for MySQL temporary, redo and
-   retained rollback data.
-5. Build a versioned shadow and validate rows, keys, non-null values and full-row
-   signatures without changing the active table.
-6. Present the exact atomic swap and rollback statements for separate approval.
-7. Re-run this read-only audit after the swap before proceeding to the next
-   table.
+The execution order is MFI interest rates, national accounts and consumer
+prices. For each table, the required checkpoints are:
+
+1. create and verify a table-scoped structure-and-data SQL backup on a separate
+   physical volume;
+2. repeat the read-only capacity preflight;
+3. build and fully validate the shadow without changing the active table;
+4. inspect the report and exact swap and rollback statements;
+5. obtain separate approval for the atomic swap;
+6. rerun this read-only audit before proceeding to the next table.
 
 No shadow, backup, index, table, SQL row or source CSV was created or changed in
-MySQL during v0.6.1.
+MySQL during v0.6.1 or v0.6.2.

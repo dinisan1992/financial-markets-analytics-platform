@@ -143,16 +143,27 @@
 - Persist local JSON/CSV evidence under Git-ignored `audit_outputs/`
 - Pass 137 deterministic tests and parse 216 active Python files
 
-## High Priority After v0.6.1
+## Completed in v0.6.2
+
+- Extract the v0.6.1 SQLite comparison logic into a reusable fingerprint store
+- Use disk-backed fingerprints during large shadow construction and pre-swap validation
+- Restrict each large rebuild to one named import with table-specific confirmations
+- Isolate all new shadow, retained and failed tables under the `v062` namespace
+- Add read-only plan and capacity-preflight stages with a 5 GiB operating reserve
+- Add a one-table backup command with streaming dump and SHA-256 verification
+- Pass 155 deterministic tests and parse 224 active Python files
+- Preserve MySQL unchanged while preparing the migration runbook
+
+## High Priority After v0.6.2
 
 - Confirm the seven source contracts still marked as inferred during their next refresh
-- Replace the shadow rebuild's remaining in-memory fingerprint dictionary with the v0.6.1 disk-backed store
-- Rebuild consumer prices, national accounts and MFI interest rates one at a time
+- Back up, build, review and swap MFI interest rates through separate approvals
+- Repeat the controlled process for national accounts and then consumer prices
+- Compare each post-swap audit with the archived v0.6.1 baseline
 - Build the transactional multidimensional EURO updater with missing-value policy
 - Add isolated database-backed synchronization tests
 - Confirm the WTI contract/source for 20 April 2020
 - Classify YUAN, FINANCIAL_CONDITIONS and TED_SPREAD by native frequency
-- Compare every post-update audit with an archived baseline
 
 ---
 

@@ -3,8 +3,6 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 from pathlib import Path
 import shutil
-import sqlite3
-from tempfile import TemporaryDirectory, gettempdir
 from time import perf_counter
 
 from sqlalchemy import inspect, text
@@ -17,6 +15,11 @@ from services.euro_rebuild_service import (
     normalize_row,
     normalize_source_frame,
     source_chunks,
+)
+from services.euro_fingerprint_store import (
+    SOURCE_DATASET,
+    TARGET_DATASET,
+    temporary_fingerprint_store,
 )
 from services.macro_import_service import normalize_column_name
 from services.market_data_sync_service import validate_identifier
@@ -103,46 +106,6 @@ class EuroStreamingValidation:
         return output
 
 
-def _create_comparison_store(path):
-    connection = sqlite3.connect(path)
-    connection.execute("PRAGMA journal_mode=OFF")
-    connection.execute("PRAGMA synchronous=OFF")
-    connection.execute("PRAGMA temp_store=FILE")
-    connection.execute("PRAGMA cache_size=-65536")
-    for name in ("source_rows", "target_rows"):
-        connection.execute(
-            f"""
-            CREATE TABLE {name} (
-                key_code TEXT NOT NULL,
-                time_period TEXT NOT NULL,
-                row_hash BLOB NOT NULL,
-                occurrences INTEGER NOT NULL DEFAULT 1,
-                hash_conflicts INTEGER NOT NULL DEFAULT 0,
-                PRIMARY KEY (key_code, time_period)
-            ) WITHOUT ROWID
-            """
-        )
-    connection.commit()
-    return connection
-
-
-def _insert_records(connection, table_name, records):
-    if not records:
-        return
-    connection.executemany(
-        f"""
-        INSERT INTO {table_name} (key_code, time_period, row_hash)
-        VALUES (?, ?, ?)
-        ON CONFLICT(key_code, time_period) DO UPDATE SET
-            occurrences = occurrences + 1,
-            hash_conflicts = hash_conflicts +
-                CASE WHEN row_hash <> excluded.row_hash THEN 1 ELSE 0 END
-        """,
-        records,
-    )
-    connection.commit()
-
-
 def _target_query(engine, table_name, columns):
     table_name = validate_identifier(table_name)
     inspector = inspect(engine)
@@ -164,44 +127,6 @@ def _target_query(engine, table_name, columns):
         alias = validate_identifier(column)
         selections.append(f"`{actual}` AS `{alias}`")
     return text(f"SELECT {', '.join(selections)} FROM `{table_name}`")
-
-
-def _store_summary(connection, table_name):
-    row = connection.execute(
-        f"""
-        SELECT
-            COUNT(*) AS unique_keys,
-            COALESCE(SUM(occurrences - 1), 0) AS duplicate_rows,
-            COALESCE(SUM(occurrences > 1), 0) AS duplicate_groups,
-            COALESCE(SUM(hash_conflicts), 0) AS hash_conflicts,
-            MIN(time_period) AS first_period,
-            MAX(time_period) AS last_period
-        FROM {table_name}
-        """
-    ).fetchone()
-    return {
-        "unique_keys": int(row[0] or 0),
-        "duplicate_rows": int(row[1] or 0),
-        "duplicate_groups": int(row[2] or 0),
-        "hash_conflicts": int(row[3] or 0),
-        "first_period": row[4],
-        "last_period": row[5],
-    }
-
-
-def _count(connection, query):
-    return int(connection.execute(query).fetchone()[0] or 0)
-
-
-def _key_samples(connection, query, limit):
-    rows = connection.execute(query, (max(0, int(limit)),)).fetchall()
-    return tuple({"key_code": row[0], "time_period": row[1]} for row in rows)
-
-
-def _workspace_size(connection):
-    page_count = int(connection.execute("PRAGMA page_count").fetchone()[0])
-    page_size = int(connection.execute("PRAGMA page_size").fetchone()[0])
-    return page_count * page_size
 
 
 def audit_euro_source_against_target(
@@ -230,19 +155,6 @@ def audit_euro_source_against_target(
     target_table = validate_identifier(contract["table_name"])
     target_query = _target_query(engine, target_table, columns)
 
-    workspace_root = (
-        Path(workspace_dir).expanduser().resolve()
-        if workspace_dir is not None
-        else Path(gettempdir()).resolve()
-    )
-    if not workspace_root.is_dir():
-        raise FileNotFoundError(f"Audit workspace does not exist: {workspace_root}")
-    free_before = shutil.disk_usage(workspace_root).free
-    if free_before < max(0, int(minimum_free_bytes)):
-        raise OSError(
-            f"Insufficient free space for streaming audit: {free_before} bytes"
-        )
-
     source_rows = 0
     target_rows = 0
     source_non_null = 0
@@ -254,13 +166,14 @@ def audit_euro_source_against_target(
     max_source_chunk_rows = 0
     max_target_chunk_rows = 0
 
-    with TemporaryDirectory(
-        prefix=f"euro_audit_{import_key.lower()}_",
-        dir=workspace_root,
-    ) as temp_dir:
-        store_path = Path(temp_dir) / "comparison.sqlite3"
-        store = _create_comparison_store(store_path)
-        try:
+    with temporary_fingerprint_store(
+        import_key,
+        workspace_dir=workspace_dir,
+        minimum_free_bytes=minimum_free_bytes,
+    ) as store:
+        free_before = store.free_disk_bytes_before
+        workspace_root = store.workspace_root
+        with store.connection:
             for raw_chunk in source_chunks(contract, chunk_size):
                 chunk = normalize_source_frame(contract, raw_chunk, columns)
                 max_source_chunk_rows = max(max_source_chunk_rows, len(chunk))
@@ -283,7 +196,7 @@ def audit_euro_source_against_target(
                             bytes.fromhex(canonical_row_hash(columns, record)),
                         )
                     )
-                _insert_records(store, "source_rows", records)
+                store.insert_records(SOURCE_DATASET, records)
                 if progress_callback:
                     progress_callback("source", import_key, source_rows)
 
@@ -314,107 +227,29 @@ def audit_euro_source_against_target(
                                 bytes.fromhex(canonical_row_hash(columns, record)),
                             )
                         )
-                    _insert_records(store, "target_rows", records)
+                    store.insert_records(TARGET_DATASET, records)
                     if progress_callback:
                         progress_callback("target", import_key, target_rows)
 
-            source_summary = _store_summary(store, "source_rows")
-            target_summary = _store_summary(store, "target_rows")
-            missing_query = """
-                SELECT COUNT(*)
-                FROM source_rows AS source
-                LEFT JOIN target_rows AS target
-                  ON target.key_code = source.key_code
-                 AND target.time_period = source.time_period
-                WHERE target.key_code IS NULL
-            """
-            extra_query = """
-                SELECT COUNT(*)
-                FROM target_rows AS target
-                LEFT JOIN source_rows AS source
-                  ON source.key_code = target.key_code
-                 AND source.time_period = target.time_period
-                WHERE source.key_code IS NULL
-            """
-            mismatch_query = """
-                SELECT COUNT(*)
-                FROM source_rows AS source
-                JOIN target_rows AS target
-                  ON target.key_code = source.key_code
-                 AND target.time_period = source.time_period
-                WHERE target.row_hash <> source.row_hash
-            """
-            source_missing = _count(store, missing_query)
-            target_extra = _count(store, extra_query)
-            mismatches = _count(store, mismatch_query)
-            store_bytes = _workspace_size(store)
+            source_summary = store.summary(SOURCE_DATASET)
+            target_summary = store.summary(TARGET_DATASET)
+            comparison = store.comparison()
+            source_missing = comparison["source_rows_missing_from_target"]
+            target_extra = comparison["target_rows_missing_from_source"]
+            mismatches = comparison["row_hash_mismatches"]
+            store_bytes = store.size_bytes
 
-            missing_samples = _key_samples(
-                store,
-                """
-                SELECT source.key_code, source.time_period
-                FROM source_rows AS source
-                LEFT JOIN target_rows AS target
-                  ON target.key_code = source.key_code
-                 AND target.time_period = source.time_period
-                WHERE target.key_code IS NULL
-                ORDER BY source.key_code, source.time_period
-                LIMIT ?
-                """,
+            missing_samples = store.key_samples("missing", sample_limit)
+            extra_samples = store.key_samples("extra", sample_limit)
+            mismatch_samples = store.key_samples("mismatch", sample_limit)
+            source_duplicate_samples = store.key_samples(
+                "source_duplicate",
                 sample_limit,
             )
-            extra_samples = _key_samples(
-                store,
-                """
-                SELECT target.key_code, target.time_period
-                FROM target_rows AS target
-                LEFT JOIN source_rows AS source
-                  ON source.key_code = target.key_code
-                 AND source.time_period = target.time_period
-                WHERE source.key_code IS NULL
-                ORDER BY target.key_code, target.time_period
-                LIMIT ?
-                """,
+            target_duplicate_samples = store.key_samples(
+                "target_duplicate",
                 sample_limit,
             )
-            mismatch_samples = _key_samples(
-                store,
-                """
-                SELECT source.key_code, source.time_period
-                FROM source_rows AS source
-                JOIN target_rows AS target
-                  ON target.key_code = source.key_code
-                 AND target.time_period = source.time_period
-                WHERE target.row_hash <> source.row_hash
-                ORDER BY source.key_code, source.time_period
-                LIMIT ?
-                """,
-                sample_limit,
-            )
-            source_duplicate_samples = _key_samples(
-                store,
-                """
-                SELECT key_code, time_period
-                FROM source_rows
-                WHERE occurrences > 1
-                ORDER BY key_code, time_period
-                LIMIT ?
-                """,
-                sample_limit,
-            )
-            target_duplicate_samples = _key_samples(
-                store,
-                """
-                SELECT key_code, time_period
-                FROM target_rows
-                WHERE occurrences > 1
-                ORDER BY key_code, time_period
-                LIMIT ?
-                """,
-                sample_limit,
-            )
-        finally:
-            store.close()
 
     free_after = shutil.disk_usage(workspace_root).free
     return EuroStreamingValidation(

@@ -4,6 +4,33 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [v0.6.2] - 2026-08-11 - Large EURO Rebuild Safety Workflow
+
+### Added
+
+- A reusable SQLite fingerprint store for exact, disk-backed source and target comparison.
+- Memory-bounded shadow loading and pre-swap validation for consumer prices, national accounts and MFI interest rates.
+- One-table-only `v062` build and swap services with import-specific confirmation phrases.
+- A read-only plan and capacity-preflight CLI with exact shadow, retained, failed, swap and rollback details.
+- A dedicated one-table backup command using streaming `mysqldump`, SHA-256 and structure-and-data verification.
+- Eighteen deterministic tests for cross-chunk duplicates, comparison semantics, temporary-store cleanup, confirmation guards, capacity checks, CLI safety and backup scope.
+
+### Capacity Findings
+
+- MFI interest rates require an estimated 1,160,347,243-byte shadow and 154,017,792-byte comparison store.
+- National accounts require an estimated 1,385,763,282-byte shadow and 352,198,656-byte comparison store.
+- Consumer prices require an estimated 2,346,474,969-byte shadow and 600,059,904-byte comparison store.
+- All three read-only preflights passed on the current machine with a 5 GiB operating reserve.
+- Backup capacity is intentionally excluded from these estimates and a separate physical volume is recommended.
+
+### Validation and Safety
+
+- Passed 155/155 deterministic tests and parsed 224/224 active Python files.
+- Existing earlier rebuild services retain their default in-memory behavior; the bounded path is opt-in and restricted to one large table.
+- No backup, shadow, retained table, swap, CSV change, SQL write or database mutation was performed.
+
+---
+
 ## [v0.6.1] - 2026-08-11 - Memory-Bounded EURO Validation
 
 ### Added

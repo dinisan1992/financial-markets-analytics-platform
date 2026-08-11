@@ -10,6 +10,12 @@ import pandas as pd
 from sqlalchemy import inspect, text
 
 from macro_import_manifest import get_macro_import
+from services.euro_fingerprint_store import (
+    EuroFingerprintStore,
+    SOURCE_DATASET,
+    TARGET_DATASET,
+    temporary_fingerprint_store,
+)
 from services.macro_import_service import normalize_column_name
 from services.market_data_sync_service import validate_identifier
 
@@ -59,6 +65,8 @@ class EuroRebuildValidation:
     last_period: object | None
     source_columns: tuple[str, ...]
     database_write_performed: bool
+    memory_bounded_validation: bool = False
+    comparison_store_bytes: int = 0
 
     @property
     def valid(self):
@@ -327,6 +335,65 @@ def source_fingerprints(import_key, chunk_size=5000):
     return columns, fingerprints, non_null_values
 
 
+def source_fingerprints_to_store(
+    import_key,
+    fingerprint_store,
+    chunk_size=5000,
+):
+    contract = get_macro_import(import_key)
+    columns = _mapped_source_columns(contract)
+    fingerprint_store.clear(SOURCE_DATASET)
+    fingerprint_store.clear(TARGET_DATASET)
+    source_rows = 0
+    non_null_values = 0
+    invalid_numeric_rows = 0
+
+    for raw_chunk in _source_chunks(contract, chunk_size):
+        chunk = _normalize_source_frame(contract, raw_chunk, columns)
+        fingerprints = []
+        chunk_keys = set()
+        for values in chunk.itertuples(index=False, name=None):
+            record, invalid_columns = normalize_row(columns, values)
+            if invalid_columns:
+                invalid_numeric_rows += 1
+                continue
+            key = tuple(record[column] for column in BUSINESS_KEY)
+            if any(value is None for value in key):
+                raise ValueError(
+                    f"Null source business key in {import_key}: {key}"
+                )
+            if key in chunk_keys:
+                raise ValueError(
+                    f"Duplicate source business key in {import_key}: {key}"
+                )
+            chunk_keys.add(key)
+            fingerprints.append(
+                (
+                    key[0],
+                    key[1],
+                    bytes.fromhex(canonical_row_hash(columns, record)),
+                )
+            )
+            source_rows += 1
+            non_null_values += record.get("obs_value") is not None
+        fingerprint_store.insert_records(SOURCE_DATASET, fingerprints)
+
+    if invalid_numeric_rows:
+        raise ValueError(
+            f"Invalid non-empty numeric rows in {import_key}: "
+            f"{invalid_numeric_rows}"
+        )
+    summary = fingerprint_store.summary(SOURCE_DATASET)
+    if summary["duplicate_groups"]:
+        samples = fingerprint_store.key_samples("source_duplicate", 1)
+        raise ValueError(
+            f"Duplicate source business key in {import_key}: {samples[0]}"
+        )
+    if summary["unique_keys"] != source_rows:
+        raise RuntimeError(f"Source fingerprint count mismatch: {import_key}")
+    return columns, source_rows, non_null_values
+
+
 def _table_exists(engine, table_name):
     return inspect(engine).has_table(validate_identifier(table_name))
 
@@ -488,6 +555,86 @@ def load_source_into_shadow(
     return columns, fingerprints, source_rows, non_null_values
 
 
+def load_source_into_shadow_disk_backed(
+    engine,
+    import_key,
+    shadow_table,
+    fingerprint_store,
+    chunk_size=5000,
+    insert_batch_size=250,
+):
+    contract = get_macro_import(import_key)
+    shadow_table = validate_identifier(shadow_table)
+    columns = _mapped_source_columns(contract)
+    insert_columns = columns + (HASH_COLUMN,)
+    quoted_columns = ", ".join(f"`{column}`" for column in insert_columns)
+    placeholders = ", ".join(f":{column}" for column in insert_columns)
+    statement = text(
+        f"INSERT INTO `{shadow_table}` ({quoted_columns}) VALUES ({placeholders})"
+    )
+    fingerprint_store.clear(SOURCE_DATASET)
+    fingerprint_store.clear(TARGET_DATASET)
+    source_rows = 0
+    non_null_values = 0
+    invalid_numeric_rows = 0
+
+    for raw_chunk in _source_chunks(contract, chunk_size):
+        chunk = _normalize_source_frame(contract, raw_chunk, columns)
+        records = []
+        fingerprints = []
+        chunk_keys = set()
+        for values in chunk.itertuples(index=False, name=None):
+            record, invalid_columns = normalize_row(columns, values)
+            if invalid_columns:
+                invalid_numeric_rows += 1
+                continue
+            key = tuple(record[column] for column in BUSINESS_KEY)
+            if any(value is None for value in key):
+                raise ValueError(
+                    f"Null source business key in {import_key}: {key}"
+                )
+            if key in chunk_keys:
+                raise ValueError(
+                    f"Duplicate source business key in {import_key}: {key}"
+                )
+            chunk_keys.add(key)
+            row_hash = canonical_row_hash(columns, record)
+            record[HASH_COLUMN] = row_hash
+            records.append(record)
+            fingerprints.append((key[0], key[1], bytes.fromhex(row_hash)))
+            source_rows += 1
+            non_null_values += record.get("obs_value") is not None
+
+        fingerprint_store.insert_records(SOURCE_DATASET, fingerprints)
+        for batch in record_batches(records, insert_batch_size):
+            with engine.begin() as connection:
+                connection.execute(
+                    text(
+                        "SET SESSION sql_mode = "
+                        "CONCAT_WS(',', @@sql_mode, 'STRICT_ALL_TABLES')"
+                    )
+                )
+                connection.execute(statement, batch)
+
+        if source_rows and source_rows % 50000 < len(records):
+            print(f"  {import_key}: loaded {source_rows} source rows")
+
+    if invalid_numeric_rows:
+        raise ValueError(
+            f"Invalid non-empty numeric rows in {import_key}: "
+            f"{invalid_numeric_rows}"
+        )
+    source_summary = fingerprint_store.summary(SOURCE_DATASET)
+    if source_summary["duplicate_groups"]:
+        samples = fingerprint_store.key_samples("source_duplicate", 1)
+        raise ValueError(
+            f"Duplicate source business key in {import_key}: {samples[0]}"
+        )
+    if source_summary["unique_keys"] != source_rows:
+        raise RuntimeError(f"Source fingerprint count mismatch: {import_key}")
+    return columns, source_rows, non_null_values
+
+
 def validate_shadow(
     engine,
     import_key,
@@ -576,6 +723,141 @@ def validate_shadow(
     return validation
 
 
+def validate_shadow_disk_backed(
+    engine,
+    import_key,
+    shadow_table,
+    columns,
+    fingerprint_store,
+    source_rows,
+    source_non_null_values,
+    chunk_size=5000,
+):
+    if not isinstance(fingerprint_store, EuroFingerprintStore):
+        raise TypeError("fingerprint_store must be EuroFingerprintStore")
+    contract = get_macro_import(import_key)
+    active = validate_identifier(contract["table_name"])
+    shadow_table = validate_identifier(shadow_table)
+    quoted_columns = ", ".join(f"`{column}`" for column in columns)
+    summary_query = text(
+        f"""
+        SELECT
+            COUNT(*) AS rows_count,
+            COUNT(DISTINCT key_code, time_period) AS unique_business_keys,
+            COUNT(obs_value) AS non_null_values,
+            SUM(key_code IS NULL OR time_period IS NULL) AS null_business_keys,
+            MIN(time_period) AS first_period,
+            MAX(time_period) AS last_period
+        FROM `{shadow_table}`
+        """
+    )
+    duplicate_query = text(
+        f"""
+        SELECT COUNT(*)
+        FROM (
+            SELECT key_code, time_period
+            FROM `{shadow_table}`
+            GROUP BY key_code, time_period
+            HAVING COUNT(*) > 1
+        ) AS duplicate_keys
+        """
+    )
+    data_query = text(
+        f"SELECT {quoted_columns}, `{HASH_COLUMN}` FROM `{shadow_table}`"
+    )
+
+    fingerprint_store.clear(TARGET_DATASET)
+    row_hash_mismatches = 0
+    streamed_shadow_rows = 0
+    chunk_size = max(1, int(chunk_size))
+    with engine.connect() as connection:
+        summary = connection.execute(summary_query).mappings().one()
+        duplicate_groups = int(
+            connection.execute(duplicate_query).scalar_one() or 0
+        )
+        result = connection.execution_options(
+            stream_results=True,
+            max_row_buffer=chunk_size,
+        ).execute(data_query).mappings()
+        while rows := result.fetchmany(chunk_size):
+            target_fingerprints = []
+            for row in rows:
+                record = {column: row[column] for column in columns}
+                actual_hash = canonical_row_hash(columns, record)
+                stored_hash = str(row[HASH_COLUMN]).strip().upper()
+                if actual_hash != stored_hash:
+                    row_hash_mismatches += 1
+                if len(stored_hash) != 64:
+                    raise ValueError(
+                        f"Invalid stored row hash in {shadow_table}: {stored_hash}"
+                    )
+                try:
+                    stored_hash_bytes = bytes.fromhex(stored_hash)
+                except ValueError as exc:
+                    raise ValueError(
+                        f"Invalid stored row hash in {shadow_table}: {stored_hash}"
+                    ) from exc
+                key = tuple(record[column] for column in BUSINESS_KEY)
+                if any(value is None for value in key):
+                    raise ValueError(
+                        f"Null shadow business key in {import_key}: {key}"
+                    )
+                target_fingerprints.append(
+                    (key[0], key[1], stored_hash_bytes)
+                )
+                streamed_shadow_rows += 1
+            fingerprint_store.insert_records(
+                TARGET_DATASET,
+                target_fingerprints,
+            )
+
+    source_summary = fingerprint_store.summary(SOURCE_DATASET)
+    target_summary = fingerprint_store.summary(TARGET_DATASET)
+    comparison = fingerprint_store.comparison()
+    if source_summary["unique_keys"] != int(source_rows):
+        raise RuntimeError(f"Source fingerprint count mismatch: {import_key}")
+    if streamed_shadow_rows != int(summary["rows_count"] or 0):
+        raise RuntimeError(f"Streamed shadow row mismatch: {shadow_table}")
+
+    validation = EuroRebuildValidation(
+        import_key=import_key,
+        active_table=active,
+        shadow_table=shadow_table,
+        source_rows=int(source_rows),
+        shadow_rows=int(summary["rows_count"] or 0),
+        source_unique_business_keys=source_summary["unique_keys"],
+        shadow_unique_business_keys=int(summary["unique_business_keys"] or 0),
+        source_non_null_values=int(source_non_null_values),
+        shadow_non_null_values=int(summary["non_null_values"] or 0),
+        null_business_keys=int(summary["null_business_keys"] or 0),
+        duplicate_business_key_groups=duplicate_groups,
+        row_hash_mismatches=row_hash_mismatches,
+        source_hash_mismatches=(
+            comparison["row_hash_mismatches"]
+            + comparison["target_rows_missing_from_source"]
+        ),
+        missing_source_rows=comparison["source_rows_missing_from_target"],
+        first_period=summary["first_period"],
+        last_period=summary["last_period"],
+        source_columns=tuple(columns),
+        database_write_performed=True,
+        memory_bounded_validation=True,
+        comparison_store_bytes=fingerprint_store.size_bytes,
+    )
+    if target_summary["duplicate_groups"] != duplicate_groups:
+        raise RuntimeError(f"Shadow duplicate count mismatch: {shadow_table}")
+    if target_summary["unique_keys"] != int(summary["unique_business_keys"] or 0):
+        raise RuntimeError(f"Shadow fingerprint count mismatch: {shadow_table}")
+    if not _business_key_is_unique(engine, shadow_table):
+        raise RuntimeError(f"Shadow business key is not unique: {shadow_table}")
+    if not validation.valid:
+        raise RuntimeError(
+            "EURO shadow validation failed: "
+            + json.dumps(validation.to_dict(), default=str)
+        )
+    return validation
+
+
 def build_and_validate_shadows(
     engine,
     backup_file,
@@ -585,6 +867,8 @@ def build_and_validate_shadows(
     insert_batch_size=250,
     import_keys=TARGET_IMPORT_KEYS,
     version="v055",
+    memory_bounded=False,
+    workspace_dir=None,
 ):
     if confirmation != BUILD_CONFIRMATION:
         raise ValueError(f"--confirm must exactly match {BUILD_CONFIRMATION}")
@@ -601,21 +885,49 @@ def build_and_validate_shadows(
             suffix,
             version=version,
         )
-        columns, fingerprints, _, non_null_values = load_source_into_shadow(
-            engine,
-            import_key,
-            shadow,
-            chunk_size=chunk_size,
-            insert_batch_size=insert_batch_size,
-        )
-        validation = validate_shadow(
-            engine,
-            import_key,
-            shadow,
-            columns,
-            fingerprints,
-            non_null_values,
-        )
+        if memory_bounded:
+            with temporary_fingerprint_store(
+                import_key,
+                workspace_dir=workspace_dir,
+            ) as fingerprint_store:
+                columns, source_rows, non_null_values = (
+                    load_source_into_shadow_disk_backed(
+                        engine,
+                        import_key,
+                        shadow,
+                        fingerprint_store,
+                        chunk_size=chunk_size,
+                        insert_batch_size=insert_batch_size,
+                    )
+                )
+                validation = validate_shadow_disk_backed(
+                    engine,
+                    import_key,
+                    shadow,
+                    columns,
+                    fingerprint_store,
+                    source_rows,
+                    non_null_values,
+                    chunk_size=chunk_size,
+                )
+        else:
+            columns, fingerprints, _, non_null_values = (
+                load_source_into_shadow(
+                    engine,
+                    import_key,
+                    shadow,
+                    chunk_size=chunk_size,
+                    insert_batch_size=insert_batch_size,
+                )
+            )
+            validation = validate_shadow(
+                engine,
+                import_key,
+                shadow,
+                columns,
+                fingerprints,
+                non_null_values,
+            )
         validations.append(validation)
         print(
             f"Validated shadow: {import_key} | "
@@ -627,6 +939,7 @@ def build_and_validate_shadows(
         "validations": tuple(validations),
         "database_write_performed": True,
         "active_tables_changed": False,
+        "memory_bounded_validation": bool(memory_bounded),
     }
 
 
@@ -683,6 +996,8 @@ def validate_existing_shadows(
     chunk_size,
     import_keys,
     version="v055",
+    memory_bounded=False,
+    workspace_dir=None,
 ):
     validations = []
     for import_key in import_keys:
@@ -690,20 +1005,45 @@ def validate_existing_shadows(
         shadow = shadow_table_name(active, suffix, version=version)
         if not _table_exists(engine, shadow):
             raise ValueError(f"Validated shadow table not found: {shadow}")
-        columns, fingerprints, non_null_values = source_fingerprints(
-            import_key,
-            chunk_size=chunk_size,
-        )
-        validations.append(
-            validate_shadow(
-                engine,
+        if memory_bounded:
+            with temporary_fingerprint_store(
                 import_key,
-                shadow,
-                columns,
-                fingerprints,
-                non_null_values,
+                workspace_dir=workspace_dir,
+            ) as fingerprint_store:
+                columns, source_rows, non_null_values = (
+                    source_fingerprints_to_store(
+                        import_key,
+                        fingerprint_store,
+                        chunk_size=chunk_size,
+                    )
+                )
+                validations.append(
+                    validate_shadow_disk_backed(
+                        engine,
+                        import_key,
+                        shadow,
+                        columns,
+                        fingerprint_store,
+                        source_rows,
+                        non_null_values,
+                        chunk_size=chunk_size,
+                    )
+                )
+        else:
+            columns, fingerprints, non_null_values = source_fingerprints(
+                import_key,
+                chunk_size=chunk_size,
             )
-        )
+            validations.append(
+                validate_shadow(
+                    engine,
+                    import_key,
+                    shadow,
+                    columns,
+                    fingerprints,
+                    non_null_values,
+                )
+            )
     return tuple(validations)
 
 
@@ -715,6 +1055,8 @@ def swap_validated_shadows(
     chunk_size=5000,
     import_keys=TARGET_IMPORT_KEYS,
     version="v055",
+    memory_bounded=False,
+    workspace_dir=None,
 ):
     if confirmation != SWAP_CONFIRMATION:
         raise ValueError(f"--confirm must exactly match {SWAP_CONFIRMATION}")
@@ -738,6 +1080,8 @@ def swap_validated_shadows(
         chunk_size,
         import_keys,
         version=version,
+        memory_bounded=memory_bounded,
+        workspace_dir=workspace_dir,
     )
     expected_rows = {
         validation.active_table: validation.source_rows
@@ -799,6 +1143,7 @@ def swap_validated_shadows(
         "rollback_statement": rollback_statement,
         "database_write_performed": True,
         "active_tables_changed": True,
+        "memory_bounded_validation": bool(memory_bounded),
         "retained_tables": tuple(
             retained_table_name(table_name, suffix, version=version)
             for table_name in tables
