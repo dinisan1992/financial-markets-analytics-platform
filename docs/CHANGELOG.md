@@ -4,6 +4,37 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [v0.7.4] - 2026-08-11 - Official ECB Source Staging
+
+### Added
+
+- Registered the official `BLS`, `PCP` and `BSI` ECB dataflows and their bulk
+  CSV endpoints in the import manifest.
+- Added a probe-first ECB refresh command with explicit external staging,
+  atomic partial downloads, schema validation, SHA-256 evidence and no active
+  CSV or SQL write mode.
+- Added a memory-bounded, disk-backed candidate-versus-active comparison that
+  classifies new, removed and changed business keys.
+- Added six deterministic tests for dataflow contracts, SDMX key handling,
+  staging isolation and file-comparison classification.
+- Added `docs/ECB_SOURCE_REFRESH.md` with the reproducible workflow, hashes,
+  complete plan counts and the write authorization gates.
+
+### Read-Only Evidence
+
+- Downloaded fresh complete official snapshots to external staging: 1,225,110
+  BLS rows, 1,081,151 PCP rows and 8,055,309 BSI rows.
+- Confirmed zero null keys, invalid numerics, duplicate keys or hash conflicts
+  across all three candidates.
+- Compared the candidates with MySQL through SELECT-only streaming: 920,328
+  candidate-only keys, 350,495 target-only keys and broad metadata/value
+  revisions requiring controlled rebuild review.
+- Sampled field differences distinguish title rewrites, storage precision and
+  substantive ECB observation revisions.
+- Performed zero database writes and zero active-CSV writes.
+
+---
+
 ## [v0.7.3] - 2026-08-11 - EURO Storage-Aware Synchronization
 
 ### Added

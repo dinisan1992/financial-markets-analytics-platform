@@ -7,6 +7,7 @@ Runnable scripts that used to live in the repository root are organized here.
 - `assets/` - per-asset processing scripts and `run_all_assets.py`.
 - `analysis/` - selectors, macro analysis, correlation analysis, validation and reporting scripts.
 - `diagnostics/` - one-off diagnosis and cleanup scripts.
+- `ingestion/` - explicit source probes, staging downloads and guarded import entry points.
 
 ## Usage
 
@@ -15,6 +16,7 @@ Prefer running scripts from the repository root:
 ```powershell
 python project_scripts/assets/run_all_assets.py
 python project_scripts/analysis/asset_chart_selector.py
+python project_scripts/ingestion/refresh_ecb_sources.py
 ```
 
 The root `analysis_launcher.py` already points to these paths.

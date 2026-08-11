@@ -30,12 +30,22 @@ def _fed(
     }
 
 
-def _euro(filename, table_name, script_name, column_aliases=None):
-    return {
+def _euro(
+    filename,
+    table_name,
+    script_name,
+    column_aliases=None,
+    source_dataflow=None,
+):
+    contract = {
         "group": "EURO",
         "source_provider": "European Central Bank Data Portal",
         "source_identifier": filename.removesuffix(".csv"),
-        "source_reference": "https://data.ecb.europa.eu/",
+        "source_reference": (
+            f"https://data.ecb.europa.eu/data/datasets/{source_dataflow}"
+            if source_dataflow
+            else "https://data.ecb.europa.eu/"
+        ),
         "csv_path": EURO_SOURCE_DIR / filename,
         "table_name": table_name,
         "mode": "multidimensional_series",
@@ -46,6 +56,13 @@ def _euro(filename, table_name, script_name, column_aliases=None):
         "write_policy": "transactional_sync_guarded",
         "script_name": script_name,
     }
+    if source_dataflow:
+        contract["source_dataflow"] = source_dataflow
+        contract["source_download_url"] = (
+            "https://data-api.ecb.europa.eu/service/data/"
+            f"{source_dataflow}?format=csvdata"
+        )
+    return contract
 
 
 MACRO_IMPORTS = {
@@ -141,16 +158,19 @@ MACRO_IMPORTS = {
         "Balance Sheet Items.csv",
         "euro_balance_sheet_items",
         "tools/eu/euro_balance_sheet_items.py",
+        source_dataflow="BSI",
     ),
     "EURO_BANK_LENDING_SURVEY": _euro(
         "Bank Lending Survey.csv",
         "euro_bank_lending_survey",
         "tools/eu/euro_bank_lending_survey.py",
+        source_dataflow="BLS",
     ),
     "EURO_CARD_PAYMENTS": _euro(
         "Card payments and cash withdrawals using cards (including fraud data).csv",
         "euro_card_payments",
         "tools/eu/euro_card_payments.py",
+        source_dataflow="PCP",
     ),
     "EURO_CARD_PAYMENTS_MERCHANT_CATEGORY": _euro(
         "Electronic card payments sent by merchant category.csv",

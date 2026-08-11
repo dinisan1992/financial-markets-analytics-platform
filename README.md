@@ -20,7 +20,7 @@ Functional local platform with:
 - Data quality and validation tools.
 - Cross-platform lint, import-safety, dependency, coverage and unit-test checks through GitHub Actions.
 
-Current project version: **v0.7.3**
+Current project version: **v0.7.4**
 
 ## Main Analytical Capabilities
 
@@ -298,7 +298,7 @@ FED and EURO source files have a separate controlled preview command:
 python project_scripts/ingestion/refresh_macro_sources.py ALL --check-sql
 ```
 
-The command validates all 28 source contracts and never writes by default. A
+The macro preview command validates all 28 source contracts and never writes by default. A
 single FED import can use `--update-sql` only with an exact table confirmation,
 a verified SQL backup containing that table and a unique business key. Version
 v0.7.0 qualifies the dedicated, default-read-only EURO synchronization planner
@@ -322,14 +322,26 @@ See `docs/EURO_SCHEMA_AUDIT.md`,
 `docs/EURO_DIRECT_DEBITS_SWAP.md` for the atomic promotion and rollback evidence,
 and `docs/MACRO_IMPORT_SAFETY.md` for importer controls.
 
+Three production-scale ECB sources also have an official, probe-first staging
+command:
+
+```powershell
+python project_scripts/ingestion/refresh_ecb_sources.py
+```
+
+Complete downloads require an explicit external `--staging-dir`. The command
+validates schema, hashes each candidate and can compare staged snapshots with
+active CSVs through a disk-backed index. It cannot replace active CSVs and has
+no SQL write mode. See `docs/ECB_SOURCE_REFRESH.md`.
+
 ## Validation Snapshot
 
-The v0.7.3 validation includes:
+The v0.7.4 validation includes:
 
-- 216/216 deterministic unit tests pass.
+- 222/222 deterministic unit tests pass.
 - The complete active Python tree compiles successfully and `pip check` reports no broken requirements.
 - Ruff passes across the active Python tree with no lint errors.
-- Branch coverage is measured across `app`, `app_pages`, `dashboard` and `services`, with a 40% regression gate over the current 42% baseline.
+- Branch coverage is measured across `app`, `app_pages`, `dashboard` and `services`, with a 40% regression gate over the current 44% baseline.
 - GitHub Actions runs static/import-safety checks and a four-environment unit-test matrix covering Windows, Linux, Python 3.11 and Python 3.12.
 - 38/38 configured SQL assets recalculate successfully with database writes disabled.
 - 9/9 Streamlit pages render without uncaught exceptions and the running server reports HTTP 200 health.
@@ -364,6 +376,14 @@ The v0.7.3 validation includes:
 - A deterministic hash-sampled field auditor reports the exact differing
   columns and examples through SELECT-only SQL access without publishing local
   source paths.
+- Official complete BLS, PCP and BSI snapshots were downloaded into external
+  staging with validated headers and SHA-256 evidence; none replaced an active
+  CSV.
+- The three candidates contain 10,361,570 unique business keys in total with
+  zero null keys, invalid numerics, duplicates or hash conflicts.
+- SELECT-only MySQL plans classify 920,328 candidate-only keys, 350,495
+  target-only keys and broad official metadata/value revisions; no plan was
+  applied.
 - Data Quality exposes the latest saved status, source freshness, planned actions and blockers for every EURO contract without rescanning CSVs or querying MySQL.
 
 The retained v0.5.6 database validation includes:
@@ -424,10 +444,15 @@ Planned improvements include:
 - Calibrate risk thresholds by asset class and data provenance.
 - Replace important year-only world events with verified exact dates.
 - Add dry-run and explicit entry points to the remaining SQL-capable ETL scripts.
-- Review the four non-idempotent EURO plans before authorizing any active-data refresh.
-- Review source freshness and the remaining changed EURO synchronization plans.
+- Create scoped external-volume backups and controlled shadows before deciding
+  whether to promote the staged BLS, PCP and BSI snapshots.
+- Define an explicit retention policy for ECB keys withdrawn from current PCP
+  and BSI snapshots.
 - Treat the 3,822,937-row Government Finance source expansion as a separate controlled migration.
-- Simplify the dependency file to direct project dependencies.
+- Refresh the remaining stale market sources through verified provider
+  contracts.
+- Develop Event Study v2 with benchmark, abnormal-return and cumulative
+  abnormal-return contracts.
 - Develop the deferred EURO fraud analytics layer.
 - Start machine-learning experiments only after feature and label governance is stable.
 

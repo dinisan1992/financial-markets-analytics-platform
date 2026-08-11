@@ -4,7 +4,7 @@ Last updated: 11 August 2026
 
 ## Current Version
 
-**Macro-Financial Risk & Market Behaviour Analytics Platform v0.7.3**
+**Macro-Financial Risk & Market Behaviour Analytics Platform v0.7.4**
 
 ## Executive Summary
 
@@ -22,7 +22,7 @@ It combines:
 - interactive dashboarding;
 - data quality validation.
 
-The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.7.0 completed the controlled Direct Debits rebuild. Version 0.7.1 separated the eight direct runtime dependencies from development tooling and expanded CI. Version 0.7.2 removed the Windows-only assumptions exposed by the first Linux matrix run. Version 0.7.3 makes EURO synchronization fingerprints aware of SQL storage precision and adds SELECT-only field-difference diagnostics. The validated 121,564-row `VARCHAR(20)` Direct Debits table remains active and the former 75,647-row `YEAR(4)` table remains retained for rollback.
+The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.7.0 completed the controlled Direct Debits rebuild. Version 0.7.1 separated the eight direct runtime dependencies from development tooling and expanded CI. Version 0.7.2 removed the Windows-only assumptions exposed by the first Linux matrix run. Version 0.7.3 made EURO synchronization fingerprints aware of SQL storage precision and added SELECT-only field-difference diagnostics. Version 0.7.4 adds a reproducible official ECB staging pipeline and validates fresh BLS, PCP and BSI snapshots without changing active CSVs or MySQL. The validated 121,564-row `VARCHAR(20)` Direct Debits table remains active and the former 75,647-row `YEAR(4)` table remains retained for rollback.
 
 ## Completed and Functional Modules
 
@@ -220,12 +220,12 @@ Main file:
 
 ## Latest Documented Validation
 
-Version 0.7.3 validation included:
+Version 0.7.4 validation included:
 
-- 216/216 deterministic unit tests passed.
+- 222/222 deterministic unit tests passed.
 - The complete active Python tree compiled successfully and `pip check` reported no broken requirements.
 - Ruff passed over the complete active Python tree.
-- Branch coverage measured 42% across `app`, `app_pages`, `dashboard` and `services`, with a 40% regression gate.
+- Branch coverage measured 44% across `app`, `app_pages`, `dashboard` and `services`, with a 40% regression gate.
 - CI covers Windows and Linux under Python 3.11 and 3.12, with a separate static and macro-import-safety job.
 - 38/38 configured SQL assets recalculated successfully with database writes disabled.
 - 9/9 Streamlit pages rendered through `AppTest` without uncaught exceptions; the running server returned HTTP 200 health.
@@ -274,6 +274,15 @@ Version 0.7.3 validation included:
 - Reduced apparent updates from 459,207 to 15 Card Payments rows, from 222,668
   to one Bank Lending Survey row, and from 3,132,298 to 54 Balance Sheet Items
   values at the sixth-decimal boundary.
+- Registered and probed the official ECB `BLS`, `PCP` and `BSI` dataflows, then
+  downloaded complete current snapshots to an external staging directory.
+- Validated 10,361,570 staged rows with zero null business keys, invalid
+  numerics, duplicate keys or hash conflicts and without replacing active CSVs.
+- Completed SELECT-only candidate-to-MySQL plans containing 920,328
+  candidate-only keys, 350,495 target-only keys and broad official historical
+  metadata/value revisions; no plan was applied.
+- Confirmed through field samples that the new snapshots contain title rewrites,
+  storage-precision differences and substantive ECB observation revisions.
 - Rendered 9/9 Streamlit pages successfully after the precision changes.
 - Synchronized `VERSION` with the runtime project version and added a regression test for future releases.
 - Reused the disk-backed store for full-row shadow validation, while preserving the legacy path for earlier migration checkpoints.
@@ -447,11 +456,21 @@ Planned work:
 
 The project already contains a validated multi-asset, FED macro and EURO macro analytical layer.
 
-The isolated MySQL acceptance gate and the full Direct Debits diagnosis, backup, shadow, atomic swap and post-swap validation chain are complete. The current priority returns to controlled platform hardening and source maintenance:
+The isolated MySQL acceptance gate, Direct Debits migration and official ECB
+snapshot staging are complete. The current priority remains controlled source
+maintenance:
 
-1. refresh the three reviewed ECB CSV snapshots from the official portal and rerun the read-only plans;
-2. create fresh scoped backups before deciding whether to apply the 15 Card Payments, one Bank Lending Survey and 54 Balance Sheet Items corrections;
-3. treat the Government Finance expansion as a dedicated migration with a fresh scoped backup and capacity preflight;
-4. update stale market sources, beginning with the explicitly supported official feeds, and confirm the seven inferred source contracts;
-5. design Event Study v2 with benchmark and abnormal-return contracts;
-6. calibrate risk thresholds by asset history and class.
+1. create fresh scoped SQL backups on a separate physical volume for BLS, PCP
+   and BSI before any write decision;
+2. define a retention policy for the 6,168 PCP and 344,327 BSI keys withdrawn
+   from the current official snapshots;
+3. prepare and validate versioned shadow tables for PCP and BSI, and choose
+   transactional synchronization or a shadow rebuild for BLS;
+4. request explicit authorization before replacing active CSVs, building
+   shadows or executing any SQL write;
+5. treat the Government Finance expansion as a dedicated migration with a
+   fresh scoped backup and capacity preflight;
+6. update stale market sources, beginning with verified official feeds, and
+   confirm the seven inferred source contracts;
+7. design Event Study v2 with benchmark and abnormal-return contracts;
+8. calibrate risk thresholds by asset history and class.

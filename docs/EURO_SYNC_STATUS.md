@@ -1,6 +1,6 @@
 # EURO Synchronization Status
 
-Version: v0.7.3
+Version: v0.7.4
 
 Date: 11 August 2026
 
@@ -17,6 +17,23 @@ state can be consolidated without reading a source CSV or connecting to MySQL:
 ```powershell
 python project_scripts/diagnostics/consolidate_euro_sync_status.py
 ```
+
+## v0.7.4 Official Snapshot Refresh
+
+Fresh complete `BLS`, `PCP` and `BSI` datasets were downloaded from the
+official ECB Data API into external staging. All 10,361,570 candidate rows have
+unique non-null business keys, valid numeric observations and schemas matching
+the registered active CSVs.
+
+SELECT-only MySQL plans found 60,754 BLS candidate-only keys and no target-only
+keys; 272,146 PCP candidate-only and 6,168 target-only keys; and 587,428 BSI
+candidate-only and 344,327 target-only keys. Broad historical metadata and
+value revisions make the v0.7.3 15/1/54 precision findings a preserved baseline
+for the October 2025 files, not the current write plan.
+
+The staged files have not replaced active CSVs and no SQL write was performed.
+See `ECB_SOURCE_REFRESH.md` for hashes, exact mismatch counts and the next
+authorization gates.
 
 ## v0.7.3 Precision Review
 
@@ -86,8 +103,9 @@ Items plan then completed against 7,812,208 target rows.
 - Government Finance is a 3,822,937-row source-universe expansion and requires
   a separate capacity review, scoped backup and controlled migration decision.
 - Card Payments, Bank Lending Survey and Balance Sheet Items completed their
-  field-level review. Fresh ECB snapshots and scoped backups are still required
-  before any of the 15, one and 54 remaining actions can be authorized.
+  old-snapshot precision review and fresh-snapshot staging. New scoped backups,
+  a withdrawn-key retention decision and controlled shadow plans are required
+  before any current action can be authorized.
 
 Version v0.7.0 completed the separately authorized Direct Debits promotion. Its
 latest plan is exact and idempotent with 121,564 unchanged rows, zero actions,
