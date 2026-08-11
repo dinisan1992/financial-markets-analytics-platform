@@ -20,7 +20,7 @@ Functional local platform with:
 - Data quality and validation tools.
 - Automated syntax checks and unit tests through GitHub Actions.
 
-Current project version: **v0.6.0**
+Current project version: **v0.6.1**
 
 ## Main Analytical Capabilities
 
@@ -296,18 +296,21 @@ v0.5.6 remediation leaves 14 schemas contract-ready and three large tables in
 the rebuild class because their SQL history is incomplete relative to the
 registered CSV sources. See `docs/EURO_SCHEMA_AUDIT.md`,
 `docs/EURO_SCHEMA_REMEDIATION.md`, `docs/EURO_SOURCE_COMPLETENESS.md` and
-`docs/MACRO_IMPORT_SAFETY.md`.
+`docs/EURO_STREAMING_VALIDATION.md` for the read-only large-source evidence,
+and `docs/MACRO_IMPORT_SAFETY.md` for importer controls.
 
 ## Validation Snapshot
 
-The v0.6.0 code-only validation includes:
+The v0.6.1 validation includes:
 
-- 130/130 deterministic unit tests pass.
-- 211/211 active Python files parse successfully and `pip check` reports no broken requirements.
+- 137/137 deterministic unit tests pass.
+- 216/216 active Python files parse successfully and `pip check` reports no broken requirements.
 - 38/38 configured SQL assets recalculate successfully with database writes disabled.
 - 9/9 Streamlit pages render without uncaught exceptions and the running server reports HTTP 200 health.
 - Financial property tests cover indicator bounds, Bollinger ordering, correlation symmetry, Base 100 anchoring and event-date direction.
 - Regression tests cover normalized entropy, volume-unit invariance, unavailable volume metrics and OHLC-derived indicator quality.
+- A disk-backed validator compared 10,864,513 EURO CSV rows with three active MySQL tables in bounded 50,000-row chunks.
+- The read-only audit confirmed 9,475,513 missing SQL rows, zero extra rows, zero null or duplicate business keys and 313,682 full-row mismatches across overlapping keys.
 - No CSV import, SQL write, schema migration or database mutation was performed.
 
 The retained v0.5.6 database validation includes:

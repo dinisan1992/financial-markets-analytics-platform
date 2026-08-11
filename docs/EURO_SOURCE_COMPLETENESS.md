@@ -90,8 +90,8 @@ That is not acceptably memory-bounded for a 6.5-million-row source.
 
 Before rebuilding the remaining tables:
 
-1. Replace the in-memory fingerprint dictionary with a streaming or SQL-backed
-   comparison that has bounded memory.
+1. Reuse the v0.6.1 disk-backed validator inside the shadow build so the legacy
+   in-memory fingerprint dictionary is no longer used by migrations.
 2. Process one source table at a time.
 3. Create and verify a table-scoped structure-and-data backup.
 4. Estimate free disk before each shadow build and preserve an operating
@@ -101,3 +101,20 @@ Before rebuilding the remaining tables:
 7. Re-run the global EURO audit and all application checks after each table.
 
 No large rebuild is authorized merely by this capacity estimate.
+
+## v0.6.1 Read-Only Validation
+
+On 11 August 2026, the new disk-backed validator compared all 10,864,513 rows
+from the three large CSVs with their active MySQL tables. It reconfirmed the
+9,475,513 missing SQL rows and found 313,682 full-row mismatches among keys
+present in both source and SQL. There were zero extra target keys, duplicate
+business keys, null business keys or invalid numeric rows.
+
+The run used 50,000-row source and target chunks, completed in 464 seconds and
+created one temporary SQLite store at a time. Store sizes were approximately
+572 MiB for consumer prices, 336 MiB for national accounts and 147 MiB for MFI
+interest rates. Each store was deleted after its table completed.
+
+No database or CSV write was performed. Detailed method and findings are in
+`docs/EURO_STREAMING_VALIDATION.md`; local row samples and machine-readable
+results remain under Git-ignored `audit_outputs/euro_streaming_validation/`.

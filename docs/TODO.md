@@ -132,10 +132,21 @@
 - Add financial property and analytical regression tests
 - Pass 130 deterministic tests, 38 SQL-only asset recalculations and 9 Streamlit page renders without any database write
 
-## High Priority After v0.6.0
+## Completed in v0.6.1
+
+- Implement a disk-backed, memory-bounded source-to-SQL validator for the three large EURO sources
+- Keep source and target chunks bounded at 50,000 rows during the live audit
+- Separate missing rows, extra rows, full-row mismatches, duplicates, null keys and invalid numerics
+- Prove through deterministic SQL-capture tests that the target receives read statements only
+- Audit all 10,864,513 source rows without changing MySQL or any CSV
+- Confirm 9,475,513 missing SQL rows and 313,682 mismatched overlapping rows
+- Persist local JSON/CSV evidence under Git-ignored `audit_outputs/`
+- Pass 137 deterministic tests and parse 216 active Python files
+
+## High Priority After v0.6.1
 
 - Confirm the seven source contracts still marked as inferred during their next refresh
-- Implement memory-bounded full-row validation for multi-million-row EURO sources
+- Replace the shadow rebuild's remaining in-memory fingerprint dictionary with the v0.6.1 disk-backed store
 - Rebuild consumer prices, national accounts and MFI interest rates one at a time
 - Build the transactional multidimensional EURO updater with missing-value policy
 - Add isolated database-backed synchronization tests

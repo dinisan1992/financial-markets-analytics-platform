@@ -276,6 +276,21 @@ def _source_chunks(contract, chunk_size):
     )
 
 
+def mapped_source_columns(contract):
+    """Return the canonical source columns used by every exact EURO check."""
+    return _mapped_source_columns(contract)
+
+
+def normalize_source_frame(contract, frame, expected_columns):
+    """Apply the shared EURO aliases and verify a stable chunk schema."""
+    return _normalize_source_frame(contract, frame, expected_columns)
+
+
+def source_chunks(contract, chunk_size):
+    """Read a EURO CSV in bounded string-preserving chunks."""
+    return _source_chunks(contract, chunk_size)
+
+
 def record_batches(records, batch_size):
     batch_size = max(1, int(batch_size))
     for start in range(0, len(records), batch_size):

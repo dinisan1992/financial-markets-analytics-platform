@@ -1,10 +1,10 @@
 # Project Status
 
-Last updated: 3 August 2026
+Last updated: 11 August 2026
 
 ## Current Version
 
-**Macro-Financial Risk & Market Behaviour Analytics Platform v0.6.0**
+**Macro-Financial Risk & Market Behaviour Analytics Platform v0.6.1**
 
 ## Executive Summary
 
@@ -22,7 +22,7 @@ It combines:
 - interactive dashboarding;
 - data quality validation.
 
-The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.6.0 strengthens analytical semantics without changing MySQL: entropy is normalized, liquidity stress is unit-invariant and volume-gated, OHLC-dependent indicators expose quality provenance, and the former spoofing-like label is replaced in active outputs by high-volume candle rejection. All 11 FED imports retain unique observation-date contracts and backup-gated upserts. EURO schema status remains 14 contract-ready tables and three controlled rebuilds; general EURO refresh writes remain disabled pending a transactional multidimensional updater.
+The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.6.1 adds a memory-bounded, disk-backed validator for the three multi-million-row EURO rebuilds without changing MySQL. The live audit compared 10,864,513 CSV rows with active SQL, confirmed 9,475,513 missing observations and identified 313,682 full-row mismatches among overlapping keys. EURO schema status remains 14 contract-ready tables and three controlled rebuilds; general EURO refresh writes remain disabled pending a transactional multidimensional updater.
 
 ## Completed and Functional Modules
 
@@ -219,14 +219,19 @@ Main file:
 
 ## Latest Documented Validation
 
-Version 0.6.0 code-only validation included:
+Version 0.6.1 validation included:
 
-- 130/130 deterministic unit tests passed.
-- 211/211 active Python files parsed successfully and `pip check` reported no broken requirements.
+- 137/137 deterministic unit tests passed.
+- 216/216 active Python files parsed successfully and `pip check` reported no broken requirements.
 - 38/38 configured SQL assets recalculated successfully with database writes disabled.
 - 9/9 Streamlit pages rendered through `AppTest` without uncaught exceptions; the running server returned HTTP 200 health.
 - Added financial property tests for indicator bounds, Bollinger ordering, correlation symmetry, Base 100 normalization and event-date direction.
 - Added regression tests for normalized entropy, unit-invariant liquidity stress, unavailable OBV and OHLC-derived indicator quality.
+- Compared all 10,864,513 rows in consumer prices, national accounts and MFI interest-rate CSVs against MySQL through a temporary SQLite index and 50,000-row chunks.
+- Confirmed zero source/target null keys, duplicate keys and invalid numeric rows, plus zero target rows absent from source.
+- Confirmed 5,873,163, 2,103,859 and 1,498,491 source rows respectively absent from the three SQL tables.
+- Found 9,456, 302,628 and 1,598 full-row mismatches respectively among keys present in both source and SQL.
+- Completed the three-table read-only audit in 464 seconds; temporary stores peaked at approximately 572, 336 and 147 MiB and were deleted after use.
 - Active Streamlit terminology no longer claims spoofing detection from daily candles and volume.
 - No CSV import, SQL write, schema migration or database mutation was performed.
 
@@ -389,10 +394,10 @@ The project already contains a validated multi-asset, FED macro and EURO macro a
 
 The current priority is the next controlled data-engineering cycle:
 
-1. implement memory-bounded source-to-SQL validation for the three multi-million-row EURO rebuilds;
-2. prove the validator on controlled fixtures and run a read-only completeness plan;
-3. present backup, capacity, confirmation and rollback evidence before requesting database-write approval;
-4. add a freshness dashboard action that identifies which source must be refreshed next without performing network access;
-5. verify the seven legacy market-source contracts currently marked as inferred during their next controlled refresh;
-6. add database-backed synchronization tests in an isolated test schema;
-7. compare future audit outputs against the retained v0.5.1 baseline before event-study expansion or machine-learning work.
+1. adapt the shadow-build validator to reuse the v0.6.1 disk-backed comparison store instead of the legacy in-memory fingerprint dictionary;
+2. prepare and verify a structure-and-data backup for consumer prices only, then repeat the capacity estimate with an operating reserve;
+3. present the exact build confirmation, shadow name, validation gates and rollback statement before requesting database-write approval;
+4. build and validate one shadow without swapping it, then request separate approval for the atomic swap;
+5. repeat the isolated process for national accounts and MFI interest rates only after the preceding table passes its post-swap audit;
+6. add a freshness dashboard action and verify the seven legacy source contracts during their next controlled refresh;
+7. add database-backed synchronization tests in an isolated test schema before event-study expansion or machine-learning work.

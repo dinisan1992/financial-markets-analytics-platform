@@ -4,6 +4,32 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [v0.6.1] - 2026-08-11 - Memory-Bounded EURO Validation
+
+### Added
+
+- A read-only full-row validator for consumer prices, national accounts and MFI interest rates.
+- A temporary SQLite comparison store keyed by `(key_code, time_period)` so memory remains bounded by the configured CSV/SQL chunk size.
+- Separate counts and samples for missing source rows, extra target rows, hash mismatches, null keys, invalid numerics and duplicate keys.
+- A diagnostic CLI that writes per-table JSON plus consolidated JSON/CSV reports under Git-ignored `audit_outputs/`.
+- Seven deterministic tests covering exact matches, missing/extra/mismatched rows, duplicates, invalid values, bounded chunks, CLI defaults and read-only target statements.
+
+### Findings
+
+- Compared 10,864,513 source rows with 1,389,000 active SQL rows in 464 seconds using 50,000-row chunks.
+- Confirmed 9,475,513 source rows absent from SQL and zero SQL keys absent from source.
+- Identified 313,682 full-row mismatches among overlapping keys: 9,456 consumer-price, 302,628 national-account and 1,598 MFI rows.
+- Confirmed zero null business keys, duplicate business keys and invalid numeric rows in both source and target for all three contracts.
+- Temporary comparison stores reached approximately 572, 336 and 147 MiB and were deleted after each table.
+
+### Safety
+
+- The target-database test proves that the validator emits only read statements against SQL.
+- The live audit reports `database_write_performed=false`; no CSV, SQL row, index, schema or table was changed.
+- The three controlled rebuilds remain blocked pending disk-backed shadow validation, scoped backups, capacity review and explicit approval.
+
+---
+
 ## [v0.6.0] - 2026-08-03 - Analytical Semantics and Financial Properties
 
 ### Improved
