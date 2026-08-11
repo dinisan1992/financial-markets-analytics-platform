@@ -20,7 +20,7 @@ Functional local platform with:
 - Data quality and validation tools.
 - Automated syntax checks and unit tests through GitHub Actions.
 
-Current project version: **v0.6.7**
+Current project version: **v0.6.8**
 
 ## Main Analytical Capabilities
 
@@ -291,7 +291,7 @@ python project_scripts/ingestion/refresh_macro_sources.py ALL --check-sql
 The command validates all 28 source contracts and never writes by default. A
 single FED import can use `--update-sql` only with an exact table confirmation,
 a verified SQL backup containing that table and a unique business key. Version
-v0.6.7 qualifies the dedicated, default-read-only EURO synchronization planner
+v0.6.8 qualifies the dedicated, default-read-only EURO synchronization planner
 and one-table transactional apply engine. It classifies inserts, updates,
 unchanged and target-only rows through a disk-backed comparison; deletions are
 disabled, target-only rows block a write, and apply mode requires a scoped
@@ -306,14 +306,15 @@ See `docs/EURO_SCHEMA_AUDIT.md`,
 `docs/EURO_MYSQL_ACCEPTANCE.md` for the isolated MySQL evidence,
 `docs/EURO_SYNC_STATUS.md` for the complete 17-contract planning baseline,
 `docs/EURO_DIRECT_DEBITS_REMEDIATION.md` for the confirmed period-loss defect,
+`docs/EURO_DIRECT_DEBITS_BACKUP.md` for the independently restored backup,
 and `docs/MACRO_IMPORT_SAFETY.md` for importer controls.
 
 ## Validation Snapshot
 
-The v0.6.7 validation includes:
+The v0.6.8 validation includes:
 
-- 187/187 deterministic unit tests pass.
-- 240/240 active Python files parse successfully and `pip check` reports no broken requirements.
+- 193/193 deterministic unit tests pass.
+- 245/245 active Python files parse successfully and `pip check` reports no broken requirements.
 - 38/38 configured SQL assets recalculate successfully with database writes disabled.
 - 9/9 Streamlit pages render without uncaught exceptions and the running server reports HTTP 200 health.
 - Financial property tests cover indicator bounds, Bollinger ordering, correlation symmetry, Base 100 anchoring and event-date direction.
@@ -331,6 +332,8 @@ The v0.6.7 validation includes:
 - A complete Direct Debits key analysis proves that the `YEAR` target column collapsed every semiannual and quarterly source period: all 77,025 source-only and 31,108 target-only keys are explained, with zero unexplained differences.
 - The full-source synchronization guard now rejects lossy target period types, and the deep schema audit classifies 16 contracts as write-ready and Direct Debits as a controlled rebuild.
 - The Direct Debits rebuild command is plan-only: it exposes future shadow DDL, swap and rollback statements but has no build, apply or swap option.
+- A 25,308,899-byte Direct Debits structure-and-data backup was created on a separate volume, independently hashed and restored into a generated isolated schema.
+- All 75,647 restored rows, the complete row fingerprint, 31-column schema fingerprint and composite primary key match the active table; the temporary schema was removed and the active table remained unchanged.
 - MySQL Connector target scans use an explicitly unbuffered cursor capped at 5,000 rows; the 7,812,208-row balance-sheet plan completed without buffering the result set into memory.
 - Data Quality exposes the latest saved status, source freshness, planned actions and blockers for every EURO contract without rescanning CSVs or querying MySQL.
 
@@ -392,7 +395,7 @@ Planned improvements include:
 - Calibrate risk thresholds by asset class and data provenance.
 - Replace important year-only world events with verified exact dates.
 - Add dry-run and explicit entry points to the remaining SQL-capable ETL scripts.
-- Create and fully validate a Direct Debits shadow only after a fresh scoped backup and separate authorization; authorize any atomic swap separately.
+- Build and fully validate the Direct Debits shadow only after a separate authorization; authorize any atomic swap separately.
 - Review the four non-idempotent EURO plans before authorizing any active-data refresh.
 - Treat the 3,822,937-row Government Finance source expansion as a separate controlled migration.
 - Simplify the dependency file to direct project dependencies.

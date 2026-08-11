@@ -4,6 +4,41 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [v0.6.8] - 2026-08-11 - Verified Direct Debits Backup
+
+### Added
+
+- A one-table EURO backup command that requires an external physical volume.
+- A separately confirmed restore verifier that creates a generated isolated
+  schema, compares complete data and schema fingerprints, and removes the
+  schema in a mandatory cleanup path.
+- Explicit active-versus-isolated database-write evidence in the verification
+  report.
+
+### Backup Evidence
+
+- Created a 25,308,899-byte structure-and-data dump scoped only to
+  `euro_direct_debits` on a separate volume.
+- Independently confirmed SHA-256
+  `724F9B20F7A7A651395FDBC689D99E23B324F96329EC6E629BC60F616682852E`.
+- Restored 75,647 rows into a generated isolated schema and matched the active
+  full-row fingerprint
+  `5BDAB01AFCF91D83161657736E94A0853B280FC946168008571233657EDD2907`.
+- Matched the 31-column schema, `(key_code, time_period)` primary key and schema
+  fingerprint
+  `6E6237FA71CBAF7603782A694107C0B9352D843E13B0258F6F42A32DBEB0F768`.
+- Removed the isolated schema and confirmed the active table remained at
+  75,647 rows with `time_period YEAR(4)`.
+
+### Validation
+
+- Passed 193/193 deterministic tests and parsed 245/245 active Python files.
+- Preserved 38/38 SQL-only asset checks, 9/9 Streamlit page renders and
+  dependency integrity.
+- Performed no write against the active database table.
+
+---
+
 ## [v0.6.7] - 2026-08-11 - Direct Debits Temporal Integrity Diagnosis
 
 ### Added

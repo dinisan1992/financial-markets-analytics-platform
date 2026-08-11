@@ -1,6 +1,6 @@
 # Controlled Macro Import Safety
 
-Version 0.6.7 places all 11 FED and 17 EURO/ECB source files behind explicit
+Version 0.6.8 places all 11 FED and 17 EURO/ECB source files behind explicit
 import contracts. Importing a Python module never opens MySQL or starts loading
 a CSV. Running an importer without write flags performs a read-only preview.
 
@@ -148,8 +148,11 @@ planner captures period patterns across the complete source. Current status:
 
 The Direct Debits active `YEAR` column explains all 77,025 source-only and
 31,108 target-only keys. Its proposed `VARCHAR(20)` shadow remains plan-only
-until a fresh scoped backup and separate build/swap authorizations exist. See
-`docs/EURO_DIRECT_DEBITS_REMEDIATION.md`.
+until separate build/swap authorizations exist. Version v0.6.8 completed the
+fresh scoped backup gate on a separate volume and proved its restoration in an
+isolated schema without changing the active table. See
+`docs/EURO_DIRECT_DEBITS_REMEDIATION.md` and
+`docs/EURO_DIRECT_DEBITS_BACKUP.md`.
 
 ## Recovery
 

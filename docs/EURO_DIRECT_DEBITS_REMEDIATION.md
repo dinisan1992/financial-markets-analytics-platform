@@ -1,6 +1,6 @@
 # EURO Direct Debits Temporal Remediation
 
-Version: v0.6.7
+Version: v0.6.8
 
 Date: 11 August 2026
 
@@ -92,3 +92,14 @@ evidence only and are not executed by the v0.6.7 command.
 
 Until all gates pass, `EURO_DIRECT_DEBITS` remains blocked by
 `unsafe_time_period_type` and `target_only_rows_require_review`.
+
+## v0.6.8 Backup Gate
+
+The first two mandatory gates are complete. A 25,308,899-byte scoped backup was
+created on a separate volume, independently hashed and restored into a generated
+isolated schema. The restored table matches all 75,647 active rows, the complete
+data and schema fingerprints, 31 columns and the composite primary key. The
+temporary schema was removed and the active table remained unchanged.
+
+The backup result does not authorize the shadow build or swap. Those remain
+separate gates. See `EURO_DIRECT_DEBITS_BACKUP.md`.

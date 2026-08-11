@@ -1,6 +1,6 @@
 # EURO Synchronization Status
 
-Version: v0.6.7
+Version: v0.6.8
 
 Date: 11 August 2026
 
@@ -75,5 +75,8 @@ Items plan then completed against 7,812,208 target rows.
 - Card Payments, Bank Lending Survey and Balance Sheet Items require field-level
   mismatch review before any write authorization.
 
-No active-data remediation is part of v0.6.7. The diagnostic and rebuild plan
-are read-only; see `EURO_DIRECT_DEBITS_REMEDIATION.md`.
+No active-data remediation is part of v0.6.8. The diagnostic and rebuild plan
+are read-only. Version v0.6.8 added a separately verified backup: its isolated
+restore matched all 75,647 active rows and was removed without changing the
+active table. See `EURO_DIRECT_DEBITS_REMEDIATION.md` and
+`EURO_DIRECT_DEBITS_BACKUP.md`.

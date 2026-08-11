@@ -1,6 +1,6 @@
 # EURO Transactional Synchronization
 
-Version: v0.6.7
+Version: v0.6.8
 
 Date: 11 August 2026
 
@@ -133,3 +133,12 @@ See `docs/EURO_MYSQL_ACCEPTANCE.md` for the procedure and recorded evidence.
 Production apply remains conditional on a genuinely newer reviewed CSV, a fresh
 read-only plan with no blockers and a new scoped backup. Direct Debits must
 first pass its separately authorized shadow-rebuild workflow.
+
+## Direct Debits Backup Gate
+
+Version v0.6.8 completed the scoped backup prerequisite for the future Direct
+Debits rebuild. The dump was independently restored into a generated isolated
+schema; all 75,647 rows, complete data/schema fingerprints and the composite
+primary key matched the active table. The isolated schema was removed and no
+active database write occurred. This evidence does not authorize a shadow build
+or atomic swap. See `EURO_DIRECT_DEBITS_BACKUP.md`.

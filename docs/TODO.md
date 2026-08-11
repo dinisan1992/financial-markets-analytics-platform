@@ -211,9 +211,18 @@
 - Keep build, apply and swap unavailable pending backup and separate authorization
 - Pass 187 deterministic tests and parse 240 active Python files
 
-## High Priority After v0.6.7
+## Completed in v0.6.8
 
-- Create and verify a fresh table-scoped Direct Debits backup on the separate physical volume
+- Add a reusable one-table EURO backup command restricted to an external volume
+- Add exact-confirmation restore verification in a generated isolated schema
+- Create and hash a 25,308,899-byte Direct Debits structure-and-data backup
+- Match all 75,647 restored rows and the complete active data fingerprint
+- Match the 31-column schema fingerprint and composite primary key
+- Remove the temporary schema and independently confirm the active table is unchanged
+- Pass 193 deterministic tests and parse 245 active Python files
+
+## High Priority After v0.6.8
+
 - Build and fully validate the Direct Debits shadow only after explicit authorization
 - Request a separate authorization before any atomic swap and retain the current table for rollback
 - Review field-level changes in Card Payments, Bank Lending Survey and Balance Sheet Items
