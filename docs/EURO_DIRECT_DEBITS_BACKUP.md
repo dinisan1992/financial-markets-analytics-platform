@@ -73,10 +73,10 @@ The restore command does not place the database password on the command line.
 It refuses an existing or incorrectly named test schema and always attempts
 cleanup after schema creation.
 
-## Next Gate
+## v0.6.9 Follow-Up
 
-The verified backup makes a future isolated shadow build recoverable; it does
-not authorize that build. The next operation must still receive explicit
-authorization, create only the versioned `VARCHAR(20)` shadow and validate every
-source row before any swap is considered. The atomic swap remains a later,
-separate authorization.
+The separately authorized shadow build is now complete. Version v0.6.9 used
+this exact backup as a mandatory checkpoint before creating and validating the
+versioned `VARCHAR(20)` table. The backup still protects the unchanged active
+table. No atomic swap was authorized or performed; that remains a later,
+separate gate. See `EURO_DIRECT_DEBITS_SHADOW.md`.

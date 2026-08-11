@@ -4,6 +4,38 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [v0.6.9] - 2026-08-11 - Validated Direct Debits Shadow
+
+### Added
+
+- A build-only Direct Debits command with no swap stage and an exact
+  `BUILD_EURO_DIRECT_DEBITS_V069_SHADOW` confirmation.
+- Immutable byte-count and SHA-256 gates for the reviewed source CSV, verified
+  v0.6.8 backup and active-table data/schema checkpoint.
+- Independent active-table before/after fingerprints and explicit shadow-only
+  database-write evidence.
+
+### Database Evidence
+
+- Built `euro_direct_debits__shadow_v069_20260811_163215` without renaming or
+  modifying the active table.
+- Loaded and validated 121,564 unique source rows over all 31 mapped columns,
+  with zero null keys, duplicates, missing rows or hash mismatches.
+- Preserved 44,539 annual, 42,039 semiannual and 34,986 quarterly rows in
+  `time_period VARCHAR(20)` under the composite primary key.
+- Repeated the full source-to-shadow comparison through an independent
+  read-only path with the same result.
+- Confirmed the active table remained at 75,647 rows with its original data and
+  schema fingerprints. No swap was authorized or performed.
+
+### Validation
+
+- Passed 199/199 deterministic tests and parsed 249/249 active Python files.
+- Passed `pip check`, 38/38 SQL-only asset recalculations, 9/9 Streamlit page
+  renders and HTTP 200 application health.
+
+---
+
 ## [v0.6.8] - 2026-08-11 - Verified Direct Debits Backup
 
 ### Added

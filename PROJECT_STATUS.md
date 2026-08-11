@@ -4,7 +4,7 @@ Last updated: 11 August 2026
 
 ## Current Version
 
-**Macro-Financial Risk & Market Behaviour Analytics Platform v0.6.8**
+**Macro-Financial Risk & Market Behaviour Analytics Platform v0.6.9**
 
 ## Executive Summary
 
@@ -22,7 +22,7 @@ It combines:
 - interactive dashboarding;
 - data quality validation.
 
-The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.6.8 completes the Direct Debits backup gate without changing the active table. A 25,308,899-byte one-table dump was created on a separate volume, independently hashed and restored into a generated isolated schema. All 75,647 rows, the complete data fingerprint, the 31-column schema fingerprint and `(key_code, time_period)` primary key matched; the temporary schema was removed. The confirmed `YEAR` period defect remains blocked and its future `VARCHAR(20)` shadow still requires separate build and swap authorization.
+The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.6.9 completes the Direct Debits shadow-build gate without changing the active table. The verified v0.6.8 backup and reviewed 32,010,024-byte CSV were pinned by SHA-256 before a versioned `VARCHAR(20)` shadow received all 121,564 source rows. Two complete comparisons found zero missing, extra, duplicate or mismatched rows. The active 75,647-row `YEAR(4)` table and its data/schema fingerprints remain unchanged; no swap was authorized or performed.
 
 ## Completed and Functional Modules
 
@@ -220,10 +220,10 @@ Main file:
 
 ## Latest Documented Validation
 
-Version 0.6.8 validation included:
+Version 0.6.9 validation included:
 
-- 193/193 deterministic unit tests passed.
-- 245/245 active Python files parsed successfully and `pip check` reported no broken requirements.
+- 199/199 deterministic unit tests passed.
+- 249/249 active Python files parsed successfully and `pip check` reported no broken requirements.
 - 38/38 configured SQL assets recalculated successfully with database writes disabled.
 - 9/9 Streamlit pages rendered through `AppTest` without uncaught exceptions; the running server returned HTTP 200 health.
 - Added financial property tests for indicator bounds, Bollinger ordering, correlation symmetry, Base 100 normalization and event-date direction.
@@ -249,6 +249,11 @@ Version 0.6.8 validation included:
 - Added reusable one-table EURO backup and isolated restore-verification commands with external-volume enforcement and exact confirmation.
 - Independently restored the 25,308,899-byte Direct Debits dump and matched 75,647 rows, data/schema fingerprints and the composite primary key.
 - Removed the generated verification schema and independently confirmed zero matching temporary schemas, 75,647 active rows and the unchanged `YEAR(4)` period type.
+- Pinned both the restored backup and reviewed Direct Debits CSV by exact byte count and SHA-256 before permitting the build.
+- Built `euro_direct_debits__shadow_v069_20260811_163215` with `time_period VARCHAR(20)`, 121,564 unique business keys and zero null keys.
+- Preserved the reviewed frequency counts: 44,539 annual, 42,039 semiannual and 34,986 quarterly rows.
+- Repeated the complete source-to-shadow validation independently with zero missing, extra, duplicate or mismatched rows.
+- Confirmed the active table before and after with the same 75,647-row data and 31-column schema fingerprints; swap remained unavailable.
 - Added progress reporting for long source, target and write scans.
 - Synchronized `VERSION` with the runtime project version and added a regression test for future releases.
 - Reused the disk-backed store for full-row shadow validation, while preserving the legacy path for earlier migration checkpoints.
@@ -416,10 +421,10 @@ Planned work:
 
 The project already contains a validated multi-asset, FED macro and EURO macro analytical layer.
 
-The isolated MySQL acceptance gate, full read-only planning baseline, Direct Debits diagnosis and verified backup gate are complete. The current priority is controlled shadow construction without changing the active table prematurely:
+The isolated MySQL acceptance gate, full read-only planning baseline, Direct Debits diagnosis, verified backup and shadow build are complete. The current priority is a deliberate review gate before any active-table change:
 
-1. build and fully validate a `VARCHAR(20)` Direct Debits shadow only after a separate explicit authorization;
-2. authorize an atomic Direct Debits swap separately, retain the current table and immediately run a read-only post-swap plan;
+1. inspect the v0.6.9 Direct Debits shadow evidence before granting any swap authorization;
+2. if separately authorized, atomically retain the current table, promote the validated shadow and immediately run rollback-capable post-swap checks;
 3. review field-level differences for Card Payments, Bank Lending Survey and Balance Sheet Items;
 4. treat the Government Finance expansion as a dedicated migration with a fresh scoped backup and capacity preflight;
 5. confirm the seven inferred source contracts during their next refresh;

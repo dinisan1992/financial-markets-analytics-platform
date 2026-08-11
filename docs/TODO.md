@@ -221,9 +221,19 @@
 - Remove the temporary schema and independently confirm the active table is unchanged
 - Pass 193 deterministic tests and parse 245 active Python files
 
-## High Priority After v0.6.8
+## Completed in v0.6.9
 
-- Build and fully validate the Direct Debits shadow only after explicit authorization
+- Pin the reviewed Direct Debits CSV, verified backup and active checkpoint by SHA-256
+- Build a versioned `VARCHAR(20)` shadow without modifying the active table
+- Load and compare all 121,564 source rows through disk-backed fingerprints
+- Preserve annual, semiannual and quarterly periods with zero duplicate or null keys
+- Repeat full source-to-shadow validation through an independent read-only path
+- Confirm the active data and schema fingerprints remained unchanged
+- Pass 199 deterministic tests and parse 249 active Python files
+
+## High Priority After v0.6.9
+
+- Review the Direct Debits v0.6.9 evidence before considering a swap
 - Request a separate authorization before any atomic swap and retain the current table for rollback
 - Review field-level changes in Card Payments, Bank Lending Survey and Balance Sheet Items
 - Prepare a separate capacity and backup plan for the Government Finance expansion

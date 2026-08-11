@@ -1,6 +1,6 @@
 # EURO Transactional Synchronization
 
-Version: v0.6.8
+Version: v0.6.9
 
 Date: 11 August 2026
 
@@ -142,3 +142,10 @@ schema; all 75,647 rows, complete data/schema fingerprints and the composite
 primary key matched the active table. The isolated schema was removed and no
 active database write occurred. This evidence does not authorize a shadow build
 or atomic swap. See `EURO_DIRECT_DEBITS_BACKUP.md`.
+
+Version v0.6.9 completed the separately authorized build prerequisite. The
+versioned shadow contains and exactly matches all 121,564 reviewed source rows,
+uses `time_period VARCHAR(20)` and preserves the composite business key. The
+active table fingerprint is unchanged. The command exposes no swap stage; an
+atomic rename and its post-swap checks remain separately gated. See
+`EURO_DIRECT_DEBITS_SHADOW.md`.

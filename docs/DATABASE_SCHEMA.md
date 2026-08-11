@@ -1,8 +1,9 @@
 # Database Schema
 
-Project version: v0.6.8. The applied database schema checkpoint remains v0.6.3;
-v0.6.7 identified one pre-existing unsafe Direct Debits period type and v0.6.8
-verified its scoped backup without changing the active table.
+Project version: v0.6.9. The active application schema checkpoint remains
+v0.6.3; v0.6.7 identified one pre-existing unsafe Direct Debits period type,
+v0.6.8 verified its scoped backup and v0.6.9 built a validated non-active
+replacement without changing the active table.
 
 ## Overview
 
@@ -623,6 +624,12 @@ Version v0.6.8 created and independently restored a one-table Direct Debits
 backup. The active and restored copies match across all 75,647 rows, 31 columns,
 the composite primary key and complete data/schema fingerprints. The generated
 verification schema was removed. See `EURO_DIRECT_DEBITS_BACKUP.md`.
+
+Version v0.6.9 added the non-active table
+`euro_direct_debits__shadow_v069_20260811_163215`. It contains 121,564 unique
+source business keys, stores `time_period` as `VARCHAR(20)` and retains a
+temporary `_source_row_sha256` validation column. The active table remains
+unchanged and no rename occurred. See `EURO_DIRECT_DEBITS_SHADOW.md`.
 
 They often contain different combinations of:
 

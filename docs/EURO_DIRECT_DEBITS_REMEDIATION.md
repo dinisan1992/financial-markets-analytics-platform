@@ -1,14 +1,14 @@
 # EURO Direct Debits Temporal Remediation
 
-Version: v0.6.8
+Version: v0.6.9
 
 Date: 11 August 2026
 
 ## Status
 
-Diagnosis and planning are complete. The active MySQL table has not been
-altered. No shadow was created, no row was inserted or updated, and no table was
-renamed.
+Diagnosis, backup and shadow validation are complete. The active MySQL table
+has not been altered or renamed. A separately authorized versioned shadow now
+contains the complete reviewed source; no swap was authorized or performed.
 
 ## Confirmed Cause
 
@@ -101,5 +101,13 @@ isolated schema. The restored table matches all 75,647 active rows, the complete
 data and schema fingerprints, 31 columns and the composite primary key. The
 temporary schema was removed and the active table remained unchanged.
 
-The backup result does not authorize the shadow build or swap. Those remain
-separate gates. See `EURO_DIRECT_DEBITS_BACKUP.md`.
+## v0.6.9 Shadow Gate
+
+Gates 3 through 5 are complete. The build-only command created
+`euro_direct_debits__shadow_v069_20260811_163215`, loaded all 121,564 unique
+source keys and validated every mapped value twice. It found zero null keys,
+duplicates, missing rows, extra rows or hash mismatches. The active table kept
+its original 75,647-row data and 31-column schema fingerprints.
+
+The atomic swap, retained-table rename and post-swap checks remain unexecuted
+and require a separate authorization. See `EURO_DIRECT_DEBITS_SHADOW.md`.
