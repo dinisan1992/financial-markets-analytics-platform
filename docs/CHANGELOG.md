@@ -4,6 +4,23 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [v0.7.5] - 2026-08-11 - ECB Backup And Shadow Planning
+
+### Completed
+
+- Created three separately scoped, structure-and-data ECB table backups on an
+  external physical volume with independent SHA-256 verification.
+- Confirmed post-backup counts of 1,164,356 BLS, 815,173 PCP and 7,812,208 BSI
+  rows through SELECT-only access.
+- Generated versioned shadow, retained-table and atomic-swap SQL previews for
+  all three contracts without executing any statement.
+- Defined the official-snapshot-authoritative retention policy while preserving
+  withdrawn keys in complete versioned rollback tables.
+- Confirmed that none of the six planned shadow/retained tables exists.
+- Performed zero database writes and zero active-CSV writes.
+
+---
+
 ## [v0.7.4] - 2026-08-11 - Official ECB Source Staging
 
 ### Added

@@ -1,6 +1,6 @@
 # EURO Synchronization Status
 
-Version: v0.7.4
+Version: v0.7.5
 
 Date: 11 August 2026
 
@@ -17,6 +17,16 @@ state can be consolidated without reading a source CSV or connecting to MySQL:
 ```powershell
 python project_scripts/diagnostics/consolidate_euro_sync_status.py
 ```
+
+## v0.7.5 Backup And Shadow Gate
+
+Complete active-table backups for BLS, PCP and BSI now exist on a separate
+physical volume with structure, data and independent SHA-256 verification.
+Post-backup row counts are unchanged. Versioned shadow, retained-table and
+atomic-swap previews were generated without execution, and none of the six
+planned tables exists. The retention policy makes the current official ECB
+snapshot authoritative while preserving withdrawn keys in the future retained
+table. See `ECB_BACKUP_AND_SHADOW_PLAN.md`.
 
 ## v0.7.4 Official Snapshot Refresh
 

@@ -20,7 +20,7 @@ Functional local platform with:
 - Data quality and validation tools.
 - Cross-platform lint, import-safety, dependency, coverage and unit-test checks through GitHub Actions.
 
-Current project version: **v0.7.4**
+Current project version: **v0.7.5**
 
 ## Main Analytical Capabilities
 
@@ -336,7 +336,7 @@ no SQL write mode. See `docs/ECB_SOURCE_REFRESH.md`.
 
 ## Validation Snapshot
 
-The v0.7.4 validation includes:
+The v0.7.5 validation includes:
 
 - 222/222 deterministic unit tests pass.
 - The complete active Python tree compiles successfully and `pip check` reports no broken requirements.
@@ -384,6 +384,10 @@ The v0.7.4 validation includes:
 - SELECT-only MySQL plans classify 920,328 candidate-only keys, 350,495
   target-only keys and broad official metadata/value revisions; no plan was
   applied.
+- Three scoped SQL backups preserve the complete active BLS, PCP and BSI
+  tables on a separate physical volume with independently verified SHA-256.
+- Versioned shadow and retained-table SQL previews are complete; schema
+  inspection confirms none was executed or created.
 - Data Quality exposes the latest saved status, source freshness, planned actions and blockers for every EURO contract without rescanning CSVs or querying MySQL.
 
 The retained v0.5.6 database validation includes:
@@ -445,7 +449,8 @@ Planned improvements include:
 - Replace important year-only world events with verified exact dates.
 - Add dry-run and explicit entry points to the remaining SQL-capable ETL scripts.
 - Create scoped external-volume backups and controlled shadows before deciding
-  whether to promote the staged BLS, PCP and BSI snapshots.
+  whether to promote the staged BLS, PCP and BSI snapshots. The scoped backups
+  are complete; shadow construction remains separately authorized.
 - Define an explicit retention policy for ECB keys withdrawn from current PCP
   and BSI snapshots.
 - Treat the 3,822,937-row Government Finance source expansion as a separate controlled migration.

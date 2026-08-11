@@ -4,7 +4,7 @@ Last updated: 11 August 2026
 
 ## Current Version
 
-**Macro-Financial Risk & Market Behaviour Analytics Platform v0.7.4**
+**Macro-Financial Risk & Market Behaviour Analytics Platform v0.7.5**
 
 ## Executive Summary
 
@@ -22,7 +22,7 @@ It combines:
 - interactive dashboarding;
 - data quality validation.
 
-The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.7.0 completed the controlled Direct Debits rebuild. Version 0.7.1 separated the eight direct runtime dependencies from development tooling and expanded CI. Version 0.7.2 removed the Windows-only assumptions exposed by the first Linux matrix run. Version 0.7.3 made EURO synchronization fingerprints aware of SQL storage precision and added SELECT-only field-difference diagnostics. Version 0.7.4 adds a reproducible official ECB staging pipeline and validates fresh BLS, PCP and BSI snapshots without changing active CSVs or MySQL. The validated 121,564-row `VARCHAR(20)` Direct Debits table remains active and the former 75,647-row `YEAR(4)` table remains retained for rollback.
+The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.7.0 completed the controlled Direct Debits rebuild. Version 0.7.1 separated direct runtime dependencies from development tooling and expanded CI. Version 0.7.2 removed Windows-only CI assumptions. Version 0.7.3 added storage-aware EURO fingerprints and field diagnostics. Version 0.7.4 added official ECB staging for fresh BLS, PCP and BSI snapshots. Version 0.7.5 completes their scoped external-volume backups, retention policy and read-only shadow planning without creating any table or changing active CSVs or MySQL.
 
 ## Completed and Functional Modules
 
@@ -220,7 +220,7 @@ Main file:
 
 ## Latest Documented Validation
 
-Version 0.7.4 validation included:
+Version 0.7.5 validation included:
 
 - 222/222 deterministic unit tests passed.
 - The complete active Python tree compiled successfully and `pip check` reported no broken requirements.
@@ -283,6 +283,10 @@ Version 0.7.4 validation included:
   metadata/value revisions; no plan was applied.
 - Confirmed through field samples that the new snapshots contain title rewrites,
   storage-precision differences and substantive ECB observation revisions.
+- Created and independently verified complete one-table SQL backups for BLS,
+  PCP and BSI on a separate physical volume.
+- Generated three versioned shadow/retained-table plans and confirmed through
+  schema inspection that none of their six tables exists.
 - Rendered 9/9 Streamlit pages successfully after the precision changes.
 - Synchronized `VERSION` with the runtime project version and added a regression test for future releases.
 - Reused the disk-backed store for full-row shadow validation, while preserving the legacy path for earlier migration checkpoints.
@@ -460,14 +464,13 @@ The isolated MySQL acceptance gate, Direct Debits migration and official ECB
 snapshot staging are complete. The current priority remains controlled source
 maintenance:
 
-1. create fresh scoped SQL backups on a separate physical volume for BLS, PCP
-   and BSI before any write decision;
-2. define a retention policy for the 6,168 PCP and 344,327 BSI keys withdrawn
-   from the current official snapshots;
-3. prepare and validate versioned shadow tables for PCP and BSI, and choose
-   transactional synchronization or a shadow rebuild for BLS;
-4. request explicit authorization before replacing active CSVs, building
+1. revalidate the completed BLS, PCP and BSI backup and candidate hashes before
+   each shadow build;
+2. request explicit authorization before replacing active CSVs, building
    shadows or executing any SQL write;
+3. build and completely validate one versioned shadow at a time;
+4. apply the documented official-snapshot-authoritative retention policy for
+   the 6,168 PCP and 344,327 BSI keys withdrawn from current snapshots;
 5. treat the Government Finance expansion as a dedicated migration with a
    fresh scoped backup and capacity preflight;
 6. update stale market sources, beginning with verified official feeds, and

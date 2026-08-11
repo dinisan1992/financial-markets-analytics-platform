@@ -115,10 +115,10 @@ The candidates are structurally valid and approved for further read-only
 planning only. They have not replaced the active CSVs and have not changed
 MySQL.
 
-Before any data write:
+The scoped backups and read-only shadow SQL previews were completed in v0.7.5.
+See `ECB_BACKUP_AND_SHADOW_PLAN.md`. Before any data write:
 
-1. create fresh scoped structure-and-data SQL backups on a separate physical
-   volume;
+1. revalidate the completed backup and candidate hashes;
 2. retain the current active tables under versioned rollback names;
 3. use a complete shadow rebuild for PCP and BSI because target-only keys make
    ordinary upsert non-idempotent;
