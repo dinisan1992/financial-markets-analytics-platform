@@ -24,6 +24,7 @@ TARGET_IMPORT_KEYS = (
 )
 REBUILD_VERSION = "v062"
 DEFAULT_OPERATING_RESERVE_BYTES = 5 * 1024**3
+SHADOW_ESTIMATE_SAFETY_FACTOR = 1.5
 V061_AUDIT_BASELINES = {
     "EURO_CONSUMER_PRICES": {
         "source_rows": 6_548_663,
@@ -155,8 +156,11 @@ def estimate_large_rebuild_capacity(
     baseline = V061_AUDIT_BASELINES[import_key]
     source_rows = int(baseline["source_rows"])
     store_bytes = int(baseline["comparison_store_bytes"])
-    estimated_shadow_bytes = ceil(
+    raw_shadow_estimate_bytes = ceil(
         active_table_bytes * source_rows / target_rows
+    )
+    estimated_shadow_bytes = ceil(
+        raw_shadow_estimate_bytes * SHADOW_ESTIMATE_SAFETY_FACTOR
     )
     reserve_bytes = max(0, int(operating_reserve_bytes))
     mysql_data_dir = Path(database["mysql_data_dir"]).expanduser().resolve()
@@ -195,6 +199,8 @@ def estimate_large_rebuild_capacity(
         "source_rows": source_rows,
         "target_rows": target_rows,
         "active_table_bytes": active_table_bytes,
+        "raw_shadow_estimate_bytes": raw_shadow_estimate_bytes,
+        "shadow_estimate_safety_factor": SHADOW_ESTIMATE_SAFETY_FACTOR,
         "estimated_shadow_bytes": estimated_shadow_bytes,
         "comparison_store_peak_bytes": store_bytes,
         "operating_reserve_bytes": reserve_bytes,

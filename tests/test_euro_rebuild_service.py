@@ -1,6 +1,6 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 import unittest
 
 from services.euro_rebuild_service import (
@@ -8,6 +8,7 @@ from services.euro_rebuild_service import (
     TARGET_IMPORT_KEYS,
     build_and_validate_shadows,
     build_rollback_statement,
+    build_shadow_schema_statements,
     build_swap_statement,
     canonical_row_hash,
     normalize_row,
@@ -103,6 +104,43 @@ class EuroRebuildServiceTests(unittest.TestCase):
         batches = list(record_batches(list(range(11)), 4))
 
         self.assertEqual([[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10]], batches)
+
+    @patch(
+        "services.euro_rebuild_service._mapped_source_columns",
+        return_value=(
+            "key_code",
+            "time_period",
+            "obs_value",
+            "data_comp",
+            "freq",
+        ),
+    )
+    @patch("services.euro_rebuild_service.inspect")
+    def test_shadow_schema_promotes_unindexed_text_without_truncation(
+        self,
+        inspect_mock,
+        _columns_mock,
+    ):
+        inspect_mock.return_value.get_columns.return_value = [
+            {"name": "key_code", "type": "VARCHAR(255)"},
+            {"name": "time_period", "type": "VARCHAR(20)"},
+            {"name": "obs_value", "type": "DECIMAL(20,6)"},
+            {"name": "data_comp", "type": "VARCHAR(50)"},
+            {"name": "freq", "type": "CHAR(1)"},
+        ]
+
+        statements = build_shadow_schema_statements(
+            Mock(),
+            "EURO_NATIONAL_ACCOUNTS",
+            "20260811_103224",
+            version="v062",
+        )
+
+        alter = statements[-1]
+        self.assertIn("MODIFY `data_comp` TEXT NULL", alter)
+        self.assertIn("MODIFY `freq` TEXT NULL", alter)
+        self.assertIn("MODIFY `key_code` VARCHAR(255) NOT NULL", alter)
+        self.assertIn("MODIFY `time_period` VARCHAR(20) NOT NULL", alter)
 
 
 if __name__ == "__main__":

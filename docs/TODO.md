@@ -154,14 +154,25 @@
 - Pass 155 deterministic tests and parse 224 active Python files
 - Preserve MySQL unchanged while preparing the migration runbook
 
-## High Priority After v0.6.2
+## Completed in v0.6.3
+
+- Create and verify three table-scoped structure-and-data backups on a separate physical volume
+- Rebuild MFI interest rates, national accounts and consumer prices through isolated shadows and atomic swaps
+- Preserve all 10,864,513 registered source rows with exact full-row validation
+- Promote long, non-key ECB dimensions to non-truncating text storage
+- Confirm zero missing, extra, duplicate, null-key, invalid-numeric and hash-mismatched rows
+- Confirm all 17 EURO schemas are write-contract ready and all 16 configured series are available
+- Retain every former active table and document table-specific rollback statements
+- Correct and test the standalone EURO series validator
+- Pass 159 deterministic tests, 225 Python parses, 38 SQL asset checks and 9 Streamlit page renders
+
+## High Priority After v0.6.3
 
 - Confirm the seven source contracts still marked as inferred during their next refresh
-- Back up, build, review and swap MFI interest rates through separate approvals
-- Repeat the controlled process for national accounts and then consumer prices
-- Compare each post-swap audit with the archived v0.6.1 baseline
 - Build the transactional multidimensional EURO updater with missing-value policy
 - Add isolated database-backed synchronization tests
+- Prove refresh idempotency and exact post-write source-to-SQL equality
+- Add EURO source freshness and refresh status to Data Quality
 - Confirm the WTI contract/source for 20 April 2020
 - Classify YUAN, FINANCIAL_CONDITIONS and TED_SPREAD by native frequency
 

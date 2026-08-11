@@ -1,6 +1,6 @@
 # EURO Streaming Validation
 
-Audit baseline: v0.6.1
+Audit baseline: v0.6.1; post-migration verification: v0.6.3
 
 Migration tooling: v0.6.2
 
@@ -97,3 +97,24 @@ prices. For each table, the required checkpoints are:
 
 No shadow, backup, index, table, SQL row or source CSV was created or changed in
 MySQL during v0.6.1 or v0.6.2.
+
+## v0.6.3 Post-Migration Verification
+
+After separate approved backups, builds and atomic swaps, the same validator
+was rerun against all three active tables with `--fail-on-difference`:
+
+| Import | Source rows | Active SQL rows | Missing | Extra | Hash mismatch |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Consumer prices | 6,548,663 | 6,548,663 | 0 | 0 | 0 |
+| National accounts | 2,721,359 | 2,721,359 | 0 | 0 | 0 |
+| MFI interest rates | 1,594,491 | 1,594,491 | 0 | 0 | 0 |
+| **Total** | **10,864,513** | **10,864,513** | **0** | **0** | **0** |
+
+The run also found zero null business keys, duplicate business keys and invalid
+numeric values. Source and target chunks remained bounded at 50,000 rows and
+the database received read operations only. The consolidated result digest is:
+
+`6B0EC4A231ADDA60FB48091E27B9D5BC8E31174D6C8840157EBCF78D6F382F59`
+
+The v0.6.1 figures above remain the immutable before-migration baseline. See
+`EURO_LARGE_REBUILD_RESULTS.md` for backup, retained-table and rollback details.

@@ -101,3 +101,14 @@ missing 9,475,513 registered source rows.
 
 See `EURO_SOURCE_COMPLETENESS.md` for the exact counts, report digests and the
 memory-bounded migration plan for those larger tables.
+
+## v0.6.3 Completion
+
+The three large histories were rebuilt exactly in v0.6.3. The final deep audit
+classifies all 17 EURO schemas as write-contract ready, with zero remaining key
+candidates or rebuild requirements. The earlier `pre_v055` and `pre_v056`
+tables and the new `pre_v062` tables remain retained for rollback.
+
+General EURO refresh writes remain disabled pending the transactional
+multidimensional updater. See `EURO_LARGE_REBUILD_RESULTS.md` for the final
+counts, backup hashes and recovery statements.

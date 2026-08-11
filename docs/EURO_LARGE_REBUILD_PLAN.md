@@ -1,6 +1,6 @@
 # Large EURO Rebuild Plan
 
-Version: v0.6.2
+Runbook version: v0.6.3
 
 Date: 11 August 2026
 
@@ -32,6 +32,12 @@ The current MySQL data directory and temporary fingerprint workspace are on
 the same `C:` volume. The recorded free space was approximately 17.6 GiB, so
 every isolated preflight passed. Capacity must be checked again immediately
 before each build because free space can change.
+
+This table preserves the original v0.6.2 preflight evidence. After the first
+national-account attempt exposed greater real storage growth from non-truncated
+text, v0.6.3 added a 1.5 safety factor to every future shadow estimate. The
+factor is reported explicitly by the preflight and does not change the
+historical figures above.
 
 ## Safe Command Sequence
 
@@ -72,7 +78,30 @@ python project_scripts/diagnostics/remediate_euro_large_table.py EURO_MFI_INTERE
 Rerun the full read-only streaming audit after the swap. National accounts may
 start only after MFI passes its post-swap audit; consumer prices remains last.
 
-## Safety Status
+## Execution Status
 
-Version 0.6.2 prepared and tested these commands but did not execute the backup,
-build or swap stages. No MySQL row, index, schema or table was changed.
+Version 0.6.2 prepared and tested these controls. Version 0.6.3 executed the
+runbook in the required order after explicit approval. Every table received a
+separate structure-and-data backup on another physical volume, a capacity
+preflight, an isolated shadow build, an exact disk-backed validation and an
+atomic swap.
+
+| Import | Active rows after swap | Missing | Extra | Hash mismatch | Retained table |
+| --- | ---: | ---: | ---: | ---: | --- |
+| MFI interest rates | 1,594,491 | 0 | 0 | 0 | `euro_mfi_interest_rate_statistics__pre_v062_20260811_101729` |
+| National accounts | 2,721,359 | 0 | 0 | 0 | `euro_main_aggregates_national_accounts__pre_v062_20260811_103657` |
+| Consumer prices | 6,548,663 | 0 | 0 | 0 | `euro_indices_consumer_prices__pre_v062_20260811_110132` |
+
+The final read-only audit compared 10,864,513 source and active SQL rows with
+zero differences. It also found zero null or duplicate business keys and zero
+invalid numeric observations. The active tables are protected by unique
+`(key_code, time_period)` contracts.
+
+One initial national-account shadow failed on a long `data_comp` value before
+any active-table change. The 17,250-row partial table was renamed to
+`euro_main_aggregates_national_accou__failed_v062_20260811_103224` and retained
+for forensic review. Non-key text fields are now promoted to `TEXT`, and the
+successful rebuild preserved the complete source.
+
+See `EURO_LARGE_REBUILD_RESULTS.md` for backup hashes, rollback statements and
+the final evidence digest. No retained or failed table was deleted.

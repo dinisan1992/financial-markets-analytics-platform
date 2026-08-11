@@ -4,6 +4,33 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [v0.6.3] - 2026-08-11 - Complete EURO Source Remediation
+
+### Corrected
+
+- Rebuilt MFI interest rates, national accounts and consumer prices one table at a time from the registered CSV sources.
+- Promoted non-key text dimensions to `TEXT` in large shadows so long ECB descriptions are preserved without truncation.
+- Added a 1.5 safety factor to large-shadow capacity estimates.
+- Corrected the EURO series validator's error status, output isolation, fail-on-error exit code and database-write reporting.
+
+### Database Outcome
+
+- Active SQL now matches 10,864,513 source rows exactly: 1,594,491 MFI, 2,721,359 national-account and 6,548,663 consumer-price observations.
+- The post-migration comparison found zero missing, extra, null-key, duplicate-key, invalid-numeric or full-row hash-mismatched rows.
+- The deep schema audit classifies 17/17 EURO contracts as write-contract ready and confirms 16/16 configured series are available.
+- All three former active tables remain retained under `pre_v062` names with documented atomic rollback statements.
+- Three verified table-scoped structure-and-data backups remain on a separate physical volume; SQL dumps and local audit artifacts are excluded from Git.
+- One failed 17,250-row national-account shadow remains retained for forensic review and is not part of the active application schema.
+
+### Validation
+
+- Passed 159/159 deterministic tests and parsed 225/225 active Python files.
+- Passed `pip check`, 38/38 SQL-only asset recalculations, 9/9 Streamlit page renders and HTTP 200 health.
+- Passed 12/12 active EURO/market pair checks; four intentionally disabled fraud series were reported as skipped.
+- General EURO refresh writes remain disabled pending the transactional multidimensional updater.
+
+---
+
 ## [v0.6.2] - 2026-08-11 - Large EURO Rebuild Safety Workflow
 
 ### Added

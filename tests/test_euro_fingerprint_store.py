@@ -160,10 +160,12 @@ class EuroFingerprintStoreTests(unittest.TestCase):
                         source_rows=1,
                         source_non_null_values=1,
                         chunk_size=1,
+                        database_write_performed=False,
                     )
 
                 self.assertTrue(validation.valid)
                 self.assertTrue(validation.memory_bounded_validation)
+                self.assertFalse(validation.database_write_performed)
                 self.assertGreater(validation.comparison_store_bytes, 0)
 
 

@@ -137,6 +137,23 @@ blocked:
 - national accounts: 2,103,859 source rows absent from SQL;
 - MFI interest rates: 1,498,491 source rows absent from SQL.
 
-The current classification is 14 `write_contract_ready` and three
-`rebuild_required` schemas. See `EURO_SOURCE_COMPLETENESS.md` for the complete
+That v0.5.6 classification was 14 `write_contract_ready` and three
+`rebuild_required` schemas. See `EURO_SOURCE_COMPLETENESS.md` for the historical
 counts, validation hashes and capacity review.
+
+## v0.6.3 Final Classification
+
+The final three large tables were rebuilt from their complete registered
+sources in v0.6.3. The post-migration deep audit reports:
+
+- 17 `write_contract_ready` schemas;
+- zero `key_addition_candidate` schemas;
+- zero `rebuild_required` schemas;
+- zero schema blockers;
+- 16/16 configured EURO series available;
+- 12/12 active EURO/market alignments operational.
+
+The read-only schema report digest is
+`45596B651D848205E4761DA2B8157DE089A793B8063D169502E0AD74AFE219B4`.
+General EURO writes remain gated by the future transactional updater, not by
+schema or source-completeness defects.

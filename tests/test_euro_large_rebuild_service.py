@@ -169,8 +169,10 @@ class EuroLargeRebuildServiceTests(unittest.TestCase):
                     operating_reserve_bytes=100,
                 )
 
-        self.assertEqual(10_000, result["estimated_shadow_bytes"])
-        self.assertEqual(10_300, result["combined_required_bytes"])
+        self.assertEqual(10_000, result["raw_shadow_estimate_bytes"])
+        self.assertEqual(1.5, result["shadow_estimate_safety_factor"])
+        self.assertEqual(15_000, result["estimated_shadow_bytes"])
+        self.assertEqual(15_300, result["combined_required_bytes"])
         self.assertTrue(result["capacity_pass"])
         self.assertFalse(result["database_write_performed"])
         self.assertFalse(result["backup_space_included"])

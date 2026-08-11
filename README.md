@@ -20,7 +20,7 @@ Functional local platform with:
 - Data quality and validation tools.
 - Automated syntax checks and unit tests through GitHub Actions.
 
-Current project version: **v0.6.2**
+Current project version: **v0.6.3**
 
 ## Main Analytical Capabilities
 
@@ -290,32 +290,33 @@ python project_scripts/ingestion/refresh_macro_sources.py ALL --check-sql
 
 The command validates all 28 source contracts and never writes by default. A
 single FED import can use `--update-sql` only with an exact table confirmation,
-a verified SQL backup containing that table and a unique business key. EURO
-writes remain blocked until the multidimensional updater is completed. The
-v0.5.6 remediation leaves 14 schemas contract-ready and three large tables in
-the rebuild class because their SQL history is incomplete relative to the
-registered CSV sources. See `docs/EURO_SCHEMA_AUDIT.md`,
+a verified SQL backup containing that table and a unique business key. General
+EURO refresh writes remain blocked until the multidimensional updater is
+completed. Version v0.6.3 rebuilt the final three large tables from their
+registered sources: all 17 schemas are now write-contract ready and the
+10,864,513 source rows match active SQL exactly. See `docs/EURO_SCHEMA_AUDIT.md`,
 `docs/EURO_SCHEMA_REMEDIATION.md`, `docs/EURO_SOURCE_COMPLETENESS.md` and
 `docs/EURO_STREAMING_VALIDATION.md` for the read-only large-source evidence,
-`docs/EURO_LARGE_REBUILD_PLAN.md` for the isolated rebuild runbook, and
+`docs/EURO_LARGE_REBUILD_PLAN.md` for the isolated rebuild runbook,
+`docs/EURO_LARGE_REBUILD_RESULTS.md` for the execution evidence, and
 `docs/MACRO_IMPORT_SAFETY.md` for importer controls.
 
 ## Validation Snapshot
 
-The v0.6.2 validation includes:
+The v0.6.3 validation includes:
 
-- 155/155 deterministic unit tests pass.
-- 224/224 active Python files parse successfully and `pip check` reports no broken requirements.
+- 159/159 deterministic unit tests pass.
+- 225/225 active Python files parse successfully and `pip check` reports no broken requirements.
 - 38/38 configured SQL assets recalculate successfully with database writes disabled.
 - 9/9 Streamlit pages render without uncaught exceptions and the running server reports HTTP 200 health.
 - Financial property tests cover indicator bounds, Bollinger ordering, correlation symmetry, Base 100 anchoring and event-date direction.
 - Regression tests cover normalized entropy, volume-unit invariance, unavailable volume metrics and OHLC-derived indicator quality.
-- A disk-backed validator compared 10,864,513 EURO CSV rows with three active MySQL tables in bounded 50,000-row chunks.
-- The read-only audit confirmed 9,475,513 missing SQL rows, zero extra rows, zero null or duplicate business keys and 313,682 full-row mismatches across overlapping keys.
-- The same disk-backed fingerprint store now protects shadow construction and pre-swap validation one table at a time.
-- Read-only capacity preflights passed for MFI interest rates, national accounts and consumer prices with a 5 GiB operating reserve.
-- A dedicated command can create and verify one table-scoped backup without exposing the database password in its command line.
-- No backup, shadow, swap, CSV import, SQL write, schema migration or database mutation was performed in v0.6.2.
+- The three final EURO tables were rebuilt one at a time through verified backups, isolated shadows, exact full-row validation and atomic swaps.
+- Active SQL now contains all 10,864,513 registered MFI, national-account and consumer-price rows, with zero missing, extra, null-key, duplicate-key, invalid-numeric or hash-mismatched rows.
+- The deep post-migration audit classifies 17/17 EURO schemas as write-contract ready and confirms all 16 configured series are available.
+- 12/12 active EURO/market pairs load and align successfully; four deliberately disabled fraud series are reported as skipped.
+- All three former active tables remain retained under versioned names for rollback; no active row was updated or deleted in place.
+- General EURO refresh writes remain disabled until the transactional multidimensional updater and isolated synchronization tests are complete.
 
 The retained v0.5.6 database validation includes:
 

@@ -69,7 +69,7 @@ Local report digests:
 The backup and reports remain local under `audit_outputs/` and are excluded
 from Git. The former tables remain in MySQL under `pre_v056` names.
 
-## Capacity Review for the Remaining Tables
+## Historical Capacity Review for the Remaining Tables
 
 At the review point, drive C had 19.25 GB free and the MySQL database occupied
 approximately 11.11 GB. The registered CSVs occupy approximately 4.03 GB.
@@ -86,7 +86,7 @@ Disk capacity is not the only constraint. The current exact validator retains
 millions of Python hash objects and copies that dictionary during comparison.
 That is not acceptably memory-bounded for a 6.5-million-row source.
 
-## Next Safe Migration
+## Historical Migration Plan
 
 Before rebuilding the remaining tables:
 
@@ -118,3 +118,20 @@ interest rates. Each store was deleted after its table completed.
 No database or CSV write was performed. Detailed method and findings are in
 `docs/EURO_STREAMING_VALIDATION.md`; local row samples and machine-readable
 results remain under Git-ignored `audit_outputs/euro_streaming_validation/`.
+
+## v0.6.3 Completion
+
+The remaining migration plan was executed one table at a time after explicit
+approval. MFI interest rates, national accounts and consumer prices were
+rebuilt from their complete registered sources through verified external
+backups, isolated shadows, exact full-row checks and atomic swaps.
+
+The final read-only comparison reports 10,864,513 source rows and 10,864,513
+active SQL rows, with zero missing, extra, duplicate, null-key, invalid-numeric
+or hash-mismatched observations. The deep schema audit now classifies all 17
+EURO contracts as `write_contract_ready`.
+
+Former active tables remain retained under versioned `pre_v062` names. General
+EURO refresh writes remain disabled because recurring synchronization still
+needs a transactional multidimensional updater and isolated database-backed
+tests. See `EURO_LARGE_REBUILD_RESULTS.md` for the execution evidence.

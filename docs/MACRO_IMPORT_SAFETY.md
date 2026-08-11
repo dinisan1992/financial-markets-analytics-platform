@@ -65,9 +65,10 @@ No multi-table bulk SQL write is supported.
 
 ## EURO Write Contract
 
-All 17 EURO writes are intentionally blocked. These files are multidimensional,
-and a safe import requires complete source-to-table mappings plus a unique
-`(key_code, time_period)` business key.
+General writes for all 17 EURO contracts remain intentionally blocked. The
+active schemas now preserve complete source history and unique
+`(key_code, time_period)` business keys, but a safe recurring import still
+requires explicit multidimensional insert, update and missing-value policies.
 
 The v0.5.4 baseline audit classified the schemas as:
 
@@ -92,17 +93,18 @@ shadow-table process are documented in `docs/EURO_SCHEMA_AUDIT.md`.
 
 Version v0.5.5 completed six required rebuilds using a verified SQL backup,
 isolated shadow tables, full-row source signatures and one atomic swap. Version
-v0.5.6 then performed a full-source cardinality audit and rebuilt three further
-tables whose stored values were not exact. The current classification is:
+v0.5.6 rebuilt three further tables whose stored values were not exact. Version
+v0.6.3 completed the remaining three large rebuilds and exact post-swap audit.
+The current classification is:
 
-- 14 `write_contract_ready` schemas;
+- 17 `write_contract_ready` schemas;
 - zero `key_addition_candidate` schemas;
-- three `rebuild_required` schemas with incomplete target history.
+- zero `rebuild_required` schemas.
 
-All nine replaced tables remain retained for rollback. General EURO imports are
-still blocked until a transactional multidimensional updater handles missing
-observations explicitly and passes full-source integration tests. Schema
-remediation alone does not enable automatic writes.
+All 12 replaced active tables remain retained for rollback. General EURO
+imports are still blocked until a transactional multidimensional updater
+handles missing observations explicitly and passes full-source integration
+tests. Schema and data remediation alone do not enable automatic writes.
 
 ## Recovery
 

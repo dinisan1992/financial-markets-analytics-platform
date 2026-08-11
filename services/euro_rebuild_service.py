@@ -41,6 +41,7 @@ LONG_TEXT_COLUMNS = {
     "title",
     "title_compl",
 }
+TEXT_TYPE_MARKERS = ("CHAR", "TEXT", "CLOB", "ENUM", "SET")
 RAW_NUMERIC_MISSING = {"", ".", "na", "n/a", "nan", "null"}
 DECIMAL_QUANTUM = Decimal("0.000000000001")
 
@@ -455,11 +456,11 @@ def build_shadow_schema_statements(engine, import_key, suffix, version="v055"):
         elif column in LONG_TEXT_COLUMNS:
             clauses.append(f"MODIFY {quoted} TEXT NULL")
         elif column in {"pre_break_value", "obs_pre_break", "reported_transaction"}:
-            clauses.append(f"MODIFY {quoted} VARCHAR(255) NULL")
+            clauses.append(f"MODIFY {quoted} TEXT NULL")
         else:
             type_name = str(active_schema[column]["type"]).upper()
-            if "CHAR" in type_name:
-                clauses.append(f"MODIFY {quoted} VARCHAR(255) NULL")
+            if any(marker in type_name for marker in TEXT_TYPE_MARKERS):
+                clauses.append(f"MODIFY {quoted} TEXT NULL")
 
     if import_key == "EURO_ATM_POS_TRANSACTIONS":
         clauses.append(
@@ -642,6 +643,7 @@ def validate_shadow(
     columns,
     fingerprints,
     source_non_null_values,
+    database_write_performed=True,
 ):
     contract = get_macro_import(import_key)
     active = validate_identifier(contract["table_name"])
@@ -711,7 +713,7 @@ def validate_shadow(
         first_period=summary["first_period"],
         last_period=summary["last_period"],
         source_columns=tuple(columns),
-        database_write_performed=True,
+        database_write_performed=bool(database_write_performed),
     )
     if not _business_key_is_unique(engine, shadow_table):
         raise RuntimeError(f"Shadow business key is not unique: {shadow_table}")
@@ -732,6 +734,7 @@ def validate_shadow_disk_backed(
     source_rows,
     source_non_null_values,
     chunk_size=5000,
+    database_write_performed=True,
 ):
     if not isinstance(fingerprint_store, EuroFingerprintStore):
         raise TypeError("fingerprint_store must be EuroFingerprintStore")
@@ -840,7 +843,7 @@ def validate_shadow_disk_backed(
         first_period=summary["first_period"],
         last_period=summary["last_period"],
         source_columns=tuple(columns),
-        database_write_performed=True,
+        database_write_performed=bool(database_write_performed),
         memory_bounded_validation=True,
         comparison_store_bytes=fingerprint_store.size_bytes,
     )
@@ -1027,6 +1030,7 @@ def validate_existing_shadows(
                         source_rows,
                         non_null_values,
                         chunk_size=chunk_size,
+                        database_write_performed=False,
                     )
                 )
         else:
@@ -1042,6 +1046,7 @@ def validate_existing_shadows(
                     columns,
                     fingerprints,
                     non_null_values,
+                    database_write_performed=False,
                 )
             )
     return tuple(validations)

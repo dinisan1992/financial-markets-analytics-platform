@@ -1,6 +1,6 @@
 # Database Schema
 
-Project version: v0.6.0. Database schema checkpoint: v0.5.6 (unchanged in v0.6.0).
+Project version: v0.6.3. Database schema checkpoint: v0.6.3.
 
 ## Overview
 
@@ -579,9 +579,9 @@ banking sector behaviour;
 European financial system indicators.
 Current Limitations
 
-EU / ECB tables are heterogeneous. The v0.5.6 post-migration audit divides the
-17 tables into 14 write-contract-ready schemas and three controlled rebuilds
-whose SQL history is incomplete relative to the registered CSV sources.
+EU / ECB tables are heterogeneous. The v0.6.3 post-migration audit classifies
+all 17 tables as write-contract ready after exact reconstruction of the final
+three incomplete histories.
 
 The following six tables were rebuilt from their complete source files in
 v0.5.5:
@@ -603,8 +603,9 @@ Version v0.5.6 also rebuilt `euro_losses_due_to_fraud`,
 `euro_retail_interest_rates` and `euro_transactions_payments_systems` after
 full-row validation exposed decimal rounding and text truncation. Their former
 versions remain under `pre_v056` names. Consumer prices, national accounts and
-MFI interest rates remain blocked pending memory-bounded reconstruction; see
-`EURO_SOURCE_COMPLETENESS.md`.
+MFI interest rates were rebuilt exactly in v0.6.3 and their former versions
+remain under `pre_v062` names. See `EURO_SOURCE_COMPLETENESS.md` and
+`EURO_LARGE_REBUILD_RESULTS.md`.
 
 They often contain different combinations of:
 

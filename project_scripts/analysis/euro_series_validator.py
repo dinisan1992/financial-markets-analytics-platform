@@ -1,44 +1,49 @@
-﻿from pathlib import Path
+from __future__ import annotations
+
+import argparse
+from pathlib import Path
 import sys
 
-PROJECT_ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "config.py").exists())
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
 import pandas as pd
 
-from euro_series_config import EURO_SERIES, EURO_SERIES_GROUPS, EURO_MARKET_PAIRS
-from euro_data_loader import get_engine, load_euro_series
+
+PROJECT_ROOT = next(
+    parent
+    for parent in Path(__file__).resolve().parents
+    if (parent / "config.py").exists()
+)
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 from asset_config import ASSETS
+from euro_data_loader import get_engine, load_euro_series
+from euro_series_config import (
+    EURO_MARKET_PAIRS,
+    EURO_SERIES,
+    EURO_SERIES_GROUPS,
+)
 
 
-# =========================
-# SETTINGS
-# =========================
-
-OUTPUT_SERIES_VALIDATION = "euro_series_validation_report.csv"
-OUTPUT_GROUP_VALIDATION = "euro_series_group_validation_report.csv"
-OUTPUT_PAIR_VALIDATION = "euro_market_pair_validation_report.csv"
-
+SERIES_REPORT = "euro_series_validation_report.csv"
+GROUP_REPORT = "euro_series_group_validation_report.csv"
+PAIR_REPORT = "euro_market_pair_validation_report.csv"
+DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "outputs" / "euro_series_validation"
 MIN_OBSERVATIONS_MONTHLY = 120
 MIN_OBSERVATIONS_SEMIANNUAL = 4
 
 
-# =========================
-# SERIES VALIDATION
-# =========================
-
-def validar_serie(series_key, cfg, engine):
+def validate_series(series_key, config, engine):
     row = {
         "series_key": series_key,
-        "display_name": cfg.get("display_name"),
-        "category": cfg.get("category"),
-        "region": cfg.get("region"),
-        "frequency": cfg.get("frequency"),
-        "table_name": cfg.get("table_name"),
-        "key_code": cfg.get("key_code"),
-        "unit": cfg.get("unit"),
-        "enabled": cfg.get("enabled", True),
-        "base100_recommended": cfg.get("base100_recommended"),
+        "display_name": config.get("display_name"),
+        "category": config.get("category"),
+        "region": config.get("region"),
+        "frequency": config.get("frequency"),
+        "table_name": config.get("table_name"),
+        "key_code": config.get("key_code"),
+        "unit": config.get("unit"),
+        "enabled": config.get("enabled", True),
+        "base100_recommended": config.get("base100_recommended"),
         "observations": None,
         "min_date": None,
         "max_date": None,
@@ -48,255 +53,197 @@ def validar_serie(series_key, cfg, engine):
         "max_value": None,
         "null_pct": None,
         "status": "UNKNOWN",
-        "issues": ""
+        "issues": "",
     }
 
     try:
-        if cfg.get("enabled", True) is not True:
+        if config.get("enabled", True) is not True:
             row["status"] = "SKIPPED"
             row["issues"] = "disabled"
             return row
 
-        df = load_euro_series(
+        frame = load_euro_series(
             series_key=series_key,
             engine=engine,
             start_date=None,
-            end_date=None
+            end_date=None,
         )
-
-        if df.empty:
-            row["status"] = "ERRORR"
+        if frame.empty:
+            row["status"] = "ERROR"
             row["issues"] = "empty_series"
             return row
 
-        value_col = series_key
-
-        observations = len(df)
-        null_pct = round(df[value_col].isna().mean() * 100, 2)
-
-        row["observations"] = observations
-        row["min_date"] = df["snapped_at"].min().date()
-        row["max_date"] = df["snapped_at"].max().date()
-        row["first_value"] = df[value_col].dropna().iloc[0]
-        row["last_value"] = df[value_col].dropna().iloc[-1]
-        row["min_value"] = df[value_col].min()
-        row["max_value"] = df[value_col].max()
-        row["null_pct"] = null_pct
+        values = frame[series_key]
+        available = values.dropna()
+        observations = len(frame)
+        null_pct = round(values.isna().mean() * 100, 2)
+        row.update({
+            "observations": observations,
+            "min_date": frame["snapped_at"].min().date(),
+            "max_date": frame["snapped_at"].max().date(),
+            "first_value": available.iloc[0] if not available.empty else None,
+            "last_value": available.iloc[-1] if not available.empty else None,
+            "min_value": values.min(),
+            "max_value": values.max(),
+            "null_pct": null_pct,
+        })
 
         issues = []
-
-        frequency = cfg.get("frequency")
-
+        frequency = config.get("frequency")
         if frequency == "monthly" and observations < MIN_OBSERVATIONS_MONTHLY:
             issues.append(f"low_observations_monthly_{observations}")
-
-        if frequency == "semiannual" and observations < MIN_OBSERVATIONS_SEMIANNUAL:
+        if (
+            frequency == "semiannual"
+            and observations < MIN_OBSERVATIONS_SEMIANNUAL
+        ):
             issues.append(f"low_observations_semiannual_{observations}")
-
         if null_pct > 5:
             issues.append(f"high_null_pct_{null_pct}")
-
-        if row["min_value"] == row["max_value"]:
+        if available.empty:
+            issues.append("no_non_null_values")
+        elif row["min_value"] == row["max_value"]:
             issues.append("constant_series")
 
-        if issues:
-            row["status"] = "WARNING"
-            row["issues"] = " | ".join(issues)
-        else:
-            row["status"] = "OK"
-            row["issues"] = "OK"
-
-    except Exception as e:
-        row["status"] = "ERRORR"
-        row["issues"] = str(e)
-
+        row["status"] = "WARNING" if issues else "OK"
+        row["issues"] = " | ".join(issues) if issues else "OK"
+    except Exception as exc:
+        row["status"] = "ERROR"
+        row["issues"] = str(exc)
     return row
 
 
-def validar_todas_series(engine):
+def validate_all_series(engine):
     rows = []
-
-    for idx, (series_key, cfg) in enumerate(EURO_SERIES.items(), start=1):
-        print("\n" + "=" * 120)
-        print(f"[{idx}/{len(EURO_SERIES)}] Validar series: {series_key}")
-        print("=" * 120)
-
-        row = validar_serie(
-            series_key=series_key,
-            cfg=cfg,
-            engine=engine
-        )
-
+    for index, (series_key, config) in enumerate(EURO_SERIES.items(), start=1):
+        print("\n" + "=" * 100)
+        print(f"[{index}/{len(EURO_SERIES)}] Validating series: {series_key}")
+        print("=" * 100)
+        row = validate_series(series_key, config, engine)
         rows.append(row)
-
         print(
             f"{series_key} | status={row['status']} | "
-            f"obs={row['observations']} | "
+            f"observations={row['observations']} | "
             f"{row['min_date']} -> {row['max_date']} | "
             f"issues={row['issues']}"
         )
-
     return pd.DataFrame(rows)
 
 
-# =========================
-# GROUP VALIDATION
-# =========================
-
-def validar_grupos(series_report_df):
+def validate_groups(series_report):
     rows = []
-
     for group_name, series_keys in EURO_SERIES_GROUPS.items():
-        missing = [
-            key for key in series_keys
-            if key not in EURO_SERIES
+        missing = [key for key in series_keys if key not in EURO_SERIES]
+        statuses = [
+            series_report.loc[
+                series_report["series_key"] == key,
+                "status",
+            ].iloc[0]
+            for key in series_keys
+            if key in series_report["series_key"].values
         ]
-
-        statuses = []
-
-        for key in series_keys:
-            if key in series_report_df["series_key"].values:
-                status = series_report_df.loc[
-                    series_report_df["series_key"] == key,
-                    "status"
-                ].iloc[0]
-
-                statuses.append(status)
-
         if missing:
-            status = "ERRORR"
+            status = "ERROR"
             issues = f"missing_series: {missing}"
-        elif any(s == "ERRORR" for s in statuses):
-            status = "ERRORR"
+        elif any(value == "ERROR" for value in statuses):
+            status = "ERROR"
             issues = "one_or_more_series_error"
-        elif any(s == "WARNING" for s in statuses):
+        elif any(value == "WARNING" for value in statuses):
             status = "WARNING"
             issues = "one_or_more_series_warning"
         else:
             status = "OK"
             issues = "OK"
-
         rows.append({
             "group_name": group_name,
             "series_count": len(series_keys),
             "missing_series": ", ".join(missing),
             "statuses": ", ".join(statuses),
             "status": status,
-            "issues": issues
+            "issues": issues,
         })
-
     return pd.DataFrame(rows)
 
 
-# =========================
-# PAIR VALIDATION
-# =========================
-
-def validar_pares():
+def validate_pairs():
     rows = []
-
-    for pair_key, cfg in EURO_MARKET_PAIRS.items():
-        euro_series = cfg.get("euro_series")
-        market_asset = cfg.get("market_asset")
-
+    for pair_key, config in EURO_MARKET_PAIRS.items():
+        euro_series = config.get("euro_series")
+        market_asset = config.get("market_asset")
         issues = []
-
         if euro_series not in EURO_SERIES:
             issues.append(f"euro_series_not_found: {euro_series}")
-
         if market_asset not in ASSETS:
             issues.append(f"market_asset_not_found: {market_asset}")
-
-        if issues:
-            status = "ERRORR"
-        else:
-            status = "OK"
-            issues = ["OK"]
-
         rows.append({
             "pair_key": pair_key,
-            "label": cfg.get("label"),
+            "label": config.get("label"),
             "euro_series": euro_series,
             "market_asset": market_asset,
-            "status": status,
-            "issues": " | ".join(issues)
+            "status": "ERROR" if issues else "OK",
+            "issues": " | ".join(issues) if issues else "OK",
         })
-
     return pd.DataFrame(rows)
 
 
-# =========================
-# MAIN
-# =========================
+def build_parser():
+    parser = argparse.ArgumentParser(
+        description="Validate configured EURO series, groups and market pairs."
+    )
+    parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
+    parser.add_argument(
+        "--fail-on-error",
+        action="store_true",
+        help="Return exit code 2 when a series, group or pair has ERROR status.",
+    )
+    return parser
 
-def main():
-    print("\nA iniciar Euro Series Validator...")
-    print(f"Series configuradas: {len(EURO_SERIES)}")
-    print(f"Groups configurados: {len(EURO_SERIES_GROUPS)}")
-    print(f"Pares market configurados: {len(EURO_MARKET_PAIRS)}")
+
+def _write_report(frame, output_dir, filename):
+    path = output_dir / filename
+    frame.to_csv(path, index=False, sep=";", encoding="utf-8-sig")
+    return path
+
+
+def main(argv=None):
+    args = build_parser().parse_args(argv)
+    output_dir = args.output_dir.expanduser().resolve()
+    output_dir.mkdir(parents=True, exist_ok=True)
+    print("Starting EURO Series Validator...")
+    print(f"Configured series: {len(EURO_SERIES)}")
+    print(f"Configured groups: {len(EURO_SERIES_GROUPS)}")
+    print(f"Configured market pairs: {len(EURO_MARKET_PAIRS)}")
+    print("Database writes: disabled")
 
     engine = get_engine()
-
-    series_report_df = validar_todas_series(engine)
-
-    group_report_df = validar_grupos(series_report_df)
-
-    pair_report_df = validar_pares()
-
-    series_report_df.to_csv(
-        OUTPUT_SERIES_VALIDATION,
-        index=False,
-        sep=";",
-        encoding="utf-8-sig"
-    )
-
-    group_report_df.to_csv(
-        OUTPUT_GROUP_VALIDATION,
-        index=False,
-        sep=";",
-        encoding="utf-8-sig"
-    )
-
-    pair_report_df.to_csv(
-        OUTPUT_PAIR_VALIDATION,
-        index=False,
-        sep=";",
-        encoding="utf-8-sig"
+    try:
+        series_report = validate_all_series(engine)
+    finally:
+        engine.dispose()
+    group_report = validate_groups(series_report)
+    pair_report = validate_pairs()
+    reports = (
+        _write_report(series_report, output_dir, SERIES_REPORT),
+        _write_report(group_report, output_dir, GROUP_REPORT),
+        _write_report(pair_report, output_dir, PAIR_REPORT),
     )
 
     print("\nReports exported:")
-    print(OUTPUT_SERIES_VALIDATION)
-    print(OUTPUT_GROUP_VALIDATION)
-    print(OUTPUT_PAIR_VALIDATION)
+    for report in reports:
+        print(report)
+    print("\nSeries summary:")
+    print(series_report["status"].value_counts(dropna=False))
+    print("\nGroup summary:")
+    print(group_report["status"].value_counts(dropna=False))
+    print("\nMarket-pair summary:")
+    print(pair_report["status"].value_counts(dropna=False))
 
-    print("\n" + "=" * 120)
-    print("SERIES SUMMARY")
-    print("=" * 120)
-    print(
-        series_report_df["status"]
-        .value_counts(dropna=False)
-        .rename_axis("status")
-        .reset_index(name="count")
+    has_error = any(
+        "ERROR" in set(frame["status"])
+        for frame in (series_report, group_report, pair_report)
     )
-
-    print("\n" + "=" * 120)
-    print("SUMMARY GROUPS")
-    print("=" * 120)
-    print(group_report_df)
-
-    print("\n" + "=" * 120)
-    print("SUMMARY PARES")
-    print("=" * 120)
-    print(
-        pair_report_df["status"]
-        .value_counts(dropna=False)
-        .rename_axis("status")
-        .reset_index(name="count")
-    )
-
-    print("\nEuro Series Validator completed.")
+    print("EURO Series Validator completed.")
+    return 2 if args.fail_on_error and has_error else 0
 
 
 if __name__ == "__main__":
-    main()
-
+    raise SystemExit(main())
