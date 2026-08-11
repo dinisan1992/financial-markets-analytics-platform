@@ -39,12 +39,18 @@ class EuroBackupRestoreServiceTests(unittest.TestCase):
         self.assertFalse(any("password" in argument.lower() for argument in command))
         self.assertEqual(schema, command[-1])
 
-    def test_external_backup_dir_rejects_repository_and_same_volume(self):
+    @patch("services.euro_backup_restore_service._physical_volume_id")
+    def test_external_backup_dir_rejects_repository_and_same_volume(
+        self,
+        volume_id,
+    ):
         root = Path("C:/project").resolve()
         with self.assertRaisesRegex(ValueError, "outside"):
             validate_external_backup_dir(root / "backups", root)
+        volume_id.side_effect = [("drive", "c:"), ("drive", "c:")]
         with self.assertRaisesRegex(ValueError, "separate physical volume"):
             validate_external_backup_dir(Path("C:/backups"), root)
+        volume_id.side_effect = [("drive", "d:"), ("drive", "c:")]
         self.assertEqual(
             Path("D:/backups").resolve(),
             validate_external_backup_dir(Path("D:/backups"), root),

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 import json
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 import pandas as pd
 
@@ -35,6 +35,10 @@ STATUS_COLUMNS = (
     "source_reference",
     "database_write_performed",
 )
+
+
+def _portable_file_name(value):
+    return PurePosixPath(str(value or "").replace("\\", "/")).name
 
 
 def _as_utc_timestamp(value=None):
@@ -104,7 +108,7 @@ def _empty_status_row(import_key, contract):
         "write_ready": False,
         "idempotent": False,
         "blockers": "",
-        "source_file": Path(contract["csv_path"]).name,
+        "source_file": _portable_file_name(contract["csv_path"]),
         "source_bytes": 0,
         "source_modified_utc": pd.NaT,
         "source_age_days": pd.NA,
@@ -195,7 +199,8 @@ def load_latest_euro_sync_status(report_root=None, as_of=None):
                 "write_ready": bool(plan.get("write_ready", False)),
                 "idempotent": idempotent,
                 "blockers": ", ".join(str(item) for item in blockers),
-                "source_file": Path(source_path).name or Path(contract["csv_path"]).name,
+                "source_file": _portable_file_name(source_path)
+                or _portable_file_name(contract["csv_path"]),
                 "source_bytes": _safe_int(plan.get("source_bytes")),
                 "source_modified_utc": source_modified_utc,
                 "source_age_days": source_age_days,

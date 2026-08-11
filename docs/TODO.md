@@ -249,7 +249,14 @@
 - Fix the active lint baseline, including the missing Power BI database URL import
 - Add regression tests that keep runtime and development dependencies deliberate
 
-## High Priority After v0.7.1
+## Completed in v0.7.2
+
+- Make CSV export line endings deterministic across Windows and Linux
+- Validate external backup volumes through filesystem device identity
+- Normalize Windows and POSIX source filenames without exposing private paths
+- Upgrade GitHub workflow actions to Node 24-compatible major versions
+
+## High Priority After v0.7.2
 
 - Review field-level changes in Card Payments, Bank Lending Survey and Balance Sheet Items
 - Prepare a separate capacity and backup plan for the Government Finance expansion

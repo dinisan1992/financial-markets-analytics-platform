@@ -4,6 +4,25 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [v0.7.2] - 2026-08-11 - Cross-Platform CI Compatibility
+
+### Fixed
+
+- Made CSV export line endings deterministic on Windows and Linux.
+- Replaced Windows-drive-only backup validation with filesystem device identity
+  while preserving the separate-volume safety requirement.
+- Normalized Windows and POSIX source paths before exposing report filenames.
+- Updated checkout, Python setup and coverage artifact actions to their current
+  Node 24-compatible major versions.
+
+### Validation
+
+- Passed 207/207 deterministic unit tests, Ruff, `pip check`, import safety and
+  the 40% branch-coverage gate locally.
+- Database writes remained disabled and no database remediation was performed.
+
+---
+
 ## [v0.7.1] - 2026-08-11 - Dependency and CI Hardening
 
 ### Changed

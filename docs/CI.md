@@ -37,7 +37,7 @@ the complete deterministic `unittest` suite under branch coverage and enforces
 the configured minimum.
 
 Coverage currently measures `app`, `app_pages`, `dashboard` and `services`.
-The v0.7.1 baseline is 41%, and `.coveragerc` blocks regressions below 40%.
+The v0.7.2 baseline is 41%, and `.coveragerc` blocks regressions below 40%.
 The Ubuntu/Python 3.12 run also publishes `coverage.xml` as a workflow artifact.
 
 ## Local Validation

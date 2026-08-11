@@ -20,7 +20,7 @@ Functional local platform with:
 - Data quality and validation tools.
 - Cross-platform lint, import-safety, dependency, coverage and unit-test checks through GitHub Actions.
 
-Current project version: **v0.7.1**
+Current project version: **v0.7.2**
 
 ## Main Analytical Capabilities
 
@@ -323,7 +323,7 @@ and `docs/MACRO_IMPORT_SAFETY.md` for importer controls.
 
 ## Validation Snapshot
 
-The v0.7.1 validation includes:
+The v0.7.2 validation includes:
 
 - 207/207 deterministic unit tests pass.
 - 254/254 active Python files parse successfully and `pip check` reports no broken requirements.

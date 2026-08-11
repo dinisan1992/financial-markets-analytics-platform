@@ -44,6 +44,18 @@ def verification_confirmation(import_key):
     return f"VERIFY_{import_key}_BACKUP_RESTORE_{BACKUP_VERIFY_VERSION.upper()}"
 
 
+def _physical_volume_id(value):
+    path = Path(value).expanduser().resolve()
+    candidate = path
+    while not candidate.exists() and candidate != candidate.parent:
+        candidate = candidate.parent
+    try:
+        return ("device", os.stat(candidate).st_dev)
+    except OSError:
+        drive = path.drive.lower()
+        return ("drive", drive) if drive else None
+
+
 def validate_external_backup_dir(value, project_root):
     path = Path(value).expanduser().resolve()
     root = Path(project_root).expanduser().resolve()
@@ -53,7 +65,9 @@ def validate_external_backup_dir(value, project_root):
         pass
     else:
         raise ValueError("Backup directory must be outside the repository")
-    if path.drive and root.drive and path.drive.lower() == root.drive.lower():
+    path_volume = _physical_volume_id(path)
+    root_volume = _physical_volume_id(root)
+    if path_volume is not None and path_volume == root_volume:
         raise ValueError("Backup directory must use a separate physical volume")
     return path
 

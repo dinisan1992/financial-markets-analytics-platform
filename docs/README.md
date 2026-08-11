@@ -1,6 +1,6 @@
 # Project Documentation
 
-Current version: v0.7.1
+Current version: v0.7.2
 
 - `CI.md`: dependency contracts, lint, import-safety, test matrix and coverage gates.
 

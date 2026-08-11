@@ -4,7 +4,7 @@ Last updated: 11 August 2026
 
 ## Current Version
 
-**Macro-Financial Risk & Market Behaviour Analytics Platform v0.7.1**
+**Macro-Financial Risk & Market Behaviour Analytics Platform v0.7.2**
 
 ## Executive Summary
 
@@ -22,7 +22,7 @@ It combines:
 - interactive dashboarding;
 - data quality validation.
 
-The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.7.0 completed the controlled Direct Debits rebuild. Version 0.7.1 separates the eight direct runtime dependencies from development tooling and expands CI into static/import-safety checks plus a Windows/Linux and Python 3.11/3.12 test matrix with enforced coverage. The validated 121,564-row `VARCHAR(20)` Direct Debits table remains active and the former 75,647-row `YEAR(4)` table remains retained for rollback.
+The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.7.0 completed the controlled Direct Debits rebuild. Version 0.7.1 separated the eight direct runtime dependencies from development tooling and expanded CI. Version 0.7.2 removes the three Windows-only assumptions exposed by the first Linux matrix run and updates the workflow actions to their Node 24-compatible major versions. The validated 121,564-row `VARCHAR(20)` Direct Debits table remains active and the former 75,647-row `YEAR(4)` table remains retained for rollback.
 
 ## Completed and Functional Modules
 
@@ -220,7 +220,7 @@ Main file:
 
 ## Latest Documented Validation
 
-Version 0.7.1 validation included:
+Version 0.7.2 validation included:
 
 - 207/207 deterministic unit tests passed.
 - 254/254 active Python files parsed successfully and `pip check` reported no broken requirements.
