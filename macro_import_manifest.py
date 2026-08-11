@@ -43,7 +43,7 @@ def _euro(filename, table_name, script_name, column_aliases=None):
         "target_key_columns": ("key_code", "time_period"),
         "column_aliases": {"key": "key_code", **(column_aliases or {})},
         "required_columns": ("key_code", "time_period", "obs_value"),
-        "write_policy": "schema_remediation_required",
+        "write_policy": "transactional_sync_guarded",
         "script_name": script_name,
     }
 

@@ -6,6 +6,7 @@ import unittest
 import pandas as pd
 
 from services.euro_fingerprint_store import (
+    EuroFingerprintStore,
     SOURCE_DATASET,
     TARGET_DATASET,
     temporary_fingerprint_store,
@@ -20,6 +21,46 @@ from services.euro_rebuild_service import (
 
 
 class EuroFingerprintStoreTests(unittest.TestCase):
+    def test_actions_for_keys_separates_insert_update_and_unchanged(self):
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            store = EuroFingerprintStore(
+                root / "fingerprints.sqlite3",
+                workspace_root=root,
+                free_disk_bytes_before=1,
+            )
+            try:
+                store.insert_records(
+                    SOURCE_DATASET,
+                    [
+                        ("A", "2024-01", b"same"),
+                        ("B", "2024-01", b"new"),
+                        ("C", "2024-01", b"missing"),
+                    ],
+                )
+                store.insert_records(
+                    TARGET_DATASET,
+                    [
+                        ("A", "2024-01", b"same"),
+                        ("B", "2024-01", b"old"),
+                    ],
+                )
+
+                actions = store.actions_for_keys(
+                    [
+                        ("A", "2024-01"),
+                        ("B", "2024-01"),
+                        ("C", "2024-01"),
+                    ],
+                    batch_size=2,
+                )
+            finally:
+                store.close()
+
+        self.assertEqual("unchanged", actions[("A", "2024-01")])
+        self.assertEqual("update", actions[("B", "2024-01")])
+        self.assertEqual("insert", actions[("C", "2024-01")])
+
     def test_store_classifies_missing_extra_mismatch_and_duplicates(self):
         with TemporaryDirectory() as temp_dir:
             with temporary_fingerprint_store(

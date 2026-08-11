@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import nullcontext
 from dataclasses import asdict, dataclass
 from pathlib import Path
 import shutil
@@ -138,6 +139,9 @@ def audit_euro_source_against_target(
     sample_limit=DEFAULT_SAMPLE_LIMIT,
     minimum_free_bytes=MIN_WORKSPACE_FREE_BYTES,
     progress_callback=None,
+    fingerprint_store=None,
+    sql_connection=None,
+    source_path=None,
 ):
     """Compare one EURO CSV with its SQL table without writing to SQL."""
     started = perf_counter()
@@ -146,6 +150,9 @@ def audit_euro_source_against_target(
     if contract.get("group") != "EURO":
         raise ValueError(f"Not a EURO import contract: {import_key}")
 
+    if source_path is not None:
+        contract = dict(contract)
+        contract["csv_path"] = Path(source_path)
     source_path = Path(contract["csv_path"]).expanduser().resolve()
     if not source_path.is_file():
         raise FileNotFoundError(f"EURO source CSV not found: {source_path}")
@@ -153,7 +160,7 @@ def audit_euro_source_against_target(
     sample_limit = max(0, int(sample_limit))
     columns = mapped_source_columns(contract)
     target_table = validate_identifier(contract["table_name"])
-    target_query = _target_query(engine, target_table, columns)
+    target_query = _target_query(sql_connection or engine, target_table, columns)
 
     source_rows = 0
     target_rows = 0
@@ -166,11 +173,20 @@ def audit_euro_source_against_target(
     max_source_chunk_rows = 0
     max_target_chunk_rows = 0
 
-    with temporary_fingerprint_store(
-        import_key,
-        workspace_dir=workspace_dir,
-        minimum_free_bytes=minimum_free_bytes,
-    ) as store:
+    store_context = (
+        nullcontext(fingerprint_store)
+        if fingerprint_store is not None
+        else temporary_fingerprint_store(
+            import_key,
+            workspace_dir=workspace_dir,
+            minimum_free_bytes=minimum_free_bytes,
+        )
+    )
+    with store_context as store:
+        if store is None:
+            raise TypeError("fingerprint_store cannot be None")
+        store.clear(SOURCE_DATASET)
+        store.clear(TARGET_DATASET)
         free_before = store.free_disk_bytes_before
         workspace_root = store.workspace_root
         with store.connection:
@@ -200,8 +216,13 @@ def audit_euro_source_against_target(
                 if progress_callback:
                     progress_callback("source", import_key, source_rows)
 
-            with engine.connect() as sql_connection:
-                result = sql_connection.execution_options(
+            connection_context = (
+                nullcontext(sql_connection)
+                if sql_connection is not None
+                else engine.connect()
+            )
+            with connection_context as target_connection:
+                result = target_connection.execution_options(
                     stream_results=True,
                     max_row_buffer=chunk_size,
                 ).execute(target_query).mappings()

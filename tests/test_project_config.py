@@ -7,11 +7,17 @@ from asset_config import (
     get_existing_script_names,
     get_missing_script_names,
 )
-from config import BASE_DIR
+from config import BASE_DIR, PROJECT_VERSION
 from market_source_manifest import MARKET_SOURCE_MANIFEST
 
 
 class ProjectConfigTests(unittest.TestCase):
+    def test_version_file_matches_runtime_version(self):
+        self.assertEqual(
+            PROJECT_VERSION,
+            (BASE_DIR / "VERSION").read_text(encoding="ascii").strip(),
+        )
+
     def test_all_assets_have_financial_metadata(self):
         required = {
             "asset_class",

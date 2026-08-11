@@ -1,8 +1,8 @@
 # Controlled Macro Import Safety
 
-Version 0.5.6 places all 11 FED and 17 EURO/ECB source files behind one explicit
-import contract. Importing a Python module never opens MySQL or starts loading a
-CSV. Running an importer without flags performs a read-only preview.
+Version 0.6.4 places all 11 FED and 17 EURO/ECB source files behind explicit
+import contracts. Importing a Python module never opens MySQL or starts loading
+a CSV. Running an importer without write flags performs a read-only preview.
 
 ## Preview Commands
 
@@ -65,10 +65,18 @@ No multi-table bulk SQL write is supported.
 
 ## EURO Write Contract
 
-General writes for all 17 EURO contracts remain intentionally blocked. The
-active schemas now preserve complete source history and unique
-`(key_code, time_period)` business keys, but a safe recurring import still
-requires explicit multidimensional insert, update and missing-value policies.
+Bulk and legacy EURO writes remain intentionally blocked. Version v0.6.4 adds
+a dedicated one-contract synchronization engine with explicit
+multidimensional insert, update and missing-value policies. Its default mode is
+a read-only, disk-backed plan:
+
+```powershell
+python project_scripts/ingestion/sync_euro_macro.py EURO_FRAUD_LOSSES
+```
+
+The plan reports inserts, updates, unchanged rows, target-only rows, source and
+target quality blockers, unique-key availability and the exact confirmation
+required by apply mode. It never plans a delete.
 
 The v0.5.4 baseline audit classified the schemas as:
 
@@ -101,10 +109,23 @@ The current classification is:
 - zero `key_addition_candidate` schemas;
 - zero `rebuild_required` schemas.
 
-All 12 replaced active tables remain retained for rollback. General EURO
-imports are still blocked until a transactional multidimensional updater
-handles missing observations explicitly and passes full-source integration
-tests. Schema and data remediation alone do not enable automatic writes.
+All 12 replaced active tables remain retained for rollback. The v0.6.4 apply
+path is limited to one explicit import and requires:
+
+1. a write-ready read-only plan;
+2. a non-empty table-scoped structure-and-data SQL backup;
+3. the exact `APPLY_<IMPORT_KEY>_V064_TRANSACTIONAL_SYNC` confirmation;
+4. zero target-only rows, null keys, duplicate keys or invalid numerics;
+5. a unique `(key_code, time_period)` target key;
+6. exact post-write validation before the transaction can commit.
+
+Source nulls are authoritative, so an explicit blank in the source replaces a
+stale target value with SQL `NULL`. Target-only observations block rather than
+being deleted. Only keys classified as insert or update are sent to SQL.
+
+The engine passed isolated transactional tests and live read-only planning, but
+no production MySQL write was executed in v0.6.4. An isolated MySQL test-schema
+and backup-restore drill remain mandatory before the first production refresh.
 
 ## Recovery
 

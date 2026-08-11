@@ -4,7 +4,7 @@ Last updated: 11 August 2026
 
 ## Current Version
 
-**Macro-Financial Risk & Market Behaviour Analytics Platform v0.6.3**
+**Macro-Financial Risk & Market Behaviour Analytics Platform v0.6.4**
 
 ## Executive Summary
 
@@ -22,7 +22,7 @@ It combines:
 - interactive dashboarding;
 - data quality validation.
 
-The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.6.3 completed the three multi-million-row EURO rebuilds one table at a time. Verified external backups, isolated shadows, disk-backed full-row comparisons and atomic swaps brought all 10,864,513 registered MFI, national-account and consumer-price observations into active SQL with zero differences. The former active tables remain retained for rollback, all 17 EURO schemas are write-contract ready, and general EURO refresh writes remain disabled until the transactional multidimensional updater is complete.
+The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.6.4 adds the guarded EURO synchronization engine on top of the exact v0.6.3 database baseline. Its default plan is read-only and memory-bounded. It identifies inserts and full-row updates, blocks target-only rows and invalid source contracts, forbids deletes, requires a scoped backup and exact confirmation for apply mode, and validates complete source-to-target equality inside the same transaction before commit. No production MySQL write was executed in v0.6.4.
 
 ## Completed and Functional Modules
 
@@ -219,20 +219,21 @@ Main file:
 
 ## Latest Documented Validation
 
-Version 0.6.3 validation included:
+Version 0.6.4 validation included:
 
-- 159/159 deterministic unit tests passed.
-- 225/225 active Python files parsed successfully and `pip check` reported no broken requirements.
+- 172/172 deterministic unit tests passed.
+- 229/229 active Python files parsed successfully and `pip check` reported no broken requirements.
 - 38/38 configured SQL assets recalculated successfully with database writes disabled.
 - 9/9 Streamlit pages rendered through `AppTest` without uncaught exceptions; the running server returned HTTP 200 health.
 - Added financial property tests for indicator bounds, Bollinger ordering, correlation symmetry, Base 100 normalization and event-date direction.
 - Added regression tests for normalized entropy, unit-invariant liquidity stress, unavailable OBV and OHLC-derived indicator quality.
-- Rebuilt MFI interest rates, national accounts and consumer prices through separate verified backups, shadows, reviews and atomic swaps.
-- Compared all 10,864,513 source rows against active MySQL in bounded 50,000-row chunks after migration.
-- Confirmed zero missing rows, extra rows, null keys, duplicate keys, invalid numerics and full-row hash mismatches across all three tables.
-- Confirmed exact active row counts of 1,594,491 MFI observations, 2,721,359 national-account observations and 6,548,663 consumer-price observations.
-- Classified 17/17 EURO schemas as write-contract ready and confirmed 16/16 configured EURO series remain available.
-- Loaded and aligned 12/12 active EURO/market pairs; four disabled fraud series were explicitly skipped.
+- Added a one-contract EURO synchronization planner with disk-backed action classification and bounded source/target chunks.
+- Defined authoritative source-null handling, reject-on-target-only policy, zero-delete behavior and exact business-key guards.
+- Added selective transactional upsert and a complete in-transaction post-write comparison that raises before commit on any difference.
+- Proved rollback with an intentionally failed post-write validation against an isolated SQLite database.
+- Confirmed a no-op dry-run against 198 live fraud rows and 1,594,491 live MFI rows with zero differences, actions or database writes.
+- Added progress reporting for long source, target and write scans.
+- Synchronized `VERSION` with the runtime project version and added a regression test for future releases.
 - Reused the disk-backed store for full-row shadow validation, while preserving the legacy path for earlier migration checkpoints.
 - Added isolated `v062` shadow, retained and failed-table names plus exact build and swap confirmations for each large import.
 - Passed read-only capacity checks for all three large rebuilds with a 5 GiB operating reserve; backup capacity remains deliberately excluded and must use a separate physical volume.
@@ -398,13 +399,13 @@ Planned work:
 
 The project already contains a validated multi-asset, FED macro and EURO macro analytical layer.
 
-The current priority is to make future EURO source refreshes transactional and repeatable:
+The current priority is to qualify the new EURO updater without risking the active database:
 
-1. define explicit insert, update and missing-value policies for every EURO contract;
-2. build the transactional multidimensional updater around `(key_code, time_period)`;
-3. add isolated database-backed synchronization and rollback tests;
-4. prove idempotency against unchanged source files and exact post-write source-to-SQL equality;
-5. expose freshness, source coverage and refresh status in Data Quality;
-6. confirm the seven market source contracts still marked as inferred during their next refresh;
-7. classify YUAN, FINANCIAL_CONDITIONS and TED_SPREAD by native frequency;
-8. resume analytical feature expansion only after the updater is stable.
+1. clone one small EURO table into an isolated MySQL test schema;
+2. test one insert, one update, one source null and one unchanged row;
+3. force a post-write mismatch and prove MySQL rollback, not only SQLite rollback;
+4. restore the scoped backup into the test schema and verify its digest and row count;
+5. run read-only plans for the remaining 15 EURO contracts;
+6. expose source freshness, plan status and blockers in Data Quality;
+7. authorize the first production refresh only when a genuinely newer CSV exists;
+8. continue market-source identity and native-frequency remediation in parallel.

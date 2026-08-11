@@ -4,6 +4,35 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [v0.6.4] - 2026-08-11 - Guarded EURO Transactional Synchronization
+
+### Added
+
+- A one-contract EURO synchronization planner backed by the existing bounded SQLite fingerprint store.
+- Explicit counts and samples for inserts, updates, unchanged observations and target-only rows.
+- A dedicated `sync_euro_macro.py` command that is read-only unless `--apply`, a verified scoped backup and an import-specific confirmation are supplied together.
+- Selective upserts for planned insert/update keys only, followed by a complete source-to-target comparison inside the same transaction.
+- Progress reporting for long source, target and write scans.
+
+### Policies and Safety
+
+- Source values, including explicit source nulls, are authoritative for matching business keys.
+- Source null keys, invalid numerics, duplicate keys and missing unique target keys block synchronization.
+- Target-only rows block synchronization for manual review; automatic deletes are disabled.
+- Source-file size and modification time are checked before, during and after the transaction.
+- A failed post-write comparison raises before commit, rolling back the complete operation.
+- No production MySQL write was executed in this release.
+
+### Validation
+
+- Passed 172/172 deterministic tests and parsed 229/229 active Python files.
+- Proved selective insert/update behavior, no-op idempotency, authoritative-null handling and forced rollback with isolated SQLite fixtures.
+- Passed read-only live plans for 198 fraud observations and 1,594,491 MFI observations with zero actions, blockers or differences.
+- Preserved 38/38 SQL asset recalculations, 9/9 Streamlit page renders and dependency integrity.
+- Synchronized the root `VERSION` file with `PROJECT_VERSION` and added a release-consistency test.
+
+---
+
 ## [v0.6.3] - 2026-08-11 - Complete EURO Source Remediation
 
 ### Corrected

@@ -110,7 +110,7 @@ class MacroImportServiceTests(unittest.TestCase):
         self.assertFalse(preview.database_write_performed)
         self.assertFalse(preview.write_ready)
 
-    def test_euro_preview_is_valid_but_write_blocked_pending_schema_contract(self):
+    def test_euro_preview_routes_writes_to_dedicated_transactional_sync(self):
         with TemporaryDirectory() as temp_dir:
             source = Path(temp_dir) / "euro.csv"
             source.write_text(
@@ -125,7 +125,11 @@ class MacroImportServiceTests(unittest.TestCase):
 
         self.assertEqual(1, preview.valid_sample_rows)
         self.assertEqual((), preview.missing_required_columns)
-        self.assertIn("schema_remediation_required", preview.blocked_reasons)
+        self.assertEqual("transactional_sync_guarded", preview.write_policy)
+        self.assertIn(
+            "dedicated_transactional_sync_required",
+            preview.blocked_reasons,
+        )
         self.assertFalse(preview.write_ready)
         self.assertFalse(preview.database_write_performed)
 

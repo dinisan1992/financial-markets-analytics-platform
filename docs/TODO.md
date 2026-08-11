@@ -166,12 +166,25 @@
 - Correct and test the standalone EURO series validator
 - Pass 159 deterministic tests, 225 Python parses, 38 SQL asset checks and 9 Streamlit page renders
 
-## High Priority After v0.6.3
+## Completed in v0.6.4
+
+- Build a memory-bounded EURO synchronization plan for all 17 contracts
+- Classify inserts, updates, unchanged rows and target-only rows by full-row hash
+- Define authoritative source-null, reject-on-target-only and zero-delete policies
+- Require a table-scoped backup and import-specific confirmation before apply mode
+- Write only planned inserts and updates inside one transaction
+- Re-run the complete source-to-target audit inside the transaction before commit
+- Prove idempotency, null handling and forced rollback with isolated database fixtures
+- Validate read-only plans on the live fraud and MFI tables without changing MySQL
+- Synchronize the root `VERSION` marker with the runtime version
+
+## High Priority After v0.6.4
 
 - Confirm the seven source contracts still marked as inferred during their next refresh
-- Build the transactional multidimensional EURO updater with missing-value policy
-- Add isolated database-backed synchronization tests
-- Prove refresh idempotency and exact post-write source-to-SQL equality
+- Clone a small EURO table into an isolated MySQL test schema
+- Prove MySQL commit and rollback behavior with controlled insert/update/null fixtures
+- Restore and validate a scoped backup inside the isolated schema
+- Run read-only plans for the remaining 15 EURO contracts
 - Add EURO source freshness and refresh status to Data Quality
 - Confirm the WTI contract/source for 20 April 2020
 - Classify YUAN, FINANCIAL_CONDITIONS and TED_SPREAD by native frequency

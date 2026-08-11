@@ -186,6 +186,40 @@ class EuroFingerprintStore:
             for row in rows
         )
 
+    def actions_for_keys(self, keys, batch_size=400):
+        """Classify source keys without loading the complete index into memory."""
+        normalized = tuple(dict.fromkeys(
+            (str(key_code), str(time_period))
+            for key_code, time_period in keys
+        ))
+        actions = {}
+        batch_size = max(1, min(int(batch_size), 400))
+        for start in range(0, len(normalized), batch_size):
+            batch = normalized[start:start + batch_size]
+            placeholders = ", ".join("(?, ?)" for _ in batch)
+            parameters = tuple(value for key in batch for value in key)
+            rows = self.connection.execute(
+                f"""
+                SELECT
+                    source.key_code,
+                    source.time_period,
+                    CASE
+                        WHEN target.key_code IS NULL THEN 'insert'
+                        WHEN target.row_hash <> source.row_hash THEN 'update'
+                        ELSE 'unchanged'
+                    END AS action
+                FROM source_rows AS source
+                LEFT JOIN target_rows AS target
+                  ON target.key_code = source.key_code
+                 AND target.time_period = source.time_period
+                WHERE (source.key_code, source.time_period)
+                      IN ({placeholders})
+                """,
+                parameters,
+            ).fetchall()
+            actions.update({(row[0], row[1]): row[2] for row in rows})
+        return actions
+
     def _count(self, query):
         return int(self.connection.execute(query).fetchone()[0] or 0)
 

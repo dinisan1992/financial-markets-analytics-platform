@@ -36,6 +36,7 @@ Runnable scripts are organized under `project_scripts/`:
 - `project_scripts/assets/` - per-asset processing scripts and `run_all_assets.py`.
 - `project_scripts/analysis/` - selectors, market analysis, macro analysis, validation and reports.
 - `project_scripts/diagnostics/` - one-off diagnosis and cleanup scripts.
+- `project_scripts/ingestion/` - controlled FED/EURO source preview and synchronization entry points.
 
 Each moved script includes a small bootstrap that adds the repository root to `sys.path`, so imports such as `from config import ...` still work when the script is launched directly.
 
@@ -46,6 +47,8 @@ Market data maintenance entry points:
 - `project_scripts/diagnostics/backup_market_tables.py` - scoped SQL backup without exposing credentials.
 - `project_scripts/diagnostics/remediate_market_tables.py` - reversible shadow-table remediation.
 - `services/market_data_sync_service.py` - shared parsing, planning, key checks and transactional upsert logic.
+- `project_scripts/ingestion/sync_euro_macro.py` - default-read-only EURO synchronization planner.
+- `services/euro_sync_service.py` - bounded EURO action planning, guarded upsert and in-transaction validation.
 
 ## Tools
 

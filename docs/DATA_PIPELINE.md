@@ -60,7 +60,7 @@ The remediation script creates parallel tables, validates row counts and raw val
 
 ## Scope Boundary
 
-This workflow currently governs the 38 market assets. The separate FED and EURO/ECB layer is governed by `macro_import_manifest.py`, `services/macro_import_service.py` and `project_scripts/ingestion/refresh_macro_sources.py`. Its default is a read-only preview. A FED write requires one named import, `--update-sql`, exact table confirmation, a verified table-level SQL backup and a unique business key. All 17 EURO schemas are remediated, but recurring EURO writes remain blocked pending the transactional multidimensional updater and isolated synchronization tests.
+This workflow currently governs the 38 market assets. The separate FED and EURO/ECB layer is governed by `macro_import_manifest.py`, `services/macro_import_service.py` and `project_scripts/ingestion/refresh_macro_sources.py`. Its default is a read-only preview. A FED write requires one named import, `--update-sql`, exact table confirmation, a verified table-level SQL backup and a unique business key. All 17 EURO schemas are remediated. EURO refreshes use the separate default-read-only `project_scripts/ingestion/sync_euro_macro.py` planner; its guarded apply path remains pending an isolated MySQL acceptance drill before production use.
 
 The canonical provider, identifier, URL, native frequency and OHLC expectation
 for each market asset are defined in `market_source_manifest.py` and documented

@@ -184,7 +184,10 @@ def preview_macro_import(
     if duplicate_rows:
         blocked.append("duplicate_source_keys")
     if contract["write_policy"] != "validated_upsert":
-        blocked.append("schema_remediation_required")
+        if contract["write_policy"] == "transactional_sync_guarded":
+            blocked.append("dedicated_transactional_sync_required")
+        else:
+            blocked.append(contract["write_policy"])
 
     table_exists = None
     unique_business_key = None
