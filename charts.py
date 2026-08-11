@@ -74,9 +74,9 @@ def gerar_dashboard(df, asset_name=None):
             hovertext=[
                 f"Open: {o:.2f}<br>"
                 f"High: {h:.2f}<br>"
-                f"Low: {l:.2f}<br>"
+                f"Low: {low:.2f}<br>"
                 f"Close: {c:.2f}"
-                for o, h, l, c in zip(
+                for o, h, low, c in zip(
                     df["open"],
                     df["high"],
                     df["low"],

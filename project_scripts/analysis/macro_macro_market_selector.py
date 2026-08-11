@@ -18,7 +18,6 @@ from macro_data_loader import (
     get_engine,
     alinhar_macro_com_market,
     normalizar_base_100,
-    calcular_variacoes,
     summary_dataset
 )
 

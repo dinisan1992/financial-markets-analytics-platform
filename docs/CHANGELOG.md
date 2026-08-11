@@ -4,6 +4,32 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [v0.7.1] - 2026-08-11 - Dependency and CI Hardening
+
+### Changed
+
+- Reduced `requirements.txt` from a transitive environment snapshot to eight
+  pinned direct runtime dependencies.
+- Added `requirements-dev.txt` with pinned Ruff and Coverage tooling.
+- Expanded GitHub Actions into a static/import-safety job and a four-environment
+  test matrix covering Windows, Linux, Python 3.11 and Python 3.12.
+- Added dependency consistency, lint, compile, coverage and coverage-artifact
+  checks without requiring database access.
+- Established 41% branch coverage across the application, page, dashboard
+  and service layers, enforced with a 40% regression floor.
+- Removed unused imports and resolved the remaining basic Ruff findings.
+- Fixed the missing `get_sqlalchemy_database_url` import in the Power BI BTC
+  analysis script.
+
+### Validation
+
+- Passed 207/207 deterministic unit tests, parsed 254/254 active Python files,
+  passed Ruff, `pip check`, import safety and
+  the 40% coverage gate locally.
+- Database writes remained disabled and no database remediation was performed.
+
+---
+
 ## [v0.7.0] - 2026-08-11 - Direct Debits Controlled Rebuild
 
 ### Added

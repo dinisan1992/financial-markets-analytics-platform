@@ -1,0 +1,12 @@
+[run]
+branch = True
+source =
+    app
+    app_pages
+    dashboard
+    services
+
+[report]
+fail_under = 40
+show_missing = True
+skip_covered = True

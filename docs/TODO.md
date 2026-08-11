@@ -241,10 +241,16 @@
 - Reclassify all 17 EURO contracts as write-contract-ready
 - Pass 205 deterministic tests and parse 253 active Python files
 
-## High Priority After v0.7.0
+## Completed in v0.7.1
 
 - Simplify `requirements.txt` to direct runtime dependencies and add `requirements-dev.txt`
 - Expand CI across Windows/Linux and Python 3.11/3.12 with lint, coverage and import safety
+- Establish a measured 41% branch-coverage baseline with a 40% regression gate
+- Fix the active lint baseline, including the missing Power BI database URL import
+- Add regression tests that keep runtime and development dependencies deliberate
+
+## High Priority After v0.7.1
+
 - Review field-level changes in Card Payments, Bank Lending Survey and Balance Sheet Items
 - Prepare a separate capacity and backup plan for the Government Finance expansion
 - Confirm the seven source contracts still marked as inferred during their next refresh

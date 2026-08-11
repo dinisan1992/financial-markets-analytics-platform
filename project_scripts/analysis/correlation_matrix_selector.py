@@ -9,7 +9,7 @@ from sqlalchemy import create_engine
 import plotly.graph_objects as go
 import plotly.io as pio
 
-from config import DB_CONFIG, get_sqlalchemy_database_url
+from config import get_sqlalchemy_database_url
 from asset_config import ASSETS
 
 

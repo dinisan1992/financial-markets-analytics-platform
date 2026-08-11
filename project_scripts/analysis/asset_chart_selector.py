@@ -7,7 +7,7 @@ if str(PROJECT_ROOT) not in sys.path:
 import pandas as pd
 from sqlalchemy import create_engine
 
-from config import DB_CONFIG, get_sqlalchemy_database_url
+from config import get_sqlalchemy_database_url
 from asset_config import ASSETS
 from indicators import calcular_indicadores
 from risk_detection import identificar_possivel_manipulacao_forte
@@ -243,7 +243,7 @@ def main():
             gerar_grafico_asset(asset_escolhido["asset_key"])
 
         except Exception as e:
-            print(f"\nERRORR generating chart:")
+            print("\nERRORR generating chart:")
             print(e)
 
         input("\nPressiona ENTER para voltar ao menu...")

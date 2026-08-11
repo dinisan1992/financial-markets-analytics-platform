@@ -18,9 +18,9 @@ Functional local platform with:
 - Market event impact analysis.
 - BTC cycle and halving analysis.
 - Data quality and validation tools.
-- Automated syntax checks and unit tests through GitHub Actions.
+- Cross-platform lint, import-safety, dependency, coverage and unit-test checks through GitHub Actions.
 
-Current project version: **v0.7.0**
+Current project version: **v0.7.1**
 
 ## Main Analytical Capabilities
 
@@ -210,6 +210,9 @@ The application is separated into configuration, data access, analytical service
 |-- outputs/           # ignored by Git
 |-- archive/           # ignored by Git
 |-- requirements.txt
+|-- requirements-dev.txt
+|-- ruff.toml
+|-- .coveragerc
 |-- .env.example
 `-- .gitignore
 ```
@@ -227,6 +230,13 @@ Install the dependencies:
 
 ```powershell
 python -m pip install -r requirements.txt
+```
+
+For development, install the runtime dependencies plus the pinned quality
+tools:
+
+```powershell
+python -m pip install -r requirements-dev.txt
 ```
 
 Create a private `.env` file:
@@ -313,10 +323,13 @@ and `docs/MACRO_IMPORT_SAFETY.md` for importer controls.
 
 ## Validation Snapshot
 
-The v0.7.0 validation includes:
+The v0.7.1 validation includes:
 
-- 205/205 deterministic unit tests pass.
-- 253/253 active Python files parse successfully and `pip check` reports no broken requirements.
+- 207/207 deterministic unit tests pass.
+- 254/254 active Python files parse successfully and `pip check` reports no broken requirements.
+- Ruff passes across the active Python tree with no lint errors.
+- Branch coverage is measured across `app`, `app_pages`, `dashboard` and `services`, with a 40% regression gate over the current 41% baseline.
+- GitHub Actions runs static/import-safety checks and a four-environment unit-test matrix covering Windows, Linux, Python 3.11 and Python 3.12.
 - 38/38 configured SQL assets recalculate successfully with database writes disabled.
 - 9/9 Streamlit pages render without uncaught exceptions and the running server reports HTTP 200 health.
 - Financial property tests cover indicator bounds, Bollinger ordering, correlation symmetry, Base 100 anchoring and event-date direction.
@@ -402,7 +415,7 @@ Planned improvements include:
 - Replace important year-only world events with verified exact dates.
 - Add dry-run and explicit entry points to the remaining SQL-capable ETL scripts.
 - Review the four non-idempotent EURO plans before authorizing any active-data refresh.
-- Simplify runtime dependencies and broaden CI across supported operating systems and Python versions.
+- Review source freshness and the remaining changed EURO synchronization plans.
 - Treat the 3,822,937-row Government Finance source expansion as a separate controlled migration.
 - Simplify the dependency file to direct project dependencies.
 - Develop the deferred EURO fraud analytics layer.

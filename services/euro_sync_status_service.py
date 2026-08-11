@@ -217,9 +217,10 @@ def summarize_euro_sync_status(status_frame: pd.DataFrame):
         "database_write_performed",
         pd.Series(dtype=bool),
     ).fillna(False)
-    numeric = lambda name: pd.to_numeric(
-        status_frame.get(name, pd.Series(dtype=float)), errors="coerce"
-    ).fillna(0)
+    def numeric(name):
+        return pd.to_numeric(
+            status_frame.get(name, pd.Series(dtype=float)), errors="coerce"
+        ).fillna(0)
 
     return {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),

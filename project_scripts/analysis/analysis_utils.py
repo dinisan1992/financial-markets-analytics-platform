@@ -4,7 +4,7 @@ from pathlib import Path
 import pandas as pd
 from sqlalchemy import create_engine
 
-from config import DB_CONFIG, get_sqlalchemy_database_url
+from config import get_sqlalchemy_database_url
 from asset_config import ASSETS
 
 

@@ -18,7 +18,8 @@ The root is reserved for entry points and shared modules:
 - `charts.py` - shared Plotly chart helpers.
 - `macro_data_loader.py` - FED macro/market loading helpers.
 - `euro_data_loader.py` - EURO macro/market loading helpers.
-- `README.md`, `PROJECT_STATUS.md`, `requirements.txt`, `.env.example`, `.gitignore`, `VERSION`.
+- `README.md`, `PROJECT_STATUS.md`, `requirements.txt`, `requirements-dev.txt`, `ruff.toml`, `.coveragerc`, `.env.example`, `.gitignore`, `VERSION`.
+- `docs/CI.md` - dependency, lint, import-safety, test-matrix and coverage contracts.
 
 ## Dashboard
 

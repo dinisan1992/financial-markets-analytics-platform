@@ -100,6 +100,8 @@ new_market_data/
 # =========================
 .pytest_cache/
 .coverage
+coverage.xml
+.ruff_cache/
 htmlcov/
 build/
 dist/

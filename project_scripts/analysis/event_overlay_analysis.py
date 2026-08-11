@@ -549,7 +549,6 @@ def gerar_grafico_event_overlay(normalized_df, df_events):
 
     # Eventos
     max_y = normalized_df[asset_cols].max().max()
-    min_y = normalized_df[asset_cols].min().min()
 
     for _, event in df_events.iterrows():
         event_date = event["event_date"]

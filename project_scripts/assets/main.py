@@ -6,13 +6,10 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 import pandas as pd
 
-from config import CSV_PATH, DB_CONFIG
+from config import DB_CONFIG
 
 from database import (
-    conectar_bd,
-    importar_csv_e_update_mysql,
-    update_indicadores_sql,
-    update_manipulacao_sql
+    conectar_bd
 )
 
 from indicators import calcular_indicadores

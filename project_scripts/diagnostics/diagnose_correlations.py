@@ -4,7 +4,6 @@ import sys
 PROJECT_ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "config.py").exists())
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
-import pandas as pd
 
 from macro_data_loader import get_engine
 from asset_config import ASSETS

@@ -4,7 +4,7 @@ Last updated: 11 August 2026
 
 ## Current Version
 
-**Macro-Financial Risk & Market Behaviour Analytics Platform v0.7.0**
+**Macro-Financial Risk & Market Behaviour Analytics Platform v0.7.1**
 
 ## Executive Summary
 
@@ -22,7 +22,7 @@ It combines:
 - interactive dashboarding;
 - data quality validation.
 
-The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.7.0 completes the controlled Direct Debits rebuild. After pinned backup, source and active-table checks, the validated 121,564-row `VARCHAR(20)` shadow was promoted with one atomic rename and the former 75,647-row `YEAR(4)` table was retained for rollback. The post-swap plan reports every row unchanged with zero actions or blockers, and the read-only schema audit now classifies all 17 EURO contracts as write-ready.
+The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.7.0 completed the controlled Direct Debits rebuild. Version 0.7.1 separates the eight direct runtime dependencies from development tooling and expands CI into static/import-safety checks plus a Windows/Linux and Python 3.11/3.12 test matrix with enforced coverage. The validated 121,564-row `VARCHAR(20)` Direct Debits table remains active and the former 75,647-row `YEAR(4)` table remains retained for rollback.
 
 ## Completed and Functional Modules
 
@@ -220,10 +220,13 @@ Main file:
 
 ## Latest Documented Validation
 
-Version 0.7.0 validation included:
+Version 0.7.1 validation included:
 
-- 205/205 deterministic unit tests passed.
-- 253/253 active Python files parsed successfully and `pip check` reported no broken requirements.
+- 207/207 deterministic unit tests passed.
+- 254/254 active Python files parsed successfully and `pip check` reported no broken requirements.
+- Ruff passed over the complete active Python tree.
+- Branch coverage measured 41% across `app`, `app_pages`, `dashboard` and `services`, with a 40% regression gate.
+- CI covers Windows and Linux under Python 3.11 and 3.12, with a separate static and macro-import-safety job.
 - 38/38 configured SQL assets recalculated successfully with database writes disabled.
 - 9/9 Streamlit pages rendered through `AppTest` without uncaught exceptions; the running server returned HTTP 200 health.
 - Added financial property tests for indicator bounds, Bollinger ordering, correlation symmetry, Base 100 normalization and event-date direction.
@@ -370,7 +373,8 @@ Implemented:
 - API credentials loaded from environment variables.
 - `.env.example` with placeholders only.
 - `.gitignore` coverage for credentials, datasets, dumps, virtual environments, outputs and archives.
-- GitHub Actions workflow for syntax compilation and unit tests.
+- GitHub Actions static/import-safety job and four-environment unit-test matrix.
+- Direct runtime dependencies separated from pinned development quality tools.
 - Public README and project-status documentation.
 
 ## Current Limitations
@@ -380,7 +384,6 @@ Implemented:
 - The public repository intentionally excludes the local production-scale database and datasets.
 - Some legacy-only helper functions still expose direct SQL writes and should remain outside active dashboard execution paths.
 - Some legacy-only scripts and comments still contain mixed Portuguese and English wording.
-- The dependency file contains both direct and transitive packages and should be simplified later.
 - Some duplicated legacy asset workflows remain, although newer assets use shared wrappers.
 
 ## Deferred and Planned Modules
@@ -416,10 +419,7 @@ Planned work:
 Planned work:
 
 - add dashboard screenshots;
-- add a short demo GIF or video;
-- provide anonymized or synthetic sample datasets;
 - document a reproducible database schema workflow;
-- simplify `requirements.txt`;
 - continue reviewing public documentation.
 
 ## Current Development Priority
@@ -428,9 +428,9 @@ The project already contains a validated multi-asset, FED macro and EURO macro a
 
 The isolated MySQL acceptance gate and the full Direct Debits diagnosis, backup, shadow, atomic swap and post-swap validation chain are complete. The current priority returns to controlled platform hardening and source maintenance:
 
-1. simplify runtime dependencies and separate development tooling;
-2. broaden CI across Windows/Linux and supported Python versions, with lint, coverage and import-safety checks;
-3. review field-level differences for Card Payments, Bank Lending Survey and Balance Sheet Items;
-4. treat the Government Finance expansion as a dedicated migration with a fresh scoped backup and capacity preflight;
-5. confirm the seven inferred source contracts during their next refresh;
-6. continue WTI source identity and native-frequency remediation in parallel.
+1. review field-level differences for Card Payments, Bank Lending Survey and Balance Sheet Items;
+2. treat the Government Finance expansion as a dedicated migration with a fresh scoped backup and capacity preflight;
+3. confirm the seven inferred source contracts during their next refresh;
+4. continue WTI source identity and native-frequency remediation in parallel;
+5. design Event Study v2 with benchmark and abnormal-return contracts;
+6. calibrate risk thresholds by asset history and class.

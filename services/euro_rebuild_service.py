@@ -880,7 +880,6 @@ def build_and_validate_shadows(
     validations = []
 
     for import_key in import_keys:
-        contract = get_macro_import(import_key)
         print(f"Building shadow: {import_key}")
         shadow = create_shadow_schema(
             engine,

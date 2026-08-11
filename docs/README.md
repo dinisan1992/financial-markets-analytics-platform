@@ -1,6 +1,8 @@
 # Project Documentation
 
-Current version: v0.7.0
+Current version: v0.7.1
+
+- `CI.md`: dependency contracts, lint, import-safety, test matrix and coverage gates.
 
 This directory contains the technical evidence, architecture notes, analytical
 methodology and controlled database runbooks for the Macro-Financial Risk &

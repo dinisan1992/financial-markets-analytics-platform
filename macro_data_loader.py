@@ -1,7 +1,7 @@
 import pandas as pd
 from sqlalchemy import create_engine
 
-from config import DB_CONFIG, get_sqlalchemy_database_url
+from config import get_sqlalchemy_database_url
 from asset_config import ASSETS
 from macro_config import MACRO_ASSETS, get_macro_config
 from services.macro_analytics_service import align_macro_to_market_calendar
