@@ -4,6 +4,42 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [v0.7.0] - 2026-08-11 - Direct Debits Controlled Rebuild
+
+### Added
+
+- A separately confirmed Direct Debits atomic-swap command with no build or
+  cleanup mode.
+- Optional post-rename and post-hash-removal validators in the shared EURO
+  rebuild engine, both covered by automatic rollback.
+- Tests proving that the source hash column is removed only after promotion
+  validation and that a forced failure executes the inverse atomic rename.
+
+### Database Evidence
+
+- Revalidated the verified backup, reviewed CSV, active-table checkpoint and
+  complete 121,564-row shadow before the rename.
+- Atomically retained the former active table as
+  `euro_direct_debits__pre_v069_20260811_163215` and promoted the validated
+  shadow to `euro_direct_debits`.
+- Confirmed the new active table has 121,564 unique business keys,
+  `time_period VARCHAR(20)`, 31 production columns and no helper hash column.
+- Preserved 44,539 annual, 42,039 semiannual and 34,986 quarterly rows.
+- Preserved the former table exactly: 75,647 rows and the original full data
+  and schema fingerprints remain available for rollback.
+- Ran a post-swap synchronization plan with 121,564 unchanged rows, zero
+  inserts, updates, target-only rows or blockers.
+- Reclassified all 17 EURO schemas as `write_contract_ready`; 16/16 configured
+  EURO series remain available.
+
+### Validation
+
+- Passed 205/205 deterministic tests and parsed 253/253 active Python files.
+- Passed `pip check`, 38/38 SQL-only asset recalculations, 9/9 Streamlit page
+  renders and HTTP 200 application health.
+
+---
+
 ## [v0.6.9] - 2026-08-11 - Validated Direct Debits Shadow
 
 ### Added

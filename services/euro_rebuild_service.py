@@ -1062,6 +1062,9 @@ def swap_validated_shadows(
     version="v055",
     memory_bounded=False,
     workspace_dir=None,
+    drop_hash_before_swap=True,
+    post_swap_validator=None,
+    post_hash_drop_validator=None,
 ):
     if confirmation != SWAP_CONFIRMATION:
         raise ValueError(f"--confirm must exactly match {SWAP_CONFIRMATION}")
@@ -1093,14 +1096,15 @@ def swap_validated_shadows(
         for validation in validations
     }
 
-    for validation in validations:
-        with engine.begin() as connection:
-            connection.execute(
-                text(
-                    f"ALTER TABLE `{validation.shadow_table}` "
-                    f"DROP COLUMN `{HASH_COLUMN}`"
+    if drop_hash_before_swap:
+        for validation in validations:
+            with engine.begin() as connection:
+                connection.execute(
+                    text(
+                        f"ALTER TABLE `{validation.shadow_table}` "
+                        f"DROP COLUMN `{HASH_COLUMN}`"
+                    )
                 )
-            )
 
     swap_statement = build_swap_statement(
         import_keys,
@@ -1111,6 +1115,10 @@ def swap_validated_shadows(
         import_keys,
         suffix,
         version=version,
+    )
+    retained_tables = tuple(
+        retained_table_name(table_name, suffix, version=version)
+        for table_name in tables
     )
     with engine.begin() as connection:
         connection.execute(text(swap_statement))
@@ -1135,6 +1143,37 @@ def swap_validated_shadows(
             )
             if "CHAR" not in str(time_column["type"]).upper():
                 raise RuntimeError(f"Post-swap period type is lossy: {table_name}")
+        if post_swap_validator is not None:
+            post_swap_validator(
+                engine=engine,
+                validations=validations,
+                retained_tables=retained_tables,
+            )
+        if not drop_hash_before_swap:
+            for validation in validations:
+                with engine.begin() as connection:
+                    connection.execute(
+                        text(
+                            f"ALTER TABLE `{validation.active_table}` "
+                            f"DROP COLUMN `{HASH_COLUMN}`"
+                        )
+                    )
+                active_columns = {
+                    normalize_column_name(column["name"])
+                    for column in inspect(engine).get_columns(
+                        validation.active_table
+                    )
+                }
+                if HASH_COLUMN in active_columns:
+                    raise RuntimeError(
+                        f"Post-swap hash column remains: {validation.active_table}"
+                    )
+        if post_hash_drop_validator is not None:
+            post_hash_drop_validator(
+                engine=engine,
+                validations=validations,
+                retained_tables=retained_tables,
+            )
     except Exception:
         with engine.begin() as connection:
             connection.execute(text(rollback_statement))
@@ -1149,8 +1188,8 @@ def swap_validated_shadows(
         "database_write_performed": True,
         "active_tables_changed": True,
         "memory_bounded_validation": bool(memory_bounded),
-        "retained_tables": tuple(
-            retained_table_name(table_name, suffix, version=version)
-            for table_name in tables
+        "retained_tables": retained_tables,
+        "hash_column_drop_stage": (
+            "before_swap" if drop_hash_before_swap else "after_validation"
         ),
     }

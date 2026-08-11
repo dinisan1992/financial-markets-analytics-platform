@@ -231,10 +231,20 @@
 - Confirm the active data and schema fingerprints remained unchanged
 - Pass 199 deterministic tests and parse 249 active Python files
 
-## High Priority After v0.6.9
+## Completed in v0.7.0
 
-- Review the Direct Debits v0.6.9 evidence before considering a swap
-- Request a separate authorization before any atomic swap and retain the current table for rollback
+- Revalidate the Direct Debits backup, source, active checkpoint and complete shadow
+- Add a separately confirmed atomic-swap command with automatic rollback
+- Delay helper hash removal until after the promoted table and retained copy pass validation
+- Promote the 121,564-row `VARCHAR(20)` table and retain the former 75,647-row table
+- Run an exact post-swap plan with zero actions or blockers
+- Reclassify all 17 EURO contracts as write-contract-ready
+- Pass 205 deterministic tests and parse 253 active Python files
+
+## High Priority After v0.7.0
+
+- Simplify `requirements.txt` to direct runtime dependencies and add `requirements-dev.txt`
+- Expand CI across Windows/Linux and Python 3.11/3.12 with lint, coverage and import safety
 - Review field-level changes in Card Payments, Bank Lending Survey and Balance Sheet Items
 - Prepare a separate capacity and backup plan for the Government Finance expansion
 - Confirm the seven source contracts still marked as inferred during their next refresh

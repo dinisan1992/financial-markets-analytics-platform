@@ -1,6 +1,6 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 import unittest
 
 from services.euro_rebuild_service import (
@@ -14,6 +14,7 @@ from services.euro_rebuild_service import (
     normalize_row,
     record_batches,
     shadow_table_name,
+    swap_validated_shadows,
     validate_scoped_backup,
     versioned_table_name,
 )
@@ -59,7 +60,7 @@ class EuroRebuildServiceTests(unittest.TestCase):
                 validate_scoped_backup(path, ("euro_one",))
 
     def test_wrong_build_confirmation_blocks_before_database_access(self):
-        engine = Mock()
+        engine = MagicMock()
         with self.assertRaisesRegex(ValueError, BUILD_CONFIRMATION):
             build_and_validate_shadows(
                 engine=engine,
@@ -104,6 +105,123 @@ class EuroRebuildServiceTests(unittest.TestCase):
         batches = list(record_batches(list(range(11)), 4))
 
         self.assertEqual([[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10]], batches)
+
+    @patch("services.euro_rebuild_service.inspect")
+    @patch("services.euro_rebuild_service._business_key_is_unique", return_value=True)
+    @patch("services.euro_rebuild_service._post_swap_summary")
+    @patch("services.euro_rebuild_service.validate_existing_shadows")
+    @patch("services.euro_rebuild_service._table_exists")
+    @patch("services.euro_rebuild_service.validate_scoped_backup")
+    def test_hash_can_be_dropped_only_after_post_swap_validation(
+        self,
+        backup_mock,
+        exists_mock,
+        validate_mock,
+        summary_mock,
+        _unique_mock,
+        inspect_mock,
+    ):
+        validation = Mock(
+            active_table="euro_direct_debits",
+            shadow_table="euro_direct_debits__shadow_v069_20260811_163215",
+            source_rows=10,
+        )
+        backup_mock.return_value = {"path": Path("backup.sql")}
+        exists_mock.side_effect = [True, False, False]
+        validate_mock.return_value = (validation,)
+        summary_mock.return_value = {
+            "rows_count": 10,
+            "unique_business_keys": 10,
+            "null_business_keys": 0,
+        }
+        inspect_mock.return_value.get_columns.side_effect = [
+            [{"name": "time_period", "type": "VARCHAR(20)"}],
+            [{"name": "time_period", "type": "VARCHAR(20)"}],
+        ]
+        engine = MagicMock()
+        connection = engine.begin.return_value.__enter__.return_value
+        events = []
+        connection.execute.side_effect = lambda statement: events.append(str(statement))
+
+        def promoted(**_kwargs):
+            events.append("PROMOTED_VALID")
+
+        def final(**_kwargs):
+            events.append("FINAL_VALID")
+
+        result = swap_validated_shadows(
+            engine=engine,
+            backup_file="backup.sql",
+            confirmation="SWAP_EURO_REBUILD_SHADOWS",
+            suffix="20260811_163215",
+            import_keys=("EURO_DIRECT_DEBITS",),
+            version="v069",
+            drop_hash_before_swap=False,
+            post_swap_validator=promoted,
+            post_hash_drop_validator=final,
+        )
+
+        self.assertIn("RENAME TABLE", events[0])
+        self.assertEqual("PROMOTED_VALID", events[1])
+        self.assertIn("DROP COLUMN", events[2])
+        self.assertEqual("FINAL_VALID", events[3])
+        self.assertEqual("after_validation", result["hash_column_drop_stage"])
+
+    @patch("services.euro_rebuild_service.inspect")
+    @patch("services.euro_rebuild_service._business_key_is_unique", return_value=True)
+    @patch("services.euro_rebuild_service._post_swap_summary")
+    @patch("services.euro_rebuild_service.validate_existing_shadows")
+    @patch("services.euro_rebuild_service._table_exists")
+    @patch("services.euro_rebuild_service.validate_scoped_backup")
+    def test_failed_post_swap_validator_runs_atomic_rollback(
+        self,
+        backup_mock,
+        exists_mock,
+        validate_mock,
+        summary_mock,
+        _unique_mock,
+        inspect_mock,
+    ):
+        validation = Mock(
+            active_table="euro_direct_debits",
+            shadow_table="euro_direct_debits__shadow_v069_20260811_163215",
+            source_rows=10,
+        )
+        backup_mock.return_value = {"path": Path("backup.sql")}
+        exists_mock.side_effect = [True, False, False]
+        validate_mock.return_value = (validation,)
+        summary_mock.return_value = {
+            "rows_count": 10,
+            "unique_business_keys": 10,
+            "null_business_keys": 0,
+        }
+        inspect_mock.return_value.get_columns.return_value = [
+            {"name": "time_period", "type": "VARCHAR(20)"}
+        ]
+        engine = MagicMock()
+        connection = engine.begin.return_value.__enter__.return_value
+        statements = []
+        connection.execute.side_effect = lambda statement: statements.append(
+            str(statement)
+        )
+
+        with self.assertRaisesRegex(RuntimeError, "forced failure"):
+            swap_validated_shadows(
+                engine=engine,
+                backup_file="backup.sql",
+                confirmation="SWAP_EURO_REBUILD_SHADOWS",
+                suffix="20260811_163215",
+                import_keys=("EURO_DIRECT_DEBITS",),
+                version="v069",
+                drop_hash_before_swap=False,
+                post_swap_validator=lambda **_kwargs: (_ for _ in ()).throw(
+                    RuntimeError("forced failure")
+                ),
+            )
+
+        self.assertEqual(2, len(statements))
+        self.assertIn("shadow_v069", statements[0])
+        self.assertIn("failed_v069", statements[1])
 
     @patch(
         "services.euro_rebuild_service._mapped_source_columns",

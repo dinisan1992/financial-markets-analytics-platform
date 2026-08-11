@@ -1,6 +1,6 @@
 # Project Documentation
 
-Current version: v0.6.9
+Current version: v0.7.0
 
 This directory contains the technical evidence, architecture notes, analytical
 methodology and controlled database runbooks for the Macro-Financial Risk &
@@ -26,6 +26,7 @@ Market Behaviour Analytics Platform. Start with the repository-level
 - `EURO_DIRECT_DEBITS_REMEDIATION.md`: confirmed temporal-loss diagnosis.
 - `EURO_DIRECT_DEBITS_BACKUP.md`: independently restored table backup.
 - `EURO_DIRECT_DEBITS_SHADOW.md`: validated v0.6.9 non-active replacement.
+- `EURO_DIRECT_DEBITS_SWAP.md`: v0.7.0 atomic promotion and rollback evidence.
 - `MACRO_IMPORT_SAFETY.md`: write gates, confirmations and recovery controls.
 
 ## Public Repository Boundary

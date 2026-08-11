@@ -1,6 +1,6 @@
 # EURO Transactional Synchronization
 
-Version: v0.6.9
+Version: v0.7.0
 
 Date: 11 August 2026
 
@@ -149,3 +149,8 @@ uses `time_period VARCHAR(20)` and preserves the composite business key. The
 active table fingerprint is unchanged. The command exposes no swap stage; an
 atomic rename and its post-swap checks remain separately gated. See
 `EURO_DIRECT_DEBITS_SHADOW.md`.
+
+Version v0.7.0 completed the atomic promotion with rollback protection. The
+former active table is retained, the promoted table matches all 121,564 source
+rows and the immediate read-only plan reports zero actions or blockers. See
+`EURO_DIRECT_DEBITS_SWAP.md`.

@@ -1,14 +1,14 @@
 # EURO Direct Debits Temporal Remediation
 
-Version: v0.6.9
+Version: v0.7.0
 
 Date: 11 August 2026
 
 ## Status
 
-Diagnosis, backup and shadow validation are complete. The active MySQL table
-has not been altered or renamed. A separately authorized versioned shadow now
-contains the complete reviewed source; no swap was authorized or performed.
+Diagnosis, backup, shadow validation and atomic promotion are complete. The
+active MySQL table now contains the complete reviewed source under the corrected
+temporal contract. The former table remains retained for rollback.
 
 ## Confirmed Cause
 
@@ -90,7 +90,7 @@ evidence only and are not executed by the v0.6.7 command.
 8. Run the read-only synchronization plan and application validation
    immediately after any future swap.
 
-Until all gates pass, `EURO_DIRECT_DEBITS` remains blocked by
+Before v0.7.0, `EURO_DIRECT_DEBITS` remained blocked by
 `unsafe_time_period_type` and `target_only_rows_require_review`.
 
 ## v0.6.8 Backup Gate
@@ -109,5 +109,14 @@ source keys and validated every mapped value twice. It found zero null keys,
 duplicates, missing rows, extra rows or hash mismatches. The active table kept
 its original 75,647-row data and 31-column schema fingerprints.
 
-The atomic swap, retained-table rename and post-swap checks remain unexecuted
-and require a separate authorization. See `EURO_DIRECT_DEBITS_SHADOW.md`.
+At the v0.6.9 checkpoint, the atomic swap, retained-table rename and post-swap
+checks remained unexecuted and separately gated. See
+`EURO_DIRECT_DEBITS_SHADOW.md`.
+
+## v0.7.0 Swap Gate
+
+Gates 6 through 8 are complete. The swap atomically retained the former table,
+promoted the validated shadow and removed the helper hash only after the new
+active and retained tables passed their checks. The post-swap plan reports
+121,564 unchanged rows, zero actions and zero blockers. No rollback was needed.
+See `EURO_DIRECT_DEBITS_SWAP.md`.

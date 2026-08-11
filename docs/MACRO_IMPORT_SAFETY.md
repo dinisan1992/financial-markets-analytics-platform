@@ -1,6 +1,6 @@
 # Controlled Macro Import Safety
 
-Version 0.6.9 places all 11 FED and 17 EURO/ECB source files behind explicit
+Version 0.7.0 places all 11 FED and 17 EURO/ECB source files behind explicit
 import contracts. Importing a Python module never opens MySQL or starts loading
 a CSV. Running an importer without write flags performs a read-only preview.
 
@@ -155,6 +155,11 @@ The build command exposes no swap option. See
 `docs/EURO_DIRECT_DEBITS_REMEDIATION.md`,
 `docs/EURO_DIRECT_DEBITS_BACKUP.md` and
 `docs/EURO_DIRECT_DEBITS_SHADOW.md`.
+
+Version v0.7.0 used a different, swap-only command with an independent exact
+confirmation. It revalidated every prerequisite, performed one atomic rename,
+retained the former table and kept the inverse rename available for rollback.
+The live audit now classifies 17/17 EURO schemas as write-contract-ready.
 
 ## Recovery
 

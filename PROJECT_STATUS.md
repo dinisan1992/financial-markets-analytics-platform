@@ -4,7 +4,7 @@ Last updated: 11 August 2026
 
 ## Current Version
 
-**Macro-Financial Risk & Market Behaviour Analytics Platform v0.6.9**
+**Macro-Financial Risk & Market Behaviour Analytics Platform v0.7.0**
 
 ## Executive Summary
 
@@ -22,7 +22,7 @@ It combines:
 - interactive dashboarding;
 - data quality validation.
 
-The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.6.9 completes the Direct Debits shadow-build gate without changing the active table. The verified v0.6.8 backup and reviewed 32,010,024-byte CSV were pinned by SHA-256 before a versioned `VARCHAR(20)` shadow received all 121,564 source rows. Two complete comparisons found zero missing, extra, duplicate or mismatched rows. The active 75,647-row `YEAR(4)` table and its data/schema fingerprints remain unchanged; no swap was authorized or performed.
+The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.7.0 completes the controlled Direct Debits rebuild. After pinned backup, source and active-table checks, the validated 121,564-row `VARCHAR(20)` shadow was promoted with one atomic rename and the former 75,647-row `YEAR(4)` table was retained for rollback. The post-swap plan reports every row unchanged with zero actions or blockers, and the read-only schema audit now classifies all 17 EURO contracts as write-ready.
 
 ## Completed and Functional Modules
 
@@ -220,10 +220,10 @@ Main file:
 
 ## Latest Documented Validation
 
-Version 0.6.9 validation included:
+Version 0.7.0 validation included:
 
-- 199/199 deterministic unit tests passed.
-- 249/249 active Python files parsed successfully and `pip check` reported no broken requirements.
+- 205/205 deterministic unit tests passed.
+- 253/253 active Python files parsed successfully and `pip check` reported no broken requirements.
 - 38/38 configured SQL assets recalculated successfully with database writes disabled.
 - 9/9 Streamlit pages rendered through `AppTest` without uncaught exceptions; the running server returned HTTP 200 health.
 - Added financial property tests for indicator bounds, Bollinger ordering, correlation symmetry, Base 100 normalization and event-date direction.
@@ -254,6 +254,11 @@ Version 0.6.9 validation included:
 - Preserved the reviewed frequency counts: 44,539 annual, 42,039 semiannual and 34,986 quarterly rows.
 - Repeated the complete source-to-shadow validation independently with zero missing, extra, duplicate or mismatched rows.
 - Confirmed the active table before and after with the same 75,647-row data and 31-column schema fingerprints; swap remained unavailable.
+- Added a separately confirmed atomic swap command with automatic rollback and delayed hash-column removal.
+- Promoted the exact 121,564-row Direct Debits shadow and retained the complete former table under its versioned rollback name.
+- Confirmed the active schema now uses `VARCHAR(20)`, preserves 121,564 unique keys and contains no technical hash column.
+- Ran an idempotent post-swap plan with zero inserts, updates, target-only rows or blockers.
+- Reclassified the live EURO schema baseline as 17/17 write-contract-ready and 16/16 configured series available.
 - Added progress reporting for long source, target and write scans.
 - Synchronized `VERSION` with the runtime project version and added a regression test for future releases.
 - Reused the disk-backed store for full-row shadow validation, while preserving the legacy path for earlier migration checkpoints.
@@ -421,10 +426,10 @@ Planned work:
 
 The project already contains a validated multi-asset, FED macro and EURO macro analytical layer.
 
-The isolated MySQL acceptance gate, full read-only planning baseline, Direct Debits diagnosis, verified backup and shadow build are complete. The current priority is a deliberate review gate before any active-table change:
+The isolated MySQL acceptance gate and the full Direct Debits diagnosis, backup, shadow, atomic swap and post-swap validation chain are complete. The current priority returns to controlled platform hardening and source maintenance:
 
-1. inspect the v0.6.9 Direct Debits shadow evidence before granting any swap authorization;
-2. if separately authorized, atomically retain the current table, promote the validated shadow and immediately run rollback-capable post-swap checks;
+1. simplify runtime dependencies and separate development tooling;
+2. broaden CI across Windows/Linux and supported Python versions, with lint, coverage and import-safety checks;
 3. review field-level differences for Card Payments, Bank Lending Survey and Balance Sheet Items;
 4. treat the Government Finance expansion as a dedicated migration with a fresh scoped backup and capacity preflight;
 5. confirm the seven inferred source contracts during their next refresh;

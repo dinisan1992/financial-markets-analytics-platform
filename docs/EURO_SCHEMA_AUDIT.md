@@ -42,6 +42,10 @@ business keys and a unique `(key_code, time_period)` contract:
 They remain write-blocked until full-source mapping and transactional importer
 tests are completed.
 
+The classifications in this section are historical. After the migrations and
+v0.7.0 Direct Debits completion, the current live audit classifies all 17 EURO
+schemas as `write_contract_ready`; see `EURO_DIRECT_DEBITS_SWAP.md`.
+
 ### Composite-Key Candidates
 
 These six tables have compatible period types and no null or duplicate business

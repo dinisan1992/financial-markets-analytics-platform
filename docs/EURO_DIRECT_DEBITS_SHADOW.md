@@ -92,3 +92,10 @@ the current table under a versioned rollback name, remove the temporary hash
 column from the validated shadow and rename both tables atomically. That action
 has not been authorized or executed and must be followed immediately by
 read-only synchronization and application validation.
+
+## v0.7.0 Follow-Up
+
+The separately authorized atomic swap is complete. The validated shadow is now
+the active 121,564-row table, the helper hash column has been removed and the
+former 75,647-row table remains retained for rollback. See
+`EURO_DIRECT_DEBITS_SWAP.md`.

@@ -126,3 +126,11 @@ planned as an isolated `VARCHAR(20)` shadow with full source/shadow validation,
 a retained active table and atomic rollback. Backup verification, shadow build
 and swap remain separate approval gates. See
 `EURO_DIRECT_DEBITS_REMEDIATION.md`.
+
+## v0.7.0 Direct Debits Completion
+
+The backup, shadow and atomic-swap gates are now complete. The active Direct
+Debits table contains 121,564 unique source rows under `time_period VARCHAR(20)`
+and the former 75,647-row table remains retained for rollback. The immediate
+sync plan is exact and the post-swap audit classifies all 17 EURO schemas as
+write-contract-ready. See `EURO_DIRECT_DEBITS_SWAP.md`.

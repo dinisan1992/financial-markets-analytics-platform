@@ -80,3 +80,8 @@ this exact backup as a mandatory checkpoint before creating and validating the
 versioned `VARCHAR(20)` table. The backup still protects the unchanged active
 table. No atomic swap was authorized or performed; that remains a later,
 separate gate. See `EURO_DIRECT_DEBITS_SHADOW.md`.
+
+Version v0.7.0 subsequently completed that atomic swap after revalidating this
+same backup and proving the active table still matched it. The former active
+table remains retained with the same 75,647-row data and schema fingerprints.
+See `EURO_DIRECT_DEBITS_SWAP.md`.
