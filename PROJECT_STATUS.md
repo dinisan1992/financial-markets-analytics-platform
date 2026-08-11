@@ -4,7 +4,7 @@ Last updated: 11 August 2026
 
 ## Current Version
 
-**Macro-Financial Risk & Market Behaviour Analytics Platform v0.6.4**
+**Macro-Financial Risk & Market Behaviour Analytics Platform v0.6.5**
 
 ## Executive Summary
 
@@ -22,7 +22,7 @@ It combines:
 - interactive dashboarding;
 - data quality validation.
 
-The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.6.4 adds the guarded EURO synchronization engine on top of the exact v0.6.3 database baseline. Its default plan is read-only and memory-bounded. It identifies inserts and full-row updates, blocks target-only rows and invalid source contracts, forbids deletes, requires a scoped backup and exact confirmation for apply mode, and validates complete source-to-target equality inside the same transaction before commit. No production MySQL write was executed in v0.6.4.
+The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.6.5 qualifies the guarded EURO synchronization engine on an isolated MariaDB/MySQL schema while preserving the exact v0.6.3 active database baseline. The drill restored a verified backup, committed controlled insert/update/null fixtures only after complete in-transaction validation, proved zero-write idempotency, forced and verified a complete rollback, then removed the temporary schema. The active table's 198 rows and full-row fingerprint were identical before and after; no active database write was executed.
 
 ## Completed and Functional Modules
 
@@ -219,10 +219,10 @@ Main file:
 
 ## Latest Documented Validation
 
-Version 0.6.4 validation included:
+Version 0.6.5 validation included:
 
-- 172/172 deterministic unit tests passed.
-- 229/229 active Python files parsed successfully and `pip check` reported no broken requirements.
+- 179/179 deterministic unit tests passed.
+- 231/231 active Python files parsed successfully and `pip check` reported no broken requirements.
 - 38/38 configured SQL assets recalculated successfully with database writes disabled.
 - 9/9 Streamlit pages rendered through `AppTest` without uncaught exceptions; the running server returned HTTP 200 health.
 - Added financial property tests for indicator bounds, Bollinger ordering, correlation symmetry, Base 100 normalization and event-date direction.
@@ -232,6 +232,10 @@ Version 0.6.4 validation included:
 - Added selective transactional upsert and a complete in-transaction post-write comparison that raises before commit on any difference.
 - Proved rollback with an intentionally failed post-write validation against an isolated SQLite database.
 - Confirmed a no-op dry-run against 198 live fraud rows and 1,594,491 live MFI rows with zero differences, actions or database writes.
+- Restored a verified 110,420-byte scoped backup into a generated MySQL test schema and matched all 198 rows to the active fingerprint.
+- Committed one controlled insert and two updates, including a source-null overwrite, then proved a second apply wrote zero rows.
+- Forced the final MySQL comparison to fail and proved the complete transaction rolled back to the original 198-row fingerprint.
+- Confirmed the active database was unchanged and no temporary acceptance schema remained.
 - Added progress reporting for long source, target and write scans.
 - Synchronized `VERSION` with the runtime project version and added a regression test for future releases.
 - Reused the disk-backed store for full-row shadow validation, while preserving the legacy path for earlier migration checkpoints.
@@ -399,13 +403,10 @@ Planned work:
 
 The project already contains a validated multi-asset, FED macro and EURO macro analytical layer.
 
-The current priority is to qualify the new EURO updater without risking the active database:
+The isolated MySQL acceptance gate is complete. The current priority is controlled refresh readiness without changing active data prematurely:
 
-1. clone one small EURO table into an isolated MySQL test schema;
-2. test one insert, one update, one source null and one unchanged row;
-3. force a post-write mismatch and prove MySQL rollback, not only SQLite rollback;
-4. restore the scoped backup into the test schema and verify its digest and row count;
-5. run read-only plans for the remaining 15 EURO contracts;
-6. expose source freshness, plan status and blockers in Data Quality;
-7. authorize the first production refresh only when a genuinely newer CSV exists;
-8. continue market-source identity and native-frequency remediation in parallel.
+1. run read-only plans for the remaining 15 EURO contracts;
+2. expose source freshness, plan status and blockers in Data Quality;
+3. confirm the seven inferred source contracts during their next refresh;
+4. authorize the first production refresh only when a genuinely newer reviewed CSV exists;
+5. continue market-source identity and native-frequency remediation in parallel.

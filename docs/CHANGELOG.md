@@ -4,6 +4,31 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [v0.6.5] - 2026-08-11 - Isolated MySQL Acceptance
+
+### Added
+
+- A default-read-only MySQL acceptance command for `EURO_FRAUD_LOSSES`.
+- Strict generated-schema validation, explicit execution confirmation and an
+  external backup-directory requirement.
+- Deterministic active-table fingerprints before and after the drill.
+- Controlled insert, update, authoritative-null and idempotency fixtures.
+- A test-only MariaDB trigger that forces post-write validation failure and
+  proves rollback without modifying the synchronization service.
+
+### Validation
+
+- Restored a verified 110,420-byte scoped backup into an isolated schema.
+- Matched all 198 restored rows to the active full-row SHA-256 fingerprint.
+- Committed one insert and two updates only after complete in-transaction
+  validation, then confirmed a zero-write reapply.
+- Forced a post-write mismatch and confirmed all 198 rows retained their
+  original fingerprint after rollback.
+- Confirmed zero writes to the active schema and removed the temporary schema.
+- Passed 179/179 deterministic tests and parsed 231/231 active Python files.
+
+---
+
 ## [v0.6.4] - 2026-08-11 - Guarded EURO Transactional Synchronization
 
 ### Added

@@ -1,6 +1,6 @@
 # Controlled Macro Import Safety
 
-Version 0.6.4 places all 11 FED and 17 EURO/ECB source files behind explicit
+Version 0.6.5 places all 11 FED and 17 EURO/ECB source files behind explicit
 import contracts. Importing a Python module never opens MySQL or starts loading
 a CSV. Running an importer without write flags performs a read-only preview.
 
@@ -123,9 +123,12 @@ Source nulls are authoritative, so an explicit blank in the source replaces a
 stale target value with SQL `NULL`. Target-only observations block rather than
 being deleted. Only keys classified as insert or update are sent to SQL.
 
-The engine passed isolated transactional tests and live read-only planning, but
-no production MySQL write was executed in v0.6.4. An isolated MySQL test-schema
-and backup-restore drill remain mandatory before the first production refresh.
+The engine passed isolated transactional tests, live read-only planning and the
+v0.6.5 MySQL acceptance drill. The drill restored a scoped backup, committed
+controlled insert/update/null fixtures, proved zero-write idempotency and forced
+a complete rollback in a generated test schema. No active MySQL write was
+executed. A future production refresh still requires a newer reviewed source,
+a blocker-free plan, a fresh scoped backup and exact apply confirmation.
 
 ## Recovery
 

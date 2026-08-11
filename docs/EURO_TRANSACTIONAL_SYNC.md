@@ -1,6 +1,6 @@
 # EURO Transactional Synchronization
 
-Version: v0.6.4
+Version: v0.6.5
 
 Date: 11 August 2026
 
@@ -104,13 +104,14 @@ Read-only MySQL plans also passed against:
 The MFI plan completed with 50,000-row chunks, proving the planner on a
 production-scale source. Both reports record `database_write_performed: false`.
 
-## Remaining Acceptance Gate
+## MySQL Acceptance Result
 
-No production MySQL write was executed in v0.6.4. Before the first one:
+The v0.6.5 isolated MySQL drill completed the former acceptance gate. A verified
+backup restored all 198 fraud rows exactly, controlled insert/update/null writes
+passed the in-transaction audit, a second apply wrote zero rows, and a forced
+post-write mismatch rolled back to the original fingerprint. The generated
+schema was removed and the active schema's before/after hash was identical.
 
-1. clone a small EURO table into a separate MySQL test schema;
-2. apply controlled insert, update, null and unchanged fixtures;
-3. force the final audit to fail and verify MySQL rollback;
-4. restore the scoped backup into that test schema;
-5. re-run the planner and confirm exact idempotency;
-6. use production apply only when a genuinely newer reviewed CSV exists.
+See `docs/EURO_MYSQL_ACCEPTANCE.md` for the procedure and recorded evidence.
+Production apply remains conditional on a genuinely newer reviewed CSV, a fresh
+read-only plan with no blockers and a new scoped backup.

@@ -20,7 +20,7 @@ Functional local platform with:
 - Data quality and validation tools.
 - Automated syntax checks and unit tests through GitHub Actions.
 
-Current project version: **v0.6.4**
+Current project version: **v0.6.5**
 
 ## Main Analytical Capabilities
 
@@ -291,8 +291,8 @@ python project_scripts/ingestion/refresh_macro_sources.py ALL --check-sql
 The command validates all 28 source contracts and never writes by default. A
 single FED import can use `--update-sql` only with an exact table confirmation,
 a verified SQL backup containing that table and a unique business key. Version
-v0.6.4 adds a dedicated, default-read-only EURO synchronization planner and a
-one-table transactional apply engine. It classifies inserts, updates,
+v0.6.5 qualifies the dedicated, default-read-only EURO synchronization planner
+and one-table transactional apply engine. It classifies inserts, updates,
 unchanged and target-only rows through a disk-backed comparison; deletions are
 disabled, target-only rows block a write, and apply mode requires a scoped
 backup plus an import-specific confirmation. See `docs/EURO_SCHEMA_AUDIT.md`,
@@ -300,15 +300,16 @@ backup plus an import-specific confirmation. See `docs/EURO_SCHEMA_AUDIT.md`,
 `docs/EURO_STREAMING_VALIDATION.md` for the read-only large-source evidence,
 `docs/EURO_LARGE_REBUILD_PLAN.md` for the isolated rebuild runbook,
 `docs/EURO_LARGE_REBUILD_RESULTS.md` for the execution evidence, and
-`docs/EURO_TRANSACTIONAL_SYNC.md` for refresh policies and acceptance gates,
+`docs/EURO_TRANSACTIONAL_SYNC.md` for refresh policies,
+`docs/EURO_MYSQL_ACCEPTANCE.md` for the isolated MySQL evidence, and
 `docs/MACRO_IMPORT_SAFETY.md` for importer controls.
 
 ## Validation Snapshot
 
-The v0.6.4 validation includes:
+The v0.6.5 validation includes:
 
-- 172/172 deterministic unit tests pass.
-- 229/229 active Python files parse successfully and `pip check` reports no broken requirements.
+- 179/179 deterministic unit tests pass.
+- 231/231 active Python files parse successfully and `pip check` reports no broken requirements.
 - 38/38 configured SQL assets recalculate successfully with database writes disabled.
 - 9/9 Streamlit pages render without uncaught exceptions and the running server reports HTTP 200 health.
 - Financial property tests cover indicator bounds, Bollinger ordering, correlation symmetry, Base 100 anchoring and event-date direction.
@@ -318,7 +319,10 @@ The v0.6.4 validation includes:
 - The apply engine writes only planned inserts and updates inside one transaction, then repeats the complete source-to-target comparison before commit.
 - Deterministic SQLite tests prove idempotency, selective upsert, authoritative-null handling and full rollback after a forced post-write failure.
 - Read-only MySQL smoke plans confirmed 198/198 fraud rows and 1,594,491/1,594,491 MFI rows unchanged, with zero actions or blockers.
-- No production MySQL write was executed in v0.6.4; an isolated MySQL test-schema drill remains the next acceptance gate.
+- A verified 110,420-byte fraud-table backup restored exactly into an isolated MySQL schema with all 198 rows and the active full-row SHA-256 fingerprint.
+- The isolated MySQL drill committed one insert and two updates, including a source-null overwrite, and the immediate reapply wrote zero rows.
+- A forced post-write mismatch rolled back the complete MySQL transaction; all 198 original rows and their fingerprint were preserved.
+- The active schema was never written, its before/after fingerprint was identical, and no temporary acceptance schema remained.
 
 The retained v0.5.6 database validation includes:
 
@@ -378,7 +382,7 @@ Planned improvements include:
 - Calibrate risk thresholds by asset class and data provenance.
 - Replace important year-only world events with verified exact dates.
 - Add dry-run and explicit entry points to the remaining SQL-capable ETL scripts.
-- Extend reference tests with database-backed snapshots when MySQL is available.
+- Run read-only EURO plans for the remaining contracts and surface refresh readiness in Data Quality.
 - Simplify the dependency file to direct project dependencies.
 - Develop the deferred EURO fraud analytics layer.
 - Start machine-learning experiments only after feature and label governance is stable.

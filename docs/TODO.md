@@ -178,12 +178,20 @@
 - Validate read-only plans on the live fraud and MFI tables without changing MySQL
 - Synchronize the root `VERSION` marker with the runtime version
 
-## High Priority After v0.6.4
+## Completed in v0.6.5
+
+- Clone the 198-row EURO fraud table into an isolated MySQL schema
+- Create and independently verify a scoped structure-and-data backup
+- Prove one insert, two updates and an authoritative source-null overwrite
+- Prove complete in-transaction post-write validation and zero-write reapply
+- Force a real MariaDB post-validation mismatch and prove transaction rollback
+- Confirm the active full-row fingerprint is identical before and after
+- Remove the generated schema and confirm no acceptance schemas remain
+- Keep local backup, fixtures and reports outside Git
+
+## High Priority After v0.6.5
 
 - Confirm the seven source contracts still marked as inferred during their next refresh
-- Clone a small EURO table into an isolated MySQL test schema
-- Prove MySQL commit and rollback behavior with controlled insert/update/null fixtures
-- Restore and validate a scoped backup inside the isolated schema
 - Run read-only plans for the remaining 15 EURO contracts
 - Add EURO source freshness and refresh status to Data Quality
 - Confirm the WTI contract/source for 20 April 2020
