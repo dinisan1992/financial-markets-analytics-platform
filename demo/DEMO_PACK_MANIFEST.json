@@ -1,0 +1,59 @@
+{
+  "package_name": "Financial Markets Analytics Platform - Public Demo Add-on",
+  "based_on_project_version": "v0.7.4",
+  "source_repository": "dinisan1992/financial-markets-analytics-platform",
+  "generated_at_utc": "2026-08-12T12:16:59.313606+00:00",
+  "integration_model": "additive; existing production files are not replaced",
+  "demo_data": "deterministic synthetic in-memory OHLCV and macro series",
+  "database_required": false,
+  "private_csv_required": false,
+  "files": {
+    "DEMO_INTEGRATION_CHECKLIST.md": {
+      "bytes": 1416,
+      "sha256": "2937feadec20264739598b915ad11120604183bd61a199fb7b69ef4b5b4ab825"
+    },
+    "demo/__init__.py": {
+      "bytes": 37,
+      "sha256": "4b604e42bdf34e0e5e4e21e40132d3d166ddedaeec275873f211d3ed35ffedaa"
+    },
+    "demo/data.py": {
+      "bytes": 20295,
+      "sha256": "866a7e5c79b982f9963b7f980cabd82eabc027fd8f22c49f2ed12a6d0e6baa0c"
+    },
+    "demo/runtime.py": {
+      "bytes": 8116,
+      "sha256": "a271da8ab28d7be0c40b34a79733988e2811d50ab99f74600a680a7a5d04bf54"
+    },
+    "docs/DEMO_MODE.md": {
+      "bytes": 4694,
+      "sha256": "5226086e2efede85603af7f73a8c401be67dd3b14fa858e186ce212320c23599"
+    },
+    "project_scripts/diagnostics/demo_mode_smoke.py": {
+      "bytes": 2268,
+      "sha256": "d9df3fc1f9bf7a55031319fb25c5878fc37534248919a429b100ac12c479a1c8"
+    },
+    "run_demo.ps1": {
+      "bytes": 280,
+      "sha256": "0f7a193c5d647c89325e71cd31ade8710c6ec0570a95eca524545ed3d87cc6fe"
+    },
+    "streamlit_demo.py": {
+      "bytes": 448,
+      "sha256": "f904558076913ae055629aa1f4358f30c52f4fadcfaf39e4fbcada28507526e0"
+    },
+    "tests/test_demo_mode.py": {
+      "bytes": 4994,
+      "sha256": "46d65b2b413070c3f748778d895f8916a66fa93c7b96574ca397aa039727be22"
+    },
+    "validate_demo.ps1": {
+      "bytes": 669,
+      "sha256": "454833909d095407aadc7fe1619beab9af2b3b07eb3550fd23f889a3ccd388bc"
+    }
+  },
+  "validation_performed_here": {
+    "python_compile": "passed",
+    "isolated_demo_tests": "5 executable tests passed; 3 project-contract tests included for execution inside the full repository",
+    "synthetic_38_asset_profile_check": "passed",
+    "full_project_streamlit_9_page_test": "requires execution inside the user's complete repository",
+    "full_existing_test_suite": "requires execution inside the user's complete repository"
+  }
+}
