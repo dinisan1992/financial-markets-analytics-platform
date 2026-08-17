@@ -4,6 +4,27 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [v0.8.5] - 2026-08-17 - Bound BSI Shadow Validation Memory
+
+### Changed
+
+- Traced the BSI build and verification working-set peaks to the SQLAlchemy
+  mysqlconnector result path used during disk-backed shadow scans.
+- Added an explicit `buffered=False` MySQL DBAPI cursor with a hard 5,000-row
+  fetch ceiling for complete shadow validation.
+- Kept a bounded SQLAlchemy streaming fallback for other drivers and now close
+  both result paths deterministically.
+- Updated the BSI status and roadmap after the completed v0.8.4 shadow build.
+
+### Validation
+
+- Passed 276/276 deterministic unit tests, Ruff and `pip check`.
+- Added regression coverage proving the mysqlconnector cursor is unbuffered,
+  fetches are capped and the fallback receives bounded streaming options.
+- Reused the signed v0.8.4 build and independent-verification evidence; no
+  production-scale BSI rescan was needed for this implementation checkpoint.
+- Performed no database write, active-CSV write, shadow promotion or cleanup.
+
 ## [v0.8.4] - 2026-08-17 - Build And Validate Official BSI Shadow
 
 ### Added

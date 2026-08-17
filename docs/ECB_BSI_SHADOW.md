@@ -73,9 +73,12 @@ backups, credentials and absolute local paths are not published.
 
 The build and verification completed successfully, but host telemetry observed
 transient Python working-set peaks of approximately 14.2 GB and 12.8 GB during
-the large comparisons. The next engineering step is to profile and reduce
-those peaks before the BSI workflow is considered suitable for unattended
-execution.
+the large comparisons. Version v0.8.5 traced those peaks to the SQLAlchemy
+mysqlconnector result path in disk-backed shadow validation and replaced it
+with an explicit `buffered=False` DBAPI cursor capped at 5,000 rows per fetch.
+The SQLAlchemy fallback is also bounded and closed deterministically. Unit
+tests cover both paths; no further production-scale BSI scan or database write
+was performed for this optimization checkpoint.
 
 ## Remaining Authorization Gate
 

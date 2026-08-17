@@ -46,6 +46,7 @@ LONG_TEXT_COLUMNS = {
 TEXT_TYPE_MARKERS = ("CHAR", "TEXT", "CLOB", "ENUM", "SET")
 RAW_NUMERIC_MISSING = {"", ".", "na", "n/a", "nan", "null"}
 DECIMAL_QUANTUM = Decimal("0.000000000001")
+MAX_SHADOW_FETCH_ROWS = 5_000
 
 
 @dataclass(frozen=True)
@@ -788,6 +789,32 @@ def validate_shadow(
     return validation
 
 
+def _shadow_value_batches(connection, query, output_columns, chunk_size):
+    """Yield bounded shadow rows without mysqlconnector result buffering."""
+    fetch_size = min(max(1, int(chunk_size)), MAX_SHADOW_FETCH_ROWS)
+    dialect = connection.engine.dialect
+    if dialect.name in {"mysql", "mariadb"} and dialect.driver == "mysqlconnector":
+        driver_connection = connection.connection.driver_connection
+        cursor = driver_connection.cursor(buffered=False)
+        try:
+            cursor.execute(query.text)
+            while rows := cursor.fetchmany(fetch_size):
+                yield rows
+        finally:
+            cursor.close()
+        return
+
+    result = connection.execution_options(
+        stream_results=True,
+        max_row_buffer=fetch_size,
+    ).execute(query).mappings()
+    try:
+        while rows := result.fetchmany(fetch_size):
+            yield [tuple(row[column] for column in output_columns) for row in rows]
+    finally:
+        result.close()
+
+
 def validate_shadow_disk_backed(
     engine,
     import_key,
@@ -831,6 +858,7 @@ def validate_shadow_disk_backed(
     data_query = text(
         f"SELECT {quoted_columns}, `{HASH_COLUMN}` FROM `{shadow_table}`"
     )
+    output_columns = tuple(columns) + (HASH_COLUMN,)
 
     fingerprint_store.clear(TARGET_DATASET)
     row_hash_mismatches = 0
@@ -842,16 +870,17 @@ def validate_shadow_disk_backed(
         duplicate_groups = int(
             connection.execute(duplicate_query).scalar_one() or 0
         )
-        result = connection.execution_options(
-            stream_results=True,
-            max_row_buffer=chunk_size,
-        ).execute(data_query).mappings()
-        while rows := result.fetchmany(chunk_size):
+        for rows in _shadow_value_batches(
+            connection,
+            data_query,
+            output_columns,
+            chunk_size,
+        ):
             target_fingerprints = []
             for row in rows:
-                record = {column: row[column] for column in columns}
+                record = dict(zip(columns, row[: len(columns)]))
                 actual_hash = canonical_row_hash(columns, record)
-                stored_hash = str(row[HASH_COLUMN]).strip().upper()
+                stored_hash = str(row[-1]).strip().upper()
                 key = tuple(record[column] for column in BUSINESS_KEY)
                 if actual_hash != stored_hash:
                     row_hash_mismatches += 1

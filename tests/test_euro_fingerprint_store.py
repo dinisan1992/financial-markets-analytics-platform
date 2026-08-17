@@ -13,6 +13,8 @@ from services.euro_fingerprint_store import (
 )
 from services.euro_rebuild_service import (
     HASH_COLUMN,
+    MAX_SHADOW_FETCH_ROWS,
+    _shadow_value_batches,
     canonical_row_hash,
     normalize_row,
     source_fingerprints_to_store,
@@ -21,6 +23,58 @@ from services.euro_rebuild_service import (
 
 
 class EuroFingerprintStoreTests(unittest.TestCase):
+    def test_shadow_batches_use_unbuffered_bounded_mysql_cursor(self):
+        class Cursor:
+            def __init__(self):
+                self.fetch_sizes = []
+                self.executed = []
+                self.closed = False
+                self.batches = [[("A", "2024-01", "hash")], []]
+
+            def execute(self, statement):
+                self.executed.append(statement)
+
+            def fetchmany(self, size):
+                self.fetch_sizes.append(size)
+                return self.batches.pop(0)
+
+            def close(self):
+                self.closed = True
+
+        cursor = Cursor()
+        driver_connection = Mock()
+        driver_connection.cursor.return_value = cursor
+        dialect = type(
+            "Dialect",
+            (),
+            {"name": "mysql", "driver": "mysqlconnector"},
+        )()
+        engine = type("Engine", (), {"dialect": dialect})()
+        fairy = type(
+            "ConnectionFairy",
+            (),
+            {"driver_connection": driver_connection},
+        )()
+        connection = type(
+            "Connection",
+            (),
+            {"engine": engine, "connection": fairy},
+        )()
+
+        batches = list(
+            _shadow_value_batches(
+                connection,
+                Mock(text="SELECT key_code, time_period, row_hash FROM euro_shadow"),
+                ("key_code", "time_period", "row_hash"),
+                MAX_SHADOW_FETCH_ROWS * 10,
+            )
+        )
+
+        driver_connection.cursor.assert_called_once_with(buffered=False)
+        self.assertEqual(1, len(batches))
+        self.assertEqual(MAX_SHADOW_FETCH_ROWS, cursor.fetch_sizes[0])
+        self.assertTrue(cursor.closed)
+
     def test_actions_for_keys_separates_insert_update_and_unchanged(self):
         with TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
@@ -207,8 +261,9 @@ class EuroFingerprintStoreTests(unittest.TestCase):
                     summary_result,
                     duplicate_result,
                 ]
-                rows = connection.execution_options.return_value.execute.return_value
-                rows.mappings.return_value.fetchmany.side_effect = [
+                result = connection.execution_options.return_value.execute.return_value
+                rows = result.mappings.return_value
+                rows.fetchmany.side_effect = [
                     [{**record, HASH_COLUMN: row_hash}],
                     [],
                 ]
@@ -236,6 +291,11 @@ class EuroFingerprintStoreTests(unittest.TestCase):
                 self.assertTrue(validation.memory_bounded_validation)
                 self.assertFalse(validation.database_write_performed)
                 self.assertGreater(validation.comparison_store_bytes, 0)
+                connection.execution_options.assert_called_once_with(
+                    stream_results=True,
+                    max_row_buffer=1,
+                )
+                rows.close.assert_called_once_with()
 
 
 if __name__ == "__main__":
