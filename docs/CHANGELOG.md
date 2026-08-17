@@ -4,6 +4,28 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [Unreleased] - Isolated BSI Shadow Preparation
+
+### Added
+
+- Restricted the current ECB shadow builder and guarded hash-repair entry point
+  to `EURO_BALANCE_SHEET_ITEMS`; BLS and PCP are rejected targets.
+- Generated a fresh BSI-only SELECT readiness report with new versioned future
+  names, current live schema/count checks and post-PCP storage capacity.
+- Recalculated the 4.46 GB official CSV and 5.13 GB scoped-backup SHA-256
+  values before accepting the readiness evidence.
+
+### Validation
+
+- Passed 267/267 deterministic unit tests, including current BSI-only builder
+  guards and historical PCP/BLS regression coverage.
+- Confirmed 7,812,208 unchanged active rows, safe period/value types and no
+  shadow, retained or failed-name collision.
+- Capacity passes with 19,437,838,336 MySQL bytes free against 15,239,010,464
+  required, including the 5 GiB reserve.
+- Performed zero SQL writes and zero active-CSV writes. Shadow construction and
+  any future promotion remain separately authorized operations.
+
 ## [v0.8.3] - 2026-08-17 - Atomic Official PCP Promotion
 
 ### Added

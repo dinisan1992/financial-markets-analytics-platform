@@ -12,7 +12,7 @@ class RepairEcbShadowHashCliTests(unittest.TestCase):
             with self.assertRaises(SystemExit):
                 parser.parse_args(
                     [
-                        "EURO_CARD_PAYMENTS",
+                        "EURO_BALANCE_SHEET_ITEMS",
                         "--readiness-report",
                         "readiness.json",
                         "--readiness-sha256",
@@ -26,7 +26,7 @@ class RepairEcbShadowHashCliTests(unittest.TestCase):
                         "--time-period",
                         "2020-Q2",
                         "--confirm",
-                        "REPAIR_EURO_CARD_PAYMENTS_V079_SHADOW_HASHES",
+                        "REPAIR_EURO_BALANCE_SHEET_ITEMS_V079_SHADOW_HASHES",
                         "--swap",
                     ]
                 )

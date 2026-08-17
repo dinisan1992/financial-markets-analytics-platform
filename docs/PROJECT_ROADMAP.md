@@ -547,9 +547,9 @@ Prepare the project for professional presentation.
 
 The current priority is:
 
-1. Repeat the separately controlled build process for BSI using its completed readiness evidence
+1. Obtain separate authorization for the prepared BSI-only shadow build
 2. Keep the retained BLS and PCP checkpoints until their retention review is authorized
-3. Validate the official BSI snapshot against its future active table before promotion
+3. Validate the complete official BSI source against the isolated shadow twice before any promotion decision
 4. Preserve the withdrawn BSI keys in a retained rollback checkpoint
 5. Validate stale sources and updater behaviour asset by asset
 6. Confirm the historical WTI contract/source without automatic correction

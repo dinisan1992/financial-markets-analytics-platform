@@ -31,7 +31,7 @@ class BuildEcbShadowCliTests(unittest.TestCase):
             with self.assertRaises(SystemExit):
                 parser.parse_args(
                     [
-                        "EURO_CARD_PAYMENTS",
+                        "EURO_BALANCE_SHEET_ITEMS",
                         "--readiness-report",
                         "readiness.json",
                         "--readiness-sha256",
@@ -47,7 +47,7 @@ class BuildEcbShadowCliTests(unittest.TestCase):
                         "--pin-file",
                         "pin.json",
                         "--confirm",
-                        "BUILD_EURO_CARD_PAYMENTS_V079_SHADOW",
+                        "BUILD_EURO_BALANCE_SHEET_ITEMS_V079_SHADOW",
                         "--swap",
                     ]
                 )

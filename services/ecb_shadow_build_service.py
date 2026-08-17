@@ -31,7 +31,7 @@ from services.macro_import_service import normalize_column_name
 from services.market_data_sync_service import validate_identifier
 
 
-BUILDABLE_IMPORT_KEYS = ("EURO_CARD_PAYMENTS",)
+BUILDABLE_IMPORT_KEYS = ("EURO_BALANCE_SHEET_ITEMS",)
 
 
 def validate_build_import_key(import_key):

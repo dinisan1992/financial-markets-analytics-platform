@@ -55,7 +55,7 @@ Market data maintenance entry points:
 - `project_scripts/diagnostics/plan_euro_direct_debits_rebuild.py` - read-only Direct Debits shadow DDL, swap and rollback plan with no write mode.
 - `project_scripts/diagnostics/audit_euro_streaming_completeness.py` - memory-bounded, SELECT-only source-to-target comparison with an optional explicit staged-source directory.
 - `project_scripts/diagnostics/plan_ecb_shadow_refresh.py` - BLS/PCP/BSI readiness gate that verifies pinned evidence and emits SQL previews only.
-- `project_scripts/diagnostics/build_ecb_shadow.py` - exact-confirmation ECB shadow builder currently restricted to PCP and exposing no swap mode.
+- `project_scripts/diagnostics/build_ecb_shadow.py` - exact-confirmation ECB shadow builder currently restricted to BSI and exposing no swap mode.
 - `project_scripts/diagnostics/repair_ecb_shadow_hash.py` - guarded representation-equivalent technical-hash repair followed by two complete validations.
 - `project_scripts/diagnostics/swap_ecb_bls.py` - swap-only BLS promotion bound to pinned readiness/build reports and exact confirmation.
 - `project_scripts/diagnostics/preflight_ecb_pcp_swap.py` - complete SELECT-only PCP promotion preflight with no swap option.

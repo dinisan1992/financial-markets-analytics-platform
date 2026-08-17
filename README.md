@@ -458,6 +458,11 @@ The v0.8.3 release validation includes:
   active with zero differences; the former 815,173-row table remains intact as
   the immediate rollback checkpoint. No CSV changed and no shadow or failed
   artifact remains. See `docs/ECB_PCP_SWAP.md`.
+- A fresh BSI-only readiness checkpoint reverified the 8,055,309-row official
+  source, 7,812,208-row active table, 5.13 GB scoped backup, unused future
+  names and current storage capacity with zero database writes. The builder is
+  now restricted to BSI and still exposes no swap mode. See
+  `docs/ECB_BSI_READINESS.md`.
 - Data Quality exposes the latest saved status, source freshness, planned actions and blockers for every EURO contract without rescanning CSVs or querying MySQL.
 
 The retained v0.5.6 database validation includes:
@@ -523,8 +528,8 @@ Planned improvements include:
 - Calibrate risk thresholds by asset class and data provenance.
 - Replace important year-only world events with verified exact dates.
 - Add dry-run and explicit entry points to the remaining SQL-capable ETL scripts.
-- Repeat the isolated build process for BSI now that the PCP promotion is
-  complete. Its backup and read-only readiness checks are already complete.
+- Obtain explicit authorization before running the prepared BSI-only shadow
+  build. Its refreshed backup, readiness and capacity checks are complete.
 - Retain the former BLS and PCP tables until a separate retention review.
 - Treat the 3,822,937-row Government Finance source expansion as a separate controlled migration.
 - Refresh the remaining stale market sources through verified provider

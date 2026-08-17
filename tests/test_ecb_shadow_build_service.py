@@ -13,8 +13,8 @@ from services.ecb_shadow_build_service import (
 from services.ecb_shadow_readiness_service import build_confirmation
 
 
-IMPORT_KEY = "EURO_CARD_PAYMENTS"
-SUFFIX = "20260817_115720"
+IMPORT_KEY = "EURO_BALANCE_SHEET_ITEMS"
+SUFFIX = "20260817_141854"
 
 
 def readiness_payload():
@@ -35,15 +35,12 @@ def readiness_payload():
                 "blockers": [],
                 "ready_for_shadow_build_authorization": True,
                 "candidate": {
-                    "file_name": (
-                        "Card payments and cash withdrawals using cards "
-                        "(including fraud data).csv"
-                    ),
+                    "file_name": "Balance Sheet Items.csv",
                     "bytes": 100,
                     "sha256": "A",
                 },
                 "backup": {
-                    "file_name": "pcp.sql",
+                    "file_name": "bsi.sql",
                     "bytes": 200,
                     "sha256": "B",
                 },
@@ -54,11 +51,11 @@ def readiness_payload():
                 },
                 "planned_names": {
                     "shadow_table": (
-                        "euro_card_payments__shadow_v079_"
+                        "euro_balance_sheet_items__shadow_v079_"
                         f"{SUFFIX}"
                     ),
                     "retained_table": (
-                        "euro_card_payments__pre_v079_"
+                        "euro_balance_sheet_items__pre_v079_"
                         f"{SUFFIX}"
                     ),
                     "shadow_exists": False,
@@ -70,10 +67,15 @@ def readiness_payload():
 
 
 class EcbShadowBuildServiceTests(unittest.TestCase):
-    def test_only_pcp_is_buildable_in_this_checkpoint(self):
+    def test_only_bsi_is_buildable_in_this_checkpoint(self):
         self.assertEqual(IMPORT_KEY, validate_build_import_key(IMPORT_KEY))
-        with self.assertRaisesRegex(ValueError, "not authorized"):
-            validate_build_import_key("EURO_BANK_LENDING_SURVEY")
+        for rejected in (
+            "EURO_BANK_LENDING_SURVEY",
+            "EURO_CARD_PAYMENTS",
+        ):
+            with self.subTest(rejected=rejected):
+                with self.assertRaisesRegex(ValueError, "not authorized"):
+                    validate_build_import_key(rejected)
 
     @patch("services.ecb_shadow_build_service.table_schema_signature")
     @patch("services.ecb_shadow_build_service.table_fingerprint")
@@ -118,7 +120,7 @@ class EcbShadowBuildServiceTests(unittest.TestCase):
         import pandas as pd
 
         contract_mock.return_value = {
-            "table_name": "euro_card_payments",
+            "table_name": "euro_balance_sheet_items",
             "column_aliases": {},
         }
         chunks_mock.return_value = [
@@ -149,7 +151,7 @@ class EcbShadowBuildServiceTests(unittest.TestCase):
             result = compare_source_shadow_row(
                 engine,
                 IMPORT_KEY,
-                "euro_card_payments__shadow_v079_test",
+                "euro_balance_sheet_items__shadow_v079_test",
                 "source.csv",
                 "KEY",
                 "2020-Q2",
@@ -222,12 +224,12 @@ class EcbShadowBuildServiceTests(unittest.TestCase):
             repair_shadow_storage_hash(
                 MagicMock(),
                 IMPORT_KEY,
-                "euro_card_payments__shadow_v079_test",
+                "euro_balance_sheet_items__shadow_v079_test",
                 "source.csv",
                 "KEY",
                 "2020-Q2",
                 confirmation=(
-                    "REPAIR_EURO_CARD_PAYMENTS_V079_SHADOW_HASHES"
+                    "REPAIR_EURO_BALANCE_SHEET_ITEMS_V079_SHADOW_HASHES"
                 ),
             )
 
@@ -235,7 +237,7 @@ class EcbShadowBuildServiceTests(unittest.TestCase):
     def test_hash_repair_updates_exactly_one_guarded_shadow_row(self, diagnose):
         diagnose.return_value = {
             "import_key": IMPORT_KEY,
-            "shadow_table": "euro_card_payments__shadow_v079_test",
+            "shadow_table": "euro_balance_sheet_items__shadow_v079_test",
             "key_code": "KEY",
             "time_period": "2020-Q2",
             "stored_hash": "A" * 64,
@@ -251,17 +253,17 @@ class EcbShadowBuildServiceTests(unittest.TestCase):
         result = repair_shadow_storage_hash(
             engine,
             IMPORT_KEY,
-            "euro_card_payments__shadow_v079_test",
+            "euro_balance_sheet_items__shadow_v079_test",
             "source.csv",
             "KEY",
             "2020-Q2",
             confirmation=(
-                "REPAIR_EURO_CARD_PAYMENTS_V079_SHADOW_HASHES"
+                "REPAIR_EURO_BALANCE_SHEET_ITEMS_V079_SHADOW_HASHES"
             ),
         )
 
         statement = str(connection.execute.call_args.args[0])
-        self.assertIn("euro_card_payments__shadow_v079_test", statement)
+        self.assertIn("euro_balance_sheet_items__shadow_v079_test", statement)
         self.assertEqual(1, result["rows_updated"])
         self.assertTrue(result["database_write_performed"])
         self.assertFalse(result["active_table_changed"])
@@ -323,8 +325,7 @@ class EcbShadowBuildServiceTests(unittest.TestCase):
         self.assertEqual(
             Path("staging").resolve()
             / (
-                "Card payments and cash withdrawals using cards "
-                "(including fraud data).csv"
+                "Balance Sheet Items.csv"
             ),
             overrides[IMPORT_KEY],
         )

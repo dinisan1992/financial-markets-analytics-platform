@@ -273,6 +273,12 @@ Version 0.8.3 validation includes:
   `euro_card_payments__pre_v079_20260817_115720` with its exact pre-swap data
   and schema fingerprints. No shadow or failed-table artifact remains, no CSV
   changed and rollback was not required.
+- A fresh BSI-only readiness pass reverified the 8,055,309-row source,
+  7,812,208-row active table, candidate and backup hashes, safe live schema,
+  unused versioned names and current storage capacity without database writes.
+- The current builder accepts only `EURO_BALANCE_SHEET_ITEMS`. Its planned
+  shadow build remains unavailable until a separate explicit authorization and
+  cannot perform a swap.
 
 Previous v0.7.5 validation included:
 
@@ -518,8 +524,8 @@ The isolated MySQL acceptance gate, Direct Debits migration, official ECB
 snapshot staging and the separately controlled BLS and PCP promotions are
 complete. The current priority remains controlled source maintenance:
 
-1. repeat the isolated build/review process for BSI using its completed backup
-   and readiness evidence;
+1. obtain explicit authorization for the prepared BSI-only shadow build using
+   its refreshed backup, readiness and capacity evidence;
 2. retain the former BLS and PCP tables until a separate retention review;
 3. apply the documented official-snapshot-authoritative retention policy for
    the 344,327 BSI keys withdrawn from the current snapshot;
