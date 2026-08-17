@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`streamlit_demo.py` runs the existing Financial Markets Analytics Platform
+`demo/streamlit_demo.py` runs the existing Financial Markets Analytics Platform
 without MySQL, private CSV files, credentials or local backup/report folders.
 
 The demo deliberately reuses the existing application pages, analytical engine,
@@ -18,16 +18,21 @@ shown in the demo are illustrative and must not be described as historical
 market results.
 
 The application displays this warning visibly at the top of the interface.
+Each series is generated from a fixed master calendar and then sliced to the
+requested interval, so selecting a different start date cannot rewrite values
+inside an overlapping period. Stress indices, yields and spreads use bounded
+mean-reverting processes; macro series use explicit frequency, scale and unit
+profiles.
 
 ## Files added
 
 ```text
-streamlit_demo.py
-demo/data.py
-demo/runtime.py
-tests/test_demo_mode.py
-project_scripts/diagnostics/demo_mode_smoke.py
-docs/DEMO_MODE.md
+demo/streamlit_demo.py
+demo/demo/data.py
+demo/demo/runtime.py
+demo/tests/test_demo_mode.py
+demo/project_scripts/diagnostics/demo_mode_smoke.py
+demo/docs/DEMO_MODE.md
 ```
 
 The package is intentionally additive: it does not replace `streamlit_app.py`,
@@ -36,10 +41,10 @@ the MySQL loaders, the production services, schemas, CSVs or existing tests.
 ## How it works
 
 ```text
-streamlit_demo.py
+demo/streamlit_demo.py
         |
         v
-demo/runtime.py
+demo/demo/runtime.py
         |
         +-- patches macro_data_loader.get_engine -> None
         +-- patches data_access_service loaders -> synthetic frames
@@ -63,8 +68,8 @@ module import time.
 From the project root:
 
 ```powershell
-python -m pip install -r requirements.txt
-python -m streamlit run streamlit_demo.py
+.\demo\setup_demo.ps1
+.\demo\run_demo.ps1
 ```
 
 No MySQL/XAMPP process is required.
@@ -77,16 +82,17 @@ python -m streamlit run streamlit_app.py
 
 ## Validate before publishing
 
-Run the isolated generator tests:
+Run the complete demo validation:
 
 ```powershell
-python -m unittest tests.test_demo_mode
+.\demo\validate_demo.ps1
 ```
 
-Run the project-aware smoke test:
+The individual cross-platform commands are:
 
 ```powershell
-python project_scripts/diagnostics/demo_mode_smoke.py
+python demo/tests/test_demo_mode.py
+python demo/project_scripts/diagnostics/demo_mode_smoke.py
 ```
 
 Then run the complete existing suite:
@@ -101,7 +107,7 @@ python -m coverage report
 Finally test all nine pages manually with:
 
 ```powershell
-python -m streamlit run streamlit_demo.py
+.\demo\run_demo.ps1
 ```
 
 ## Expected page behaviour
@@ -128,7 +134,7 @@ python -m streamlit run streamlit_demo.py
 For a public deployment, use:
 
 ```text
-Main file: streamlit_demo.py
+Main file: demo/streamlit_demo.py
 ```
 
 No database secret is required for the demo entry point.

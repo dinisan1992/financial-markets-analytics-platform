@@ -1,9 +1,19 @@
+from pathlib import Path
+import sys
 import unittest
 
 import numpy as np
 import pandas as pd
 
-from demo.data import (
+
+DEMO_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = DEMO_ROOT.parent
+for path in (str(DEMO_ROOT), str(PROJECT_ROOT)):
+    if path not in sys.path:
+        sys.path.insert(0, path)
+
+from demo.data import (  # noqa: E402
+    build_demo_macro_series,
     build_demo_multi_asset_price_frame,
     load_demo_asset_data,
     load_demo_events,
@@ -12,7 +22,7 @@ from demo.data import (
 
 
 try:
-    from asset_config import ASSETS as PROJECT_ASSETS
+    from asset_config import ASSETS as PROJECT_ASSETS  # noqa: E402
 except ImportError:
     PROJECT_ASSETS = None
 
@@ -27,6 +37,14 @@ ASSETS = {
     "SP500": {
         "table_name": "sp500_analysis",
         "calendar_type": "trading_days",
+        "market_type": "equity_index",
+        "positive_values_expected": True,
+        "volume_expected": True,
+    },
+    "NASDAQ100": {
+        "table_name": "nasdaq100_analysis",
+        "calendar_type": "trading_days",
+        "market_type": "equity_index",
         "positive_values_expected": True,
         "volume_expected": True,
     },
@@ -85,6 +103,44 @@ class DemoDataTests(unittest.TestCase):
         )
         self.assertTrue((frame["macro_age_days"] >= 0).all())
 
+    def test_asset_history_is_invariant_to_selected_start_date(self):
+        wide = load_demo_asset_data(ASSETS, "SP500", "2020-01-01", "2024-12-31")
+        narrow = load_demo_asset_data(ASSETS, "SP500", "2021-01-01", "2024-12-31")
+        overlap = wide.merge(narrow, on="snapped_at", suffixes=("_wide", "_narrow"))
+        self.assertFalse(overlap.empty)
+        np.testing.assert_allclose(overlap["price_wide"], overlap["price_narrow"])
+
+    def test_macro_history_is_invariant_to_selected_start_date(self):
+        wide = build_demo_macro_series(
+            "EURO_HICP_PROCESSED_FOOD", "2000-01-01", "2024-12-31"
+        )
+        narrow = build_demo_macro_series(
+            "EURO_HICP_PROCESSED_FOOD", "2020-01-01", "2024-12-31"
+        )
+        overlap = wide.merge(narrow, on="snapped_at", suffixes=("_wide", "_narrow"))
+        np.testing.assert_allclose(
+            overlap["EURO_HICP_PROCESSED_FOOD_wide"],
+            overlap["EURO_HICP_PROCESSED_FOOD_narrow"],
+        )
+
+    def test_demo_stress_and_macro_levels_are_plausible(self):
+        vix = load_demo_asset_data(ASSETS, "VIX", "2020-01-01", "2024-12-31")
+        hicp = build_demo_macro_series(
+            "EURO_HICP_PROCESSED_FOOD", "2020-01-01", "2024-12-31"
+        )
+        self.assertTrue(vix["price"].between(8.0, 90.0).all())
+        self.assertGreater(float(hicp["EURO_HICP_PROCESSED_FOOD"].median()), 80.0)
+
+    def test_demo_equities_share_a_market_factor(self):
+        prices = build_demo_multi_asset_price_frame(
+            ASSETS,
+            ["SP500", "NASDAQ100"],
+            start_date="2020-01-01",
+            end_date="2024-12-31",
+        )
+        returns = prices[["SP500", "NASDAQ100"]].pct_change(fill_method=None)
+        self.assertGreater(float(returns.corr().iloc[0, 1]), 0.30)
+
 
 @unittest.skipIf(PROJECT_ASSETS is None, "Project asset_config is not available")
 class ProjectDemoContractTests(unittest.TestCase):
@@ -103,14 +159,15 @@ class ProjectDemoContractTests(unittest.TestCase):
                 self.assertTrue(frame["close"].notna().all())
 
     def test_runtime_patch_disables_database_engine(self):
+        import importlib
         import os
 
-        import macro_data_loader
         from demo.runtime import activate_demo_mode, deactivate_demo_mode
 
         previous_mode = os.environ.get("DATA_MODE")
         try:
             activate_demo_mode()
+            macro_data_loader = importlib.import_module("macro_data_loader")
             self.assertIsNone(macro_data_loader.get_engine())
         finally:
             deactivate_demo_mode()

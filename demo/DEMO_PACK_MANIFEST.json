@@ -1,59 +1,72 @@
 {
-  "package_name": "Financial Markets Analytics Platform - Public Demo Add-on",
-  "based_on_project_version": "v0.7.4",
+  "package_name": "Financial Markets Analytics Platform - Public Demo",
+  "based_on_project_version": "v0.7.6",
   "source_repository": "dinisan1992/financial-markets-analytics-platform",
-  "generated_at_utc": "2026-08-12T12:16:59.313606+00:00",
-  "integration_model": "additive; existing production files are not replaced",
-  "demo_data": "deterministic synthetic in-memory OHLCV and macro series",
+  "generated_at_utc": "2026-08-17T10:50:00+00:00",
+  "integration_model": "additive; production SQL paths are not replaced",
+  "demo_data": "fixed-calendar deterministic synthetic OHLCV, event and macro series",
   "database_required": false,
   "private_csv_required": false,
   "files": {
     "DEMO_INTEGRATION_CHECKLIST.md": {
-      "bytes": 1416,
-      "sha256": "2937feadec20264739598b915ad11120604183bd61a199fb7b69ef4b5b4ab825"
+      "bytes": 1810,
+      "sha256": "21a32617a2451a70da6636190c3a8b3aa177a30f7cb6ffbd0362d9d61e5fcf7b"
+    },
+    "README_ISOLATED_ENV.md": {
+      "bytes": 1103,
+      "sha256": "a267ad28e97e1d98c6dd678d0cf70e982f1bc121a3550de9584a2eb27140a564"
+    },
+    "run_demo.ps1": {
+      "bytes": 925,
+      "sha256": "122a28e0d2ee87524eb62305be5d616d50d2f90d820da400663c68cd8784f199"
+    },
+    "setup_demo.ps1": {
+      "bytes": 1795,
+      "sha256": "bb446eb170b3c3128978542ea2b4265c13166831719db020ccf60a3ae488b4ec"
+    },
+    "streamlit_demo.py": {
+      "bytes": 1242,
+      "sha256": "e33c8e9d68b6095e7ff5c747d380ac54d8fbb3949f3ca599014946b730d352d8"
+    },
+    "validate_demo.ps1": {
+      "bytes": 2284,
+      "sha256": "fdecaaa6e726f303cd5cfaeda234c6a70c9b1c80ab7b9866c8288018f174abb3"
     },
     "demo/__init__.py": {
       "bytes": 37,
       "sha256": "4b604e42bdf34e0e5e4e21e40132d3d166ddedaeec275873f211d3ed35ffedaa"
     },
     "demo/data.py": {
-      "bytes": 20295,
-      "sha256": "866a7e5c79b982f9963b7f980cabd82eabc027fd8f22c49f2ed12a6d0e6baa0c"
+      "bytes": 29248,
+      "sha256": "d3a3cb52500b0a5edc70cea91ce9a55f11c4969139d1c8f765f47567783e3f4a"
     },
     "demo/runtime.py": {
-      "bytes": 8116,
-      "sha256": "a271da8ab28d7be0c40b34a79733988e2811d50ab99f74600a680a7a5d04bf54"
+      "bytes": 11939,
+      "sha256": "8e45a5fe687e203ff560b0055d649db2bac55f9b175d40bf9600df7519f33abd"
     },
     "docs/DEMO_MODE.md": {
-      "bytes": 4694,
-      "sha256": "5226086e2efede85603af7f73a8c401be67dd3b14fa858e186ce212320c23599"
+      "bytes": 5036,
+      "sha256": "1b9967324f2de18b61ff06e11ba8b5aa9c72986cdd566c84463afa1f929ffbed"
     },
     "project_scripts/diagnostics/demo_mode_smoke.py": {
-      "bytes": 2268,
-      "sha256": "d9df3fc1f9bf7a55031319fb25c5878fc37534248919a429b100ac12c479a1c8"
+      "bytes": 3633,
+      "sha256": "46de07958dec836fed24cc25eb210fc42ca61047480777ac46ba2da35f2dce0c"
     },
-    "run_demo.ps1": {
-      "bytes": 280,
-      "sha256": "0f7a193c5d647c89325e71cd31ade8710c6ec0570a95eca524545ed3d87cc6fe"
-    },
-    "streamlit_demo.py": {
-      "bytes": 448,
-      "sha256": "f904558076913ae055629aa1f4358f30c52f4fadcfaf39e4fbcada28507526e0"
+    "project_scripts/diagnostics/validate_demo_pages.py": {
+      "bytes": 1100,
+      "sha256": "564e4b8fa43a9d527b45ed52b036d78b69b55b2dd00ee4989b4bbb86a3d34d73"
     },
     "tests/test_demo_mode.py": {
-      "bytes": 4994,
-      "sha256": "46d65b2b413070c3f748778d895f8916a66fa93c7b96574ca397aa039727be22"
-    },
-    "validate_demo.ps1": {
-      "bytes": 669,
-      "sha256": "454833909d095407aadc7fe1619beab9af2b3b07eb3550fd23f889a3ccd388bc"
+      "bytes": 7402,
+      "sha256": "5fdb3c5b57e2bbeb38c19865e60a399343cb365ed0a1ec212f28ee390e17f3f5"
     }
   },
-  "validation_performed_here": {
-    "python_compile": "passed",
-    "isolated_demo_tests": "5 executable tests passed; 3 project-contract tests included for execution inside the full repository",
-    "synthetic_38_asset_profile_check": "passed",
-    "full_project_streamlit_9_page_test": "requires execution inside the user's complete repository",
-    "full_existing_test_suite": "requires execution inside the user's complete repository"
+  "validation": {
+    "demo_unit_tests": "12 passed",
+    "demo_smoke": "38 assets, 10 events and aligned macro data passed",
+    "demo_streamlit_pages": "9 of 9 pages rendered without exceptions",
+    "production_unit_tests": "222 passed",
+    "database_writes": 0,
+    "active_csv_writes": 0
   }
 }

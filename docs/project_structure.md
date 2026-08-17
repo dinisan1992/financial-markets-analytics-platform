@@ -65,6 +65,20 @@ Market data maintenance entry points:
 - `services/euro_direct_debits_shadow_service.py` - pinned Direct Debits source/backup gates, shadow-only build and complete before/after validation.
 - `services/euro_direct_debits_swap_service.py` - Direct Debits promotion checks, retained checkpoint and post-swap evidence.
 
+## Public Demo
+
+`demo/` contains the database-free portfolio deployment:
+
+- `demo/streamlit_demo.py` - Streamlit Community Cloud entry point.
+- `demo/demo/data.py` - fixed-calendar synthetic OHLCV, event and macro data.
+- `demo/demo/runtime.py` - cached read-only substitutions for SQL data boundaries.
+- `demo/tests/test_demo_mode.py` - determinism, plausibility and isolation contracts.
+- `demo/project_scripts/diagnostics/demo_mode_smoke.py` - 38-asset smoke test.
+- `demo/project_scripts/diagnostics/validate_demo_pages.py` - nine-page AppTest validation.
+
+The demo reuses the production pages and analytical services. It does not read
+private CSV files, connect to MySQL or execute synchronization commands.
+
 ## Tools
 
 `tools/` contains import/maintenance utilities:

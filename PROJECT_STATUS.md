@@ -1,10 +1,10 @@
 # Project Status
 
-Last updated: 11 August 2026
+Last updated: 17 August 2026
 
 ## Current Version
 
-**Macro-Financial Risk & Market Behaviour Analytics Platform v0.7.5**
+**Macro-Financial Risk & Market Behaviour Analytics Platform v0.7.6**
 
 ## Executive Summary
 
@@ -22,7 +22,7 @@ It combines:
 - interactive dashboarding;
 - data quality validation.
 
-The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.7.0 completed the controlled Direct Debits rebuild. Version 0.7.1 separated direct runtime dependencies from development tooling and expanded CI. Version 0.7.2 removed Windows-only CI assumptions. Version 0.7.3 added storage-aware EURO fingerprints and field diagnostics. Version 0.7.4 added official ECB staging for fresh BLS, PCP and BSI snapshots. Version 0.7.5 completes their scoped external-volume backups, retention policy and read-only shadow planning without creating any table or changing active CSVs or MySQL.
+The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.7.0 completed the controlled Direct Debits rebuild. Version 0.7.1 separated direct runtime dependencies from development tooling and expanded CI. Version 0.7.2 removed Windows-only CI assumptions. Version 0.7.3 added storage-aware EURO fingerprints and field diagnostics. Version 0.7.4 added official ECB staging for fresh BLS, PCP and BSI snapshots. Version 0.7.5 completed their scoped external-volume backups, retention policy and read-only shadow planning without creating any table or changing active CSVs or MySQL. Version 0.7.6 hardens the public database-free demo with stable date-window semantics, plausible bounded stress and macro profiles, cache-backed data access, dedicated CI contracts and a discoverable live deployment.
 
 ## Completed and Functional Modules
 
@@ -220,7 +220,20 @@ Main file:
 
 ## Latest Documented Validation
 
-Version 0.7.5 validation included:
+Version 0.7.6 validation includes:
+
+- 222/222 deterministic production unit tests passed.
+- 12/12 public-demo contracts passed, covering interval invariance, plausible
+  stress and macro scales, cross-asset structure and SQL isolation.
+- The demo smoke test generated 38/38 configured assets, 10 events and aligned
+  macro data without database access.
+- 9/9 demo Streamlit pages rendered through `AppTest` without exceptions.
+- Ruff and dependency checks passed across the complete active tree.
+- CI now executes demo page rendering on Linux and demo tests/smoke checks on
+  Windows and Linux under Python 3.11 and 3.12.
+- No database writes, SQL schema changes or active-CSV promotions were made.
+
+Previous v0.7.5 validation included:
 
 - 222/222 deterministic unit tests passed.
 - The complete active Python tree compiled successfully and `pip check` reported no broken requirements.

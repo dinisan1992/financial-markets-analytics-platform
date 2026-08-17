@@ -4,6 +4,15 @@ A Python, MySQL, pandas, Plotly and Streamlit platform for analysing financial m
 
 The project was developed as a local analytics platform and professional portfolio project. Raw datasets, SQL dumps and private credentials are intentionally excluded from Git.
 
+## Live Demo
+
+**[Open the public Streamlit demo](https://financial-markets-analytics-demo.streamlit.app/)**
+
+The public demo runs without MySQL, credentials or private CSV files. It reuses
+the production pages and analytical services against deterministic synthetic
+OHLCV and macro-financial series. Values and event reactions shown in demo mode
+are illustrative and are identified as such throughout the application.
+
 ## Current Status
 
 Functional local platform with:
@@ -20,7 +29,7 @@ Functional local platform with:
 - Data quality and validation tools.
 - Cross-platform lint, import-safety, dependency, coverage and unit-test checks through GitHub Actions.
 
-Current project version: **v0.7.5**
+Current project version: **v0.7.6**
 
 ## Main Analytical Capabilities
 
@@ -204,6 +213,12 @@ The application is separated into configuration, data access, analytical service
 |   |-- legacy/
 |   `-- sql/
 |-- tests/
+|-- demo/
+|   |-- streamlit_demo.py
+|   |-- demo/
+|   |   |-- data.py
+|   |   `-- runtime.py
+|   `-- tests/
 |-- docs/
 |-- data/              # ignored by Git
 |-- new_market_data/   # ignored by Git
@@ -336,13 +351,18 @@ no SQL write mode. See `docs/ECB_SOURCE_REFRESH.md`.
 
 ## Validation Snapshot
 
-The v0.7.5 validation includes:
+The v0.7.6 validation includes:
 
 - 222/222 deterministic unit tests pass.
+- 12/12 public-demo contracts pass, including fixed-window invariance,
+  plausible stress/macro levels, shared equity structure and SQL isolation.
+- The demo smoke test generates all 38 configured assets, 10 events and aligned
+  macro data; its dedicated AppTest renders 9/9 pages without exceptions.
 - The complete active Python tree compiles successfully and `pip check` reports no broken requirements.
 - Ruff passes across the active Python tree with no lint errors.
 - Branch coverage is measured across `app`, `app_pages`, `dashboard` and `services`, with a 40% regression gate over the current 44% baseline.
-- GitHub Actions runs static/import-safety checks and a four-environment unit-test matrix covering Windows, Linux, Python 3.11 and Python 3.12.
+- GitHub Actions runs static/import-safety/demo-page checks and a four-environment
+  unit and demo-test matrix covering Windows, Linux, Python 3.11 and Python 3.12.
 - 38/38 configured SQL assets recalculate successfully with database writes disabled.
 - 9/9 Streamlit pages render without uncaught exceptions and the running server reports HTTP 200 health.
 - Financial property tests cover indicator bounds, Bollinger ordering, correlation symmetry, Base 100 anchoring and event-date direction.
@@ -417,6 +437,11 @@ The previous database-enabled validation covered all then-configured assets, 11/
 ## Data and Reproducibility
 
 The production-scale local database and raw datasets are not included in the repository.
+
+A database-free public demo is included under `demo/` and deployed on
+[Streamlit Community Cloud](https://financial-markets-analytics-demo.streamlit.app/).
+It uses synthetic data with stable date-window semantics and does not represent
+historical prices or investment results.
 
 The public repository focuses on:
 

@@ -120,6 +120,48 @@ def activate_demo_mode() -> None:
 
     original_setup_page = layout.setup_page
 
+    def cache_date(value):
+        if value is None:
+            return None
+        timestamp = pd.to_datetime(value, errors="coerce")
+        return None if pd.isna(timestamp) else str(pd.Timestamp(timestamp).date())
+
+    @st.cache_data(show_spinner=False, max_entries=256)
+    def cached_asset_data(asset_key, start_date, end_date):
+        return load_demo_asset_data(
+            assets_config=ASSETS,
+            asset_key=asset_key,
+            start_date=start_date,
+            end_date=end_date,
+        )
+
+    @st.cache_data(show_spinner=False, max_entries=64)
+    def cached_macro_pair(macro_key, market_asset, start_date, end_date):
+        return load_demo_macro_pair(
+            assets_config=ASSETS,
+            macro_key=macro_key,
+            market_asset=market_asset,
+            start_date=start_date,
+            end_date=end_date,
+        )
+
+    @st.cache_data(show_spinner=False, max_entries=32)
+    def cached_multi_asset_frame(
+        selected_assets,
+        start_date,
+        end_date,
+        forward_fill,
+        return_load_report,
+    ):
+        return build_demo_multi_asset_price_frame(
+            assets_config=ASSETS,
+            selected_assets=list(selected_assets),
+            start_date=start_date,
+            end_date=end_date,
+            forward_fill=forward_fill,
+            return_load_report=return_load_report,
+        )
+
     def demo_setup_page(*args, **kwargs):
         result = original_setup_page(*args, **kwargs)
         st.info(
@@ -127,6 +169,13 @@ def activate_demo_mode() -> None:
             "No MySQL connection, private CSV, credential or live market feed is used. "
             "Displayed prices, returns, regimes and event reactions are illustrative."
         )
+        with st.sidebar:
+            st.link_button(
+                "View source on GitHub",
+                "https://github.com/dinisan1992/financial-markets-analytics-platform",
+                icon=":material/code:",
+                use_container_width=True,
+            )
         return result
 
     def get_table_columns(engine, table_name):
@@ -157,11 +206,10 @@ def activate_demo_mode() -> None:
         end_date=None,
         get_table_columns_func=None,
     ):
-        return load_demo_asset_data(
-            assets_config=assets_config,
-            asset_key=asset_key,
-            start_date=start_date,
-            end_date=end_date,
+        return cached_asset_data(
+            asset_key,
+            cache_date(start_date),
+            cache_date(end_date),
         )
 
     def load_fed_macro_pair(
@@ -172,12 +220,11 @@ def activate_demo_mode() -> None:
         start_date,
         end_date,
     ):
-        return load_demo_macro_pair(
-            assets_config=ASSETS,
-            macro_key=macro_key,
-            market_asset=market_asset,
-            start_date=start_date,
-            end_date=end_date,
+        return cached_macro_pair(
+            macro_key,
+            market_asset,
+            cache_date(start_date),
+            cache_date(end_date),
         )
 
     def load_euro_macro_pair(
@@ -188,12 +235,11 @@ def activate_demo_mode() -> None:
         start_date,
         end_date,
     ):
-        return load_demo_macro_pair(
-            assets_config=ASSETS,
-            macro_key=euro_series_key,
-            market_asset=market_asset,
-            start_date=start_date,
-            end_date=end_date,
+        return cached_macro_pair(
+            euro_series_key,
+            market_asset,
+            cache_date(start_date),
+            cache_date(end_date),
         )
 
     def build_multi_asset_price_frame(
@@ -205,21 +251,21 @@ def activate_demo_mode() -> None:
         forward_fill=False,
         return_load_report=False,
     ):
-        return build_demo_multi_asset_price_frame(
-            assets_config=assets_config,
-            selected_assets=selected_assets,
-            start_date=start_date,
-            end_date=end_date,
-            forward_fill=forward_fill,
-            return_load_report=return_load_report,
+        return cached_multi_asset_frame(
+            tuple(selected_assets),
+            cache_date(start_date),
+            cache_date(end_date),
+            bool(forward_fill),
+            bool(return_load_report),
         )
 
-    def run_asset_audit(engine, assets_config, as_of=None):
+    @st.cache_data(show_spinner=False, ttl=3600, max_entries=4)
+    def cached_asset_audit(as_of_date):
         rows = []
         frame_map = {}
 
-        for asset_key, asset_cfg in assets_config.items():
-            frame = load_demo_asset_data(assets_config, asset_key)
+        for asset_key, asset_cfg in ASSETS.items():
+            frame = cached_asset_data(asset_key, None, None)
             coverage = frame[["snapped_at", "price"]].copy()
             frame_map[asset_key] = coverage
 
@@ -240,11 +286,14 @@ def activate_demo_mode() -> None:
                     asset_key=asset_key,
                     asset_cfg=demo_cfg,
                     frame=frame,
-                    as_of=as_of,
+                    as_of=as_of_date,
                 )
             )
 
         return pd.DataFrame(rows), frame_map
+
+    def run_asset_audit(engine, assets_config, as_of=None):
+        return cached_asset_audit(cache_date(as_of))
 
     def audit_event_coverage(engine, asset_frames):
         events = load_demo_events()

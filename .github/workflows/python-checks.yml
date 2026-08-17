@@ -49,6 +49,9 @@ jobs:
           python -m unittest
           tests.test_macro_import_service.MacroImportManifestTests.test_all_import_entrypoints_are_import_safe
 
+      - name: Render all public demo pages
+        run: python demo/project_scripts/diagnostics/validate_demo_pages.py
+
   tests:
     name: Tests (${{ matrix.os }}, Python ${{ matrix.python-version }})
     runs-on: ${{ matrix.os }}
@@ -79,6 +82,12 @@ jobs:
 
       - name: Run unit tests with coverage
         run: python -m coverage run -m unittest discover -s tests
+
+      - name: Run public demo contract tests
+        run: python demo/tests/test_demo_mode.py
+
+      - name: Run public demo smoke test
+        run: python demo/project_scripts/diagnostics/demo_mode_smoke.py
 
       - name: Enforce coverage baseline
         run: python -m coverage report

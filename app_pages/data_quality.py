@@ -31,7 +31,7 @@ def render_data_quality(deps: DataQualityDeps):
 
     results = st.session_state.get("data_quality_results")
     if not results:
-        st.info("Run the audit to inspect the current database coverage.")
+        st.info("Run the audit to inspect the configured data coverage.")
         return
 
     asset_audit = results.get("asset_audit", pd.DataFrame())

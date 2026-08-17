@@ -7,8 +7,58 @@ import numpy as np
 import pandas as pd
 
 
-DEMO_START_DATE = "2016-01-01"
+DEMO_START_DATE = "2000-01-01"
 DEMO_END_DATE = str(date.today())
+
+_ASSET_START_DATES = {
+    "BTC": "2010-07-18",
+}
+
+_YIELD_TIGHTENING_SHIFTS = {
+    "US3M": 4.8,
+    "US2Y": 4.0,
+    "US10Y": 2.2,
+    "US30Y": 1.6,
+    "GERMANY10Y": 2.4,
+    "UK10Y": 2.2,
+    "JAPAN10Y": 0.7,
+}
+
+_MACRO_PROFILES = {
+    "FED_FUNDS_RATE": {
+        "frequency": "ME", "kind": "policy_rate", "start": 5.5, "noise": 0.030,
+    },
+    "FED_M2": {
+        "frequency": "ME", "kind": "level", "start": 4_700.0, "growth": 0.060,
+    },
+    "FED_TOTAL_ASSETS": {
+        "frequency": "ME", "kind": "level", "start": 600.0, "growth": 0.082,
+    },
+    "FED_RESERVE_BANK_CREDIT": {
+        "frequency": "ME", "kind": "level", "start": 560.0, "growth": 0.083,
+    },
+    "FED_DEPOSITS": {
+        "frequency": "ME", "kind": "level", "start": 3_500.0, "growth": 0.064,
+    },
+    "FED_BANK_CREDIT": {
+        "frequency": "ME", "kind": "level", "start": 4_900.0, "growth": 0.055,
+    },
+    "FED_LOANS_LEASES": {
+        "frequency": "ME", "kind": "level", "start": 3_400.0, "growth": 0.056,
+    },
+    "FED_SECURITIES_BANK_CREDIT": {
+        "frequency": "ME", "kind": "level", "start": 1_100.0, "growth": 0.052,
+    },
+    "FED_CONSUMER_LOANS_CREDIT_CARDS": {
+        "frequency": "ME", "kind": "level", "start": 680.0, "growth": 0.044,
+    },
+    "FED_CREDIT_CARD_DELINQUENCY": {
+        "frequency": "QE", "kind": "stress_rate", "start": 4.7,
+    },
+    "FED_CHARGE_OFF_RATE_CREDIT_CARDS": {
+        "frequency": "QE", "kind": "stress_rate", "start": 6.0,
+    },
+}
 
 EVENT_COLUMNS = [
     "event_date",
@@ -197,9 +247,9 @@ def _date_factor(dates: pd.DatetimeIndex) -> np.ndarray:
         return np.array([], dtype=float)
     ordinal = dates.view("int64") / 86_400_000_000_000
     factor = (
-        0.0045 * np.sin(ordinal * 0.017)
-        + 0.0030 * np.sin(ordinal * 0.071)
-        + 0.0015 * np.cos(ordinal * 0.131)
+        0.0065 * np.sin(ordinal * 0.017)
+        + 0.0040 * np.sin(ordinal * 0.071)
+        + 0.0020 * np.cos(ordinal * 0.131)
     )
     return np.asarray(factor, dtype=float)
 
@@ -224,6 +274,10 @@ def _event_stress(dates: pd.DatetimeIndex) -> np.ndarray:
 
 def _btc_demo_close(dates: pd.DatetimeIndex) -> pd.Series:
     anchors = [
+        ("2010-07-18", 0.08),
+        ("2011-06-08", 30.0),
+        ("2013-12-04", 1_100.0),
+        ("2015-01-14", 200.0),
         ("2016-01-01", 430.0),
         ("2016-07-09", 650.0),
         ("2017-12-17", 19_000.0),
@@ -234,7 +288,7 @@ def _btc_demo_close(dates: pd.DatetimeIndex) -> pd.Series:
         ("2024-03-14", 73_000.0),
         ("2024-04-20", 64_000.0),
         ("2025-10-01", 105_000.0),
-        (DEMO_END_DATE, 96_000.0),
+        ("2026-01-01", 96_000.0),
     ]
     anchor_dates = pd.to_datetime([item[0] for item in anchors])
     anchor_values = np.log(np.array([item[1] for item in anchors], dtype=float))
@@ -244,44 +298,164 @@ def _btc_demo_close(dates: pd.DatetimeIndex) -> pd.Series:
 
     rng = np.random.default_rng(_stable_seed("BTC_DEMO_PATH"))
     noise = rng.normal(0, 0.018, len(dates))
-    noise = pd.Series(noise).rolling(7, min_periods=1, center=True).mean().to_numpy()
+    noise = pd.Series(noise).rolling(7, min_periods=1).mean().to_numpy()
     return pd.Series(np.exp(interpolated + noise), index=dates, dtype=float)
+
+
+def _policy_cycle(dates: pd.DatetimeIndex) -> np.ndarray:
+    start = pd.Timestamp("2022-03-01")
+    peak = pd.Timestamp("2023-07-01")
+    normalization = pd.Timestamp("2026-12-31")
+    date_values = dates.view("int64").astype(float)
+    rise = np.clip(
+        (date_values - start.value) / (peak.value - start.value),
+        0.0,
+        1.0,
+    )
+    decline = np.clip(
+        (date_values - peak.value) / (normalization.value - peak.value),
+        0.0,
+        1.0,
+    )
+    return rise * (1.0 - 0.35 * decline)
+
+
+def _mean_reverting_level(
+    targets: np.ndarray,
+    rng: np.random.Generator,
+    start_level: float,
+    speed: float,
+    noise_scale: float,
+    lower: float,
+    upper: float,
+) -> np.ndarray:
+    levels = np.empty(len(targets), dtype=float)
+    if not len(targets):
+        return levels
+
+    levels[0] = float(np.clip(start_level, lower, upper))
+    innovations = rng.normal(0.0, noise_scale, len(targets))
+    for index in range(1, len(targets)):
+        previous = levels[index - 1]
+        candidate = previous + speed * (targets[index] - previous) + innovations[index]
+        levels[index] = float(np.clip(candidate, lower, upper))
+    return levels
+
+
+def _stress_proxy_close(
+    asset_key: str,
+    dates: pd.DatetimeIndex,
+    rng: np.random.Generator,
+) -> pd.Series:
+    is_vix = asset_key == "VIX"
+    base = 18.0 if is_vix else 85.0
+    lower = 9.0 if is_vix else 45.0
+    upper = 85.0 if is_vix else 200.0
+    factor_scale = 800.0 if is_vix else 1_800.0
+    event_scale = 4_500.0 if is_vix else 8_000.0
+    noise_scale = 0.85 if is_vix else 1.8
+    targets = (
+        base
+        + np.clip(-_date_factor(dates), 0.0, None) * factor_scale
+        + np.clip(-_event_stress(dates), 0.0, None) * event_scale
+    )
+    levels = _mean_reverting_level(
+        targets=targets,
+        rng=rng,
+        start_level=base,
+        speed=0.12,
+        noise_scale=noise_scale,
+        lower=lower,
+        upper=upper,
+    )
+    return pd.Series(levels, index=dates, dtype=float)
+
+
+def _yield_close(
+    asset_key: str,
+    dates: pd.DatetimeIndex,
+    rng: np.random.Generator,
+) -> pd.Series:
+    start_level = float(_START_LEVELS[asset_key])
+    targets = start_level + _YIELD_TIGHTENING_SHIFTS[asset_key] * _policy_cycle(dates)
+    levels = _mean_reverting_level(
+        targets=targets,
+        rng=rng,
+        start_level=start_level,
+        speed=0.035,
+        noise_scale=0.018,
+        lower=0.01,
+        upper=8.0,
+    )
+    return pd.Series(levels, index=dates, dtype=float)
+
+
+def _stress_level_close(
+    asset_key: str,
+    dates: pd.DatetimeIndex,
+    rng: np.random.Generator,
+) -> pd.Series:
+    event_pressure = np.clip(-_event_stress(dates), 0.0, None)
+    factor_pressure = np.clip(-_date_factor(dates), 0.0, None)
+    if asset_key == "FINANCIAL_CONDITIONS":
+        targets = 100.0 + event_pressure * 500.0 + factor_pressure * 80.0
+        levels = _mean_reverting_level(
+            targets, rng, 100.0, 0.08, 0.08, 96.0, 106.0,
+        )
+    else:
+        targets = 0.35 + event_pressure * 35.0 + factor_pressure * 4.0
+        levels = _mean_reverting_level(
+            targets, rng, 0.35, 0.10, 0.012, 0.05, 2.5,
+        )
+    return pd.Series(levels, index=dates, dtype=float)
+
+
+def _currency_close(
+    asset_key: str,
+    dates: pd.DatetimeIndex,
+    rng: np.random.Generator,
+) -> pd.Series:
+    start_level = float(_START_LEVELS[asset_key])
+    beta = float(_RISK_BETAS.get(asset_key, 0.0))
+    log_anchor = np.log(start_level)
+    targets = log_anchor + beta * _date_factor(dates) * 4.0
+    log_levels = _mean_reverting_level(
+        targets=targets,
+        rng=rng,
+        start_level=log_anchor,
+        speed=0.025,
+        noise_scale=float(_SIGMAS.get(asset_key, 0.0035)),
+        lower=log_anchor - 0.35,
+        upper=log_anchor + 0.35,
+    )
+    return pd.Series(np.exp(log_levels), index=dates, dtype=float)
 
 
 def _generic_close(asset_key: str, asset_cfg: dict, dates: pd.DatetimeIndex) -> pd.Series:
     start_level = float(_START_LEVELS.get(asset_key, 100.0))
-    sigma = float(_SIGMAS.get(asset_key, 0.011))
-    drift = float(_DRIFTS.get(asset_key, 0.00018))
+    market_type = str(asset_cfg.get("market_type", "")).lower()
     beta = float(_RISK_BETAS.get(asset_key, 0.8))
-
     rng = np.random.default_rng(_stable_seed(f"asset::{asset_key}"))
-    idiosyncratic = rng.normal(drift, sigma, len(dates))
-    shared = beta * _date_factor(dates)
-    stress = beta * _event_stress(dates)
-    returns = idiosyncratic + shared + stress
 
     if asset_key in {"VIX", "MOVE_INDEX"}:
-        # Stress proxies should rise when risk assets fall.
-        returns = idiosyncratic - 1.7 * _date_factor(dates) - 2.0 * _event_stress(dates)
+        return _stress_proxy_close(asset_key, dates, rng)
+    if asset_key in _YIELD_TIGHTENING_SHIFTS:
+        return _yield_close(asset_key, dates, rng)
+    if asset_key in {"FINANCIAL_CONDITIONS", "TED_SPREAD"}:
+        return _stress_level_close(asset_key, dates, rng)
+    if market_type in {"currency", "currency_index", "fx"}:
+        return _currency_close(asset_key, dates, rng)
 
-    if asset_key in {"US3M", "US2Y", "US10Y", "US30Y", "GERMANY10Y", "UK10Y", "JAPAN10Y"}:
-        # Yield levels are more stable than prices; use a bounded level process.
-        level = start_level + np.cumsum(returns * 0.12)
-        level += np.where(
-            (dates >= pd.Timestamp("2022-03-01")) & (dates <= pd.Timestamp("2023-12-31")),
-            np.linspace(0, 2.0, len(dates)),
-            0.0,
-        )
-        return pd.Series(np.clip(level, 0.01, None), index=dates, dtype=float)
-
-    if asset_key == "FINANCIAL_CONDITIONS":
-        level = start_level + np.cumsum(-returns * 0.2)
-        return pd.Series(level, index=dates, dtype=float)
-
-    if asset_key == "TED_SPREAD":
-        level = start_level + np.cumsum(-returns * 0.03)
-        return pd.Series(np.clip(level, 0.01, None), index=dates, dtype=float)
-
+    default_sigma = 0.0065 if market_type == "equity_index" else 0.0080
+    sigma = float(_SIGMAS.get(asset_key, default_sigma))
+    default_drift = 0.00022 if market_type == "equity_index" else 0.00008
+    drift = float(_DRIFTS.get(asset_key, default_drift))
+    idiosyncratic = rng.normal(drift, sigma, len(dates))
+    returns = (
+        idiosyncratic
+        + beta * _date_factor(dates)
+        + beta * _event_stress(dates)
+    )
     log_level = np.log(max(start_level, 1e-8)) + np.cumsum(returns)
     return pd.Series(np.exp(log_level), index=dates, dtype=float)
 
@@ -297,7 +471,17 @@ def load_demo_asset_data(
         raise KeyError(f"Asset is not configured: {asset_key}")
 
     cfg = assets_config[asset_key]
-    dates = _calendar(cfg, start_date=start_date, end_date=end_date)
+    requested_start = _coerce_date(start_date, DEMO_START_DATE)
+    requested_end = _coerce_date(end_date, DEMO_END_DATE)
+    generation_start = max(
+        pd.Timestamp(DEMO_START_DATE),
+        pd.Timestamp(_ASSET_START_DATES.get(asset_key, DEMO_START_DATE)),
+    )
+    dates = _calendar(
+        cfg,
+        start_date=generation_start,
+        end_date=requested_end,
+    )
     if len(dates) == 0:
         return pd.DataFrame(
             columns=[
@@ -386,6 +570,9 @@ def load_demo_asset_data(
     if cfg.get("ohlc_expected") is False:
         frame[["open", "high", "low"]] = np.nan
 
+    frame = frame.loc[
+        frame["snapped_at"].between(requested_start, requested_end, inclusive="both")
+    ]
     return frame.reset_index(drop=True)
 
 
@@ -482,24 +669,128 @@ def build_demo_multi_asset_price_frame(
     return (merged, report) if return_load_report else merged
 
 
-def _macro_frequency(macro_key: str) -> str:
+def _macro_profile(macro_key: str) -> dict:
     key = macro_key.upper()
-    if any(token in key for token in ("HICP", "MFI", "M2", "ASSETS", "CREDIT", "LOAN", "DEPOSIT")):
-        return "ME"
-    if any(token in key for token in ("DELINQ", "CHARGE", "BLS")):
-        return "QE"
-    return "ME"
+    if key in _MACRO_PROFILES:
+        return dict(_MACRO_PROFILES[key])
+
+    if "HICP" in key:
+        start_levels = {
+            "EURO_HICP_PROCESSED_FOOD": 76.0,
+            "EURO_HICP_EX_TOBACCO": 78.0,
+            "EURO_HICP_SERVICES": 80.0,
+            "EURO_HICP_INDUSTRIAL_GOODS": 82.0,
+            "EURO_HICP_ADMINISTERED_ENERGY_FOOD": 74.0,
+        }
+        return {
+            "frequency": "ME",
+            "kind": "level",
+            "start": start_levels.get(key, 78.0),
+            "growth": 0.022,
+            "noise": 0.003,
+        }
+
+    if key.startswith("EURO_MFI_"):
+        if "DEPOSIT" in key:
+            start = 2.2
+        elif "REVOLVING" in key:
+            start = 6.5
+        elif "HOUSE_PURCHASE" in key:
+            start = 4.5
+        else:
+            start = 5.0
+        return {
+            "frequency": "ME",
+            "kind": "policy_rate",
+            "start": start,
+            "noise": 0.035,
+        }
+
+    if "FRAUD_LOSSES" in key:
+        return {
+            "frequency": "2QE-DEC",
+            "kind": "level",
+            "start": 100.0,
+            "growth": 0.040,
+            "noise": 0.025,
+        }
+
+    return {
+        "frequency": "ME",
+        "kind": "level",
+        "start": 100.0,
+        "growth": 0.025,
+        "noise": 0.008,
+    }
+
+
+def _macro_frequency(macro_key: str) -> str:
+    return str(_macro_profile(macro_key)["frequency"])
 
 
 def _macro_start_level(macro_key: str) -> float:
+    return float(_macro_profile(macro_key)["start"])
+
+
+def _interpolate_anchors(
+    dates: pd.DatetimeIndex,
+    anchors: list[tuple[str, float]],
+) -> np.ndarray:
+    anchor_dates = pd.to_datetime([item[0] for item in anchors])
+    anchor_values = np.array([item[1] for item in anchors], dtype=float)
+    return np.interp(
+        dates.view("int64").astype(float),
+        anchor_dates.view("int64").astype(float),
+        anchor_values,
+    )
+
+
+def _macro_rate_path(
+    macro_key: str,
+    dates: pd.DatetimeIndex,
+    start_level: float,
+) -> np.ndarray:
     key = macro_key.upper()
-    if any(token in key for token in ("RATE", "DELINQ", "CHARGE", "HICP")):
-        return 2.5
-    if "M2" in key:
-        return 14_000.0
-    if any(token in key for token in ("ASSETS", "CREDIT", "LOAN", "DEPOSIT")):
-        return 5_000.0
-    return 100.0
+    if key == "FED_FUNDS_RATE":
+        anchors = [
+            ("2000-01-31", 5.5),
+            ("2004-01-31", 1.0),
+            ("2007-07-31", 5.25),
+            ("2009-01-31", 0.20),
+            ("2016-01-31", 0.40),
+            ("2019-01-31", 2.40),
+            ("2020-05-31", 0.10),
+            ("2023-08-31", 5.30),
+            ("2026-12-31", 4.20),
+        ]
+    elif key == "FED_CREDIT_CARD_DELINQUENCY":
+        anchors = [
+            ("2000-03-31", 4.7),
+            ("2006-12-31", 3.5),
+            ("2009-12-31", 6.5),
+            ("2021-03-31", 2.1),
+            ("2026-12-31", 3.2),
+        ]
+    elif key == "FED_CHARGE_OFF_RATE_CREDIT_CARDS":
+        anchors = [
+            ("2000-03-31", 6.0),
+            ("2006-12-31", 4.0),
+            ("2010-03-31", 10.5),
+            ("2021-03-31", 2.0),
+            ("2026-12-31", 3.8),
+        ]
+    else:
+        floor = max(0.10, start_level - 3.2)
+        anchors = [
+            ("2000-01-31", start_level),
+            ("2005-01-31", max(floor, start_level - 1.5)),
+            ("2008-09-30", start_level),
+            ("2016-01-31", floor),
+            ("2021-01-31", floor),
+            ("2024-01-31", start_level + 0.8),
+            ("2026-12-31", start_level),
+        ]
+    return _interpolate_anchors(dates, anchors)
 
 
 def build_demo_macro_series(
@@ -507,26 +798,46 @@ def build_demo_macro_series(
     start_date=None,
     end_date=None,
 ) -> pd.DataFrame:
-    start = _coerce_date(start_date, DEMO_START_DATE)
-    end = _coerce_date(end_date, DEMO_END_DATE)
-    dates = pd.date_range(start, end, freq=_macro_frequency(macro_key))
+    requested_start = _coerce_date(start_date, DEMO_START_DATE)
+    requested_end = _coerce_date(end_date, DEMO_END_DATE)
+    dates = pd.date_range(
+        pd.Timestamp(DEMO_START_DATE),
+        requested_end,
+        freq=_macro_frequency(macro_key),
+    )
     if len(dates) == 0:
         return pd.DataFrame(columns=["snapped_at", macro_key])
 
+    profile = _macro_profile(macro_key)
     rng = np.random.default_rng(_stable_seed(f"macro::{macro_key}"))
     level = _macro_start_level(macro_key)
-    changes = rng.normal(0.0015, 0.012, len(dates))
+    noise_scale = float(profile.get("noise", 0.008))
+    smooth_noise = (
+        pd.Series(rng.normal(0.0, noise_scale, len(dates)))
+        .rolling(3, min_periods=1)
+        .mean()
+        .to_numpy()
+    )
 
-    key = macro_key.upper()
-    if "RATE" in key:
-        values = level + np.cumsum(changes * 0.25)
-        tightening = dates >= pd.Timestamp("2022-03-01")
-        values[tightening] += np.linspace(0, 2.5, tightening.sum())
+    if profile["kind"] in {"policy_rate", "stress_rate"}:
+        values = _macro_rate_path(macro_key, dates, level) + smooth_noise
         values = np.clip(values, 0.0, None)
     else:
-        values = level * np.exp(np.cumsum(changes))
+        elapsed_years = (
+            dates - pd.Timestamp(DEMO_START_DATE)
+        ).days.to_numpy(dtype=float) / 365.2425
+        growth = float(profile.get("growth", 0.025))
+        seasonal = 0.004 * np.sin(2.0 * np.pi * elapsed_years)
+        values = level * np.exp(growth * elapsed_years + seasonal + smooth_noise)
 
-    return pd.DataFrame({"snapped_at": dates, macro_key: values})
+    frame = pd.DataFrame({"snapped_at": dates, macro_key: values})
+    return frame.loc[
+        frame["snapped_at"].between(
+            requested_start,
+            requested_end,
+            inclusive="both",
+        )
+    ].reset_index(drop=True)
 
 
 def align_demo_macro_to_market(

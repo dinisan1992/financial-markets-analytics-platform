@@ -4,6 +4,38 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [v0.7.6] - 2026-08-17 - Public Demo Hardening
+
+### Added
+
+- Added a database-free Streamlit deployment that reuses all nine production
+  pages against synthetic OHLCV, event and macro data.
+- Added fixed-calendar regression contracts, bounded stress-index checks,
+  macro-scale checks and shared-market-factor validation.
+- Added the demo unit and smoke suites to every Windows/Linux and Python
+  3.11/3.12 CI test job.
+- Added a prominent live-demo link to the public README and a source-code link
+  inside the demo sidebar.
+
+### Fixed
+
+- Made overlapping asset and macro values invariant to the selected start date.
+- Replaced unbounded VIX, MOVE, yield and spread random walks with bounded
+  mean-reverting processes.
+- Replaced macro token heuristics with explicit frequency, scale and process
+  profiles, including index-scaled HICP series.
+- Corrected the SQL-isolation test import order and made the smoke test respect
+  assets whose contracts intentionally omit native OHLC.
+- Added cache-backed demo asset, macro, multi-asset and Data Quality loaders.
+- Corrected deployment paths and removed tracked Python bytecode artefacts.
+
+### Safety
+
+- Performed no database writes, CSV promotions or SQL schema changes.
+- Demo mode continues to require no database credentials or private datasets.
+
+---
+
 ## [v0.7.5] - 2026-08-11 - ECB Backup And Shadow Planning
 
 ### Completed
