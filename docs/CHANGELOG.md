@@ -29,7 +29,8 @@ All notable changes to this project will be documented here.
 
 ### Validation
 
-- The public deployment was retested against the corrected VIX regime output.
+- The public deployment test exposed retained Streamlit data and patch state;
+  the complete correction is documented in v0.7.8.
 - No SQL, MySQL or active CSV write was performed.
 
 ## [v0.7.6] - 2026-08-17 - Public Demo Hardening
