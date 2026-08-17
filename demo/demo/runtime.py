@@ -118,7 +118,11 @@ def activate_demo_mode() -> None:
     from services import data_quality_service
     from services import euro_sync_status_service
 
-    original_setup_page = layout.setup_page
+    original_setup_page = getattr(
+        layout.setup_page,
+        "_mfi_demo_original",
+        layout.setup_page,
+    )
 
     def cache_date(value):
         if value is None:
@@ -177,6 +181,8 @@ def activate_demo_mode() -> None:
                 use_container_width=True,
             )
         return result
+
+    demo_setup_page._mfi_demo_original = original_setup_page
 
     def get_table_columns(engine, table_name):
         return demo_table_columns(table_name, ASSETS)

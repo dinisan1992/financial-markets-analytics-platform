@@ -4,6 +4,20 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [v0.7.8] - 2026-08-17 - Atomic Demo Runtime Handoff
+
+### Fixed
+
+- Deactivates the previous demo runtime before loading a newly deployed one.
+- Clears stale Streamlit data caches once per release, preventing old generated
+  values from surviving after the source code has updated.
+- Avoids stacking the demo disclosure wrapper across cloud deployments.
+
+### Validation
+
+- The public deployment was checked for a single disclosure and corrected VIX.
+- No SQL, MySQL or active CSV write was performed.
+
 ## [v0.7.7] - 2026-08-17 - Demo Deployment Reload Guard
 
 ### Fixed
