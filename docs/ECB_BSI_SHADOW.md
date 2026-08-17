@@ -86,4 +86,5 @@ The shadow is ready for review but promotion has not been authorized or
 performed. A future BSI-only swap checkpoint must revalidate the complete
 signed evidence chain, retain the former active table under its versioned name,
 validate the promoted official snapshot and automatically reverse the atomic
-rename after any post-swap failure.
+rename after any post-swap failure. That guarded implementation is now prepared
+but remains unexecuted; see `docs/ECB_BSI_PROMOTION.md`.

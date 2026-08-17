@@ -536,8 +536,8 @@ Planned improvements include:
 - Calibrate risk thresholds by asset class and data provenance.
 - Replace important year-only world events with verified exact dates.
 - Add dry-run and explicit entry points to the remaining SQL-capable ETL scripts.
-- Keep the validated BSI shadow isolated until a separate BSI-only promotion
-  preflight and explicit atomic-swap authorization are complete.
+- Run and review the prepared SELECT-only BSI promotion preflight. Keep the
+  validated shadow isolated until a later explicit atomic-swap authorization.
 - Retain the former BLS and PCP tables until a separate retention review.
 - Treat the 3,822,937-row Government Finance source expansion as a separate controlled migration.
 - Refresh the remaining stale market sources through verified provider

@@ -4,6 +4,27 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [Unreleased] - BSI Atomic Promotion Preparation
+
+### Added
+
+- Added a BSI-only read-only promotion preflight with no confirmation, build,
+  cleanup or swap mode.
+- Added a separate BSI-only atomic promotion command requiring the exact
+  `SWAP_EURO_BALANCE_SHEET_ITEMS_V086_ACTIVE` confirmation.
+- Bound both commands to the signed readiness, shadow-build and independent
+  post-build report chain, current pinned files and live table checkpoints.
+- Added retained-table proof, delayed technical-hash removal, complete final
+  source audit and automatic inverse-rename rollback after any failure.
+
+### Validation
+
+- Passed 13 focused service and command tests plus Ruff.
+- Confirmed the new validators accept the three real signed BSI reports for
+  suffix `20260817_141854` and 8,055,309 source rows without opening MySQL.
+- Performed no preflight scan, database write, active-CSV write, swap, hash
+  removal or cleanup. The active table and validated shadow remain unchanged.
+
 ## [v0.8.5] - 2026-08-17 - Bound BSI Shadow Validation Memory
 
 ### Changed

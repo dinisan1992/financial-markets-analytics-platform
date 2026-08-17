@@ -539,8 +539,8 @@ The isolated MySQL acceptance gate, Direct Debits migration, official ECB
 snapshot staging and the separately controlled BLS and PCP promotions are
 complete. The current priority remains controlled source maintenance:
 
-1. prepare and execute a read-only BSI promotion preflight, then require a new
-   explicit authorization before any atomic swap;
+1. execute and review the prepared read-only BSI promotion preflight, then
+   require a new explicit authorization before any atomic swap;
 2. retain the former BLS and PCP tables until a separate retention review;
 3. apply the documented official-snapshot-authoritative retention policy for
    the 344,327 BSI keys withdrawn from the current snapshot;

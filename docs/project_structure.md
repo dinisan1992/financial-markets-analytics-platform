@@ -62,6 +62,8 @@ Market data maintenance entry points:
 - `project_scripts/diagnostics/swap_ecb_bls.py` - swap-only BLS promotion bound to pinned readiness/build reports and exact confirmation.
 - `project_scripts/diagnostics/preflight_ecb_pcp_swap.py` - complete SELECT-only PCP promotion preflight with no swap option.
 - `project_scripts/diagnostics/swap_ecb_pcp.py` - separately confirmed PCP-only atomic promotion with retained-table rollback.
+- `project_scripts/diagnostics/preflight_ecb_bsi_swap.py` - complete SELECT-only BSI promotion preflight with no confirmation or swap option.
+- `project_scripts/diagnostics/swap_ecb_bsi.py` - prepared, separately confirmed BSI-only atomic promotion with retained-table rollback.
 - `project_scripts/diagnostics/build_euro_direct_debits_shadow.py` - build-only v0.6.9 Direct Debits shadow loader with pinned inputs and no swap mode.
 - `project_scripts/diagnostics/swap_euro_direct_debits.py` - separately confirmed v0.7.0 atomic promotion with retained-table rollback.
 - `project_scripts/diagnostics/remediate_market_tables.py` - reversible shadow-table remediation.
@@ -79,6 +81,7 @@ Market data maintenance entry points:
 - `services/ecb_shadow_post_build_service.py` - signed BSI evidence chaining, pinned-file checks and complete read-only source/shadow revalidation.
 - `services/ecb_bls_swap_service.py` - BLS preflight, atomic promotion, retained-table proof, complete source audit and automatic rollback controls.
 - `services/ecb_pcp_swap_service.py` - chained PCP evidence checks, live preflight, atomic promotion and automatic rollback controls.
+- `services/ecb_bsi_swap_service.py` - signed BSI evidence chain, bounded preflight, atomic promotion and automatic rollback controls.
 
 ## Public Demo
 
