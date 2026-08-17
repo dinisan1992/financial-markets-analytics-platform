@@ -220,9 +220,9 @@ Main file:
 
 ## Latest Documented Validation
 
-Version 0.8.2 validation includes:
+Version 0.8.2 and the current main-branch preparation validation include:
 
-- 254/254 deterministic production unit tests passed.
+- 267/267 deterministic production unit tests passed.
 - 12/12 public-demo contracts passed, covering interval invariance, plausible
   stress and macro scales, cross-asset structure and SQL isolation.
 - The demo smoke test generated 38/38 configured assets, 10 events and aligned
@@ -262,6 +262,13 @@ Version 0.8.2 validation includes:
   `A0379A34BB5AFCBD7AA588F6F0C068243920400D0BE81CE1CF1F050CF89C8A8B`.
 - No PCP swap, retained table, failed table or active-CSV change was authorized
   or performed.
+- A separate PCP-only promotion command now requires the exact readiness,
+  build and independent post-build report chain, delays technical-hash removal
+  until after the atomic rename is validated and automatically restores the
+  former active table after any post-swap failure.
+- Its independent SELECT-only preflight again matched all 1,081,151 source and
+  shadow rows with zero mismatches. The active table remained at 815,173 rows;
+  promotion is prepared but still unauthorized.
 
 Previous v0.7.5 validation included:
 
@@ -504,11 +511,12 @@ Planned work:
 The project already contains a validated multi-asset, FED macro and EURO macro analytical layer.
 
 The isolated MySQL acceptance gate, Direct Debits migration, official ECB
-snapshot staging, BLS promotion and PCP shadow build are complete. The current
-priority remains controlled source maintenance:
+snapshot staging, BLS promotion, PCP shadow build and the read-only PCP
+promotion preflight are complete. The current priority remains controlled
+source maintenance:
 
-1. review the completed PCP shadow evidence and require separate authorization
-   before any atomic promotion;
+1. obtain explicit authorization before executing the prepared PCP atomic
+   promotion;
 2. preserve the former PCP table under the planned retained name if promotion
    is later authorized;
 3. repeat the isolated build/review process for BSI only after the PCP decision;

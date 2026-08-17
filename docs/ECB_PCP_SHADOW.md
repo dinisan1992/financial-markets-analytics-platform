@@ -77,3 +77,8 @@ performed. A future swap-only checkpoint must revalidate the pinned inputs,
 complete shadow and active fingerprint, retain the former active table under
 its versioned name, validate the promoted official snapshot and execute an
 inverse atomic rename on any post-swap failure.
+
+That guarded command and its independent read-only preflight are now prepared
+and documented in `docs/ECB_PCP_PROMOTION.md`. The latest preflight matched all
+1,081,151 official source rows with zero database writes. Promotion remains a
+separate authorization decision.

@@ -4,6 +4,30 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [Unreleased] - Guarded PCP Promotion Preparation
+
+### Added
+
+- Added a PCP-only atomic promotion service and command with a distinct exact
+  confirmation, retained-table proof and automatic inverse rename on any
+  post-swap failure.
+- Bound promotion to the signed readiness, shadow-build and independent
+  post-build reports, including cross-report file and SHA-256 checks.
+- Added a separate SELECT-only preflight command with no confirmation or swap
+  mode. It repeats the complete memory-bounded source-to-shadow validation.
+- Added regression tests for altered active checkpoints, changed shadow
+  evidence, reused retained names, active-CSV writes and invalid confirmations.
+
+### Validation
+
+- Passed 267/267 deterministic unit tests, Ruff and `pip check`.
+- Revalidated all 1,081,151 official PCP rows against the live shadow with zero
+  missing, duplicate or mismatched rows.
+- Confirmed 815,173 active rows, no retained/failed name collision, zero
+  database writes and no swap authorization or execution.
+- Recorded the ignored preflight report SHA-256 as
+  `DAE34DE8DDF6EC04FBCA35789187C2C4994066C842F5DA5107230F860331902A`.
+
 ## [v0.8.2] - 2026-08-17 - Verified Official PCP Shadow
 
 ### Added

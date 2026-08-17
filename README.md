@@ -367,9 +367,9 @@ mode. See `docs/ECB_SHADOW_READINESS.md`.
 
 ## Validation Snapshot
 
-The v0.8.2 validation includes:
+The v0.8.2 release and current main-branch validation include:
 
-- 254/254 deterministic unit tests pass.
+- 267/267 deterministic unit tests pass.
 - 12/12 public-demo contracts pass, including fixed-window invariance,
   plausible stress/macro levels, shared equity structure and SQL isolation.
 - The demo smoke test generates all 38 configured assets, 10 events and aligned
@@ -449,6 +449,11 @@ The v0.8.2 validation includes:
 - The 815,173-row PCP active table retained identical data and schema
   fingerprints. No retained table, swap or active-CSV change was authorized or
   performed. See `docs/ECB_PCP_SHADOW.md`.
+- A separate PCP-only atomic promotion command is now guarded by the signed
+  readiness, build and independent verification reports. Its SELECT-only
+  preflight repeated the complete 1,081,151-row source-to-shadow comparison
+  with zero differences and zero database writes. Promotion remains
+  unauthorized; see `docs/ECB_PCP_PROMOTION.md`.
 - Data Quality exposes the latest saved status, source freshness, planned actions and blockers for every EURO contract without rescanning CSVs or querying MySQL.
 
 The retained v0.5.6 database validation includes:
@@ -514,8 +519,8 @@ Planned improvements include:
 - Calibrate risk thresholds by asset class and data provenance.
 - Replace important year-only world events with verified exact dates.
 - Add dry-run and explicit entry points to the remaining SQL-capable ETL scripts.
-- Review the completed PCP shadow evidence and require separate authorization
-  before any atomic promotion.
+- Obtain explicit authorization before running the prepared PCP atomic
+  promotion; the independent full preflight is complete.
 - Repeat the same isolated build process for BSI only after the PCP decision.
   Its backup and read-only readiness checks are complete.
 - Treat the 3,822,937-row Government Finance source expansion as a separate controlled migration.
