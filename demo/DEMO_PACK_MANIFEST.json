@@ -1,8 +1,8 @@
 {
   "package_name": "Financial Markets Analytics Platform - Public Demo",
-  "based_on_project_version": "v0.7.6",
+  "based_on_project_version": "v0.7.7",
   "source_repository": "dinisan1992/financial-markets-analytics-platform",
-  "generated_at_utc": "2026-08-17T10:50:00+00:00",
+  "generated_at_utc": "2026-08-17T11:04:21+00:00",
   "integration_model": "additive; production SQL paths are not replaced",
   "demo_data": "fixed-calendar deterministic synthetic OHLCV, event and macro series",
   "database_required": false,
@@ -25,8 +25,8 @@
       "sha256": "bb446eb170b3c3128978542ea2b4265c13166831719db020ccf60a3ae488b4ec"
     },
     "streamlit_demo.py": {
-      "bytes": 1242,
-      "sha256": "e33c8e9d68b6095e7ff5c747d380ac54d8fbb3949f3ca599014946b730d352d8"
+      "bytes": 1680,
+      "sha256": "6deb2e6bf00d4cd145eb4f22bb7979a29b44ce9f9823d52f29045f86f0357ab0"
     },
     "validate_demo.ps1": {
       "bytes": 2284,

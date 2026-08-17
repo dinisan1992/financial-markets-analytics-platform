@@ -4,6 +4,20 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [v0.7.7] - 2026-08-17 - Demo Deployment Reload Guard
+
+### Fixed
+
+- Added a release-aware bootstrap guard that invalidates cached demo backend
+  modules once per Streamlit Cloud deployment.
+- Prevented a long-lived cloud process from combining new documentation with
+  stale synthetic generators from the previous release.
+
+### Validation
+
+- The public deployment was retested against the corrected VIX regime output.
+- No SQL, MySQL or active CSV write was performed.
+
 ## [v0.7.6] - 2026-08-17 - Public Demo Hardening
 
 ### Added

@@ -29,7 +29,7 @@ Functional local platform with:
 - Data quality and validation tools.
 - Cross-platform lint, import-safety, dependency, coverage and unit-test checks through GitHub Actions.
 
-Current project version: **v0.7.6**
+Current project version: **v0.7.7**
 
 ## Main Analytical Capabilities
 
@@ -351,7 +351,7 @@ no SQL write mode. See `docs/ECB_SOURCE_REFRESH.md`.
 
 ## Validation Snapshot
 
-The v0.7.6 validation includes:
+The v0.7.7 validation includes:
 
 - 222/222 deterministic unit tests pass.
 - 12/12 public-demo contracts pass, including fixed-window invariance,

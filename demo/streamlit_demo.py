@@ -13,6 +13,8 @@ import sys
 # <project_root>/demo/.
 DEMO_BUNDLE_ROOT = Path(__file__).resolve().parent
 PROJECT_ROOT = DEMO_BUNDLE_ROOT.parent
+DEMO_RELEASE = "0.7.7"
+_RUNTIME_RELEASE_ENV = "_MFI_DEMO_RUNTIME_RELEASE"
 
 # Make the bundled inner package (<project_root>/demo/demo/) available as
 # `demo`, while also exposing the normal project modules such as asset_config,
@@ -23,6 +25,13 @@ for path in (str(DEMO_BUNDLE_ROOT), str(PROJECT_ROOT)):
 
 sys.path.insert(0, str(DEMO_BUNDLE_ROOT))
 sys.path.insert(1, str(PROJECT_ROOT))
+
+# Streamlit Cloud reruns the entry point in a long-lived process. Reload the
+# demo backend once per release so a deployment cannot retain stale generators.
+if os.environ.get(_RUNTIME_RELEASE_ENV) != DEMO_RELEASE:
+    for module_name in ("demo.runtime", "demo.data"):
+        sys.modules.pop(module_name, None)
+    os.environ[_RUNTIME_RELEASE_ENV] = DEMO_RELEASE
 
 from demo.runtime import activate_demo_mode  # noqa: E402
 
