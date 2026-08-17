@@ -43,7 +43,7 @@ def build_parser():
     parser.add_argument(
         "--output-dir",
         type=Path,
-        default=ROOT / "audit_outputs" / "ecb_bsi_swap_v086",
+        default=ROOT / "audit_outputs" / "ecb_bsi_swap_v087",
     )
     return parser
 

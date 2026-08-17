@@ -8,22 +8,42 @@ All notable changes to this project will be documented here.
 
 ### Added
 
-- Added a BSI-only read-only promotion preflight with no confirmation, build,
-  cleanup or swap mode.
 - Added a separate BSI-only atomic promotion command requiring the exact
-  `SWAP_EURO_BALANCE_SHEET_ITEMS_V086_ACTIVE` confirmation.
-- Bound both commands to the signed readiness, shadow-build and independent
+  `SWAP_EURO_BALANCE_SHEET_ITEMS_V087_ACTIVE` confirmation.
+- Bound the command to the signed readiness, shadow-build and independent
   post-build report chain, current pinned files and live table checkpoints.
 - Added retained-table proof, delayed technical-hash removal, complete final
   source audit and automatic inverse-rename rollback after any failure.
 
 ### Validation
 
-- Passed 13 focused service and command tests plus Ruff.
-- Confirmed the new validators accept the three real signed BSI reports for
-  suffix `20260817_141854` and 8,055,309 source rows without opening MySQL.
-- Performed no preflight scan, database write, active-CSV write, swap, hash
-  removal or cleanup. The active table and validated shadow remain unchanged.
+- The v0.8.6 SELECT-only preflight is complete and reviewed.
+- No database write, active-CSV write, swap, hash removal or cleanup has been
+  authorized or performed. The active table and validated shadow are unchanged.
+
+## [v0.8.6] - 2026-08-17 - Force Unbuffered BSI Preflight
+
+### Fixed
+
+- Proved that mysqlconnector's connection-level buffered default caused
+  `cursor(buffered=False)` to return `CMySQLCursorBuffered` under SQLAlchemy.
+- Added a shared cursor factory that forces the public `CMySQLCursor` class and
+  fails closed if a buffered runtime cursor is returned.
+- Applied the guard to active-table fingerprints, source/target audits and
+  disk-backed shadow validation, all with a 5,000-row fetch ceiling.
+
+### Validation
+
+- Passed 291/291 deterministic unit tests, Ruff, compilation and `pip check`.
+- Reproduced the 7,812,208-row active fingerprint and its existing SHA-256 with
+  stable bounded memory.
+- Completed the full BSI promotion preflight across 8,055,309 source/shadow
+  rows with zero missing, duplicate or mismatched rows.
+- Reduced observed Python memory from 7.4 GB before minute two to peaks near
+  218 MB working set and 555 MB private memory.
+- Recorded preflight report SHA-256
+  `950B70C560858C51E6A67B9CF89170C0A42AF9DB08B987C03589B7D11BB14DB9`.
+- Performed no database write, active-CSV write, promotion or cleanup.
 
 ## [v0.8.5] - 2026-08-17 - Bound BSI Shadow Validation Memory
 
@@ -45,6 +65,8 @@ All notable changes to this project will be documented here.
 - Reused the signed v0.8.4 build and independent-verification evidence; no
   production-scale BSI rescan was needed for this implementation checkpoint.
 - Performed no database write, active-CSV write, shadow promotion or cleanup.
+- A later production preflight showed that the connection-level default still
+  selected a buffered cursor; v0.8.6 contains the complete forced-class fix.
 
 ## [v0.8.4] - 2026-08-17 - Build And Validate Official BSI Shadow
 

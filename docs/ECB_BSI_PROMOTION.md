@@ -8,7 +8,7 @@ Date: 17 August 2026
 
 This runbook is restricted to `EURO_BALANCE_SHEET_ITEMS`. It cannot target BLS,
 PCP or any other table. The promotion command has no build or cleanup mode and
-requires the exact `SWAP_EURO_BALANCE_SHEET_ITEMS_V086_ACTIVE` confirmation.
+requires the exact `SWAP_EURO_BALANCE_SHEET_ITEMS_V087_ACTIVE` confirmation.
 
 The implementation is bound to three immutable local reports:
 
@@ -31,13 +31,16 @@ confirmation, build, cleanup or swap option. It will:
 1. Verify all report hashes and cross-report identities.
 2. Re-hash the official CSV and scoped structure-and-data SQL backup.
 3. Recompute the active data/schema checkpoint and shadow schema evidence.
-4. Repeat the complete source-to-shadow comparison through the bounded,
-   unbuffered MySQL scan introduced in v0.8.5.
+4. Repeat the complete source-to-shadow comparison through the forced,
+   unbuffered MySQL cursor introduced in v0.8.6.
 5. Reject missing active/shadow tables or occupied retained/failed names.
 6. Write an ignored local report recording zero database and CSV writes.
 
-This preflight has been implemented and unit-tested but has not been run
-against MySQL. It does not authorize the later promotion.
+The preflight completed against MySQL with 7,812,208 active rows and 8,055,309
+matching source/shadow rows. It found zero missing or mismatched source rows,
+performed no database or CSV write and did not authorize promotion. Its
+ignored local report SHA-256 is
+`950B70C560858C51E6A67B9CF89170C0A42AF9DB08B987C03589B7D11BB14DB9`.
 
 ## Atomic Procedure
 

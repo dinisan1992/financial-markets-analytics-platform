@@ -26,6 +26,7 @@ from services.euro_fingerprint_store import (
 from services.euro_schema_audit_service import classify_period, period_type_is_safe
 from services.macro_import_service import normalize_column_name
 from services.market_data_sync_service import validate_identifier
+from services.mysql_streaming_service import unbuffered_mysql_cursor
 
 
 TARGET_IMPORT_KEYS = (
@@ -157,7 +158,7 @@ def _target_value_batches(connection, query, columns, chunk_size):
     dialect = connection.engine.dialect
     if dialect.name in {"mysql", "mariadb"} and dialect.driver == "mysqlconnector":
         driver_connection = connection.connection.driver_connection
-        cursor = driver_connection.cursor(buffered=False)
+        cursor = unbuffered_mysql_cursor(driver_connection)
         try:
             cursor.execute(query.text)
             while rows := cursor.fetchmany(fetch_size):

@@ -4,7 +4,7 @@ Last updated: 17 August 2026
 
 ## Current Version
 
-**Macro-Financial Risk & Market Behaviour Analytics Platform v0.8.5**
+**Macro-Financial Risk & Market Behaviour Analytics Platform v0.8.6**
 
 ## Executive Summary
 
@@ -22,7 +22,7 @@ It combines:
 - interactive dashboarding;
 - data quality validation.
 
-The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.7.0 completed the controlled Direct Debits rebuild. Version 0.7.1 separated direct runtime dependencies from development tooling and expanded CI. Version 0.7.2 removed Windows-only CI assumptions. Version 0.7.3 added storage-aware EURO fingerprints and field diagnostics. Version 0.7.4 added official ECB staging for fresh BLS, PCP and BSI snapshots. Version 0.7.5 completed their scoped external-volume backups, retention policy and read-only shadow planning without creating any table or changing active CSVs or MySQL. Version 0.7.6 hardened the public database-free demo with stable date-window semantics, plausible bounded stress and macro profiles, cache-backed data access, dedicated CI contracts and a discoverable live deployment. Version 0.7.7 introduced release-aware module invalidation. Version 0.7.8 completed that handoff by deactivating prior demo patches and clearing stale Streamlit data caches before the new backend was activated. Version 0.7.9 added a reproducible, SELECT-only readiness gate for the three staged ECB snapshots. Version 0.8.0 built and twice validated the official BLS snapshot in an isolated versioned shadow. Version 0.8.1 atomically promoted that snapshot after complete revalidation and preserved the former active table as the immediate rollback checkpoint. Version 0.8.2 built and twice validated the official PCP snapshot in an isolated shadow while proving that its active table and CSV remained unchanged. Version 0.8.3 atomically promoted the official PCP snapshot after a separate full preflight and preserved the complete former active table for immediate rollback. Version 0.8.4 built the official BSI snapshot in an isolated shadow and independently reproduced its complete source equivalence while preserving the active table. Version 0.8.5 replaces the buffered BSI shadow scan with an explicitly unbuffered, bounded MySQL cursor before any promotion work.
+The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.7.0 completed the controlled Direct Debits rebuild. Version 0.7.1 separated direct runtime dependencies from development tooling and expanded CI. Version 0.7.2 removed Windows-only CI assumptions. Version 0.7.3 added storage-aware EURO fingerprints and field diagnostics. Version 0.7.4 added official ECB staging for fresh BLS, PCP and BSI snapshots. Version 0.7.5 completed their scoped external-volume backups, retention policy and read-only shadow planning without creating any table or changing active CSVs or MySQL. Version 0.7.6 hardened the public database-free demo with stable date-window semantics, plausible bounded stress and macro profiles, cache-backed data access, dedicated CI contracts and a discoverable live deployment. Version 0.7.7 introduced release-aware module invalidation. Version 0.7.8 completed that handoff by deactivating prior demo patches and clearing stale Streamlit data caches before the new backend was activated. Version 0.7.9 added a reproducible, SELECT-only readiness gate for the three staged ECB snapshots. Version 0.8.0 built and twice validated the official BLS snapshot in an isolated versioned shadow. Version 0.8.1 atomically promoted that snapshot after complete revalidation and preserved the former active table as the immediate rollback checkpoint. Version 0.8.2 built and twice validated the official PCP snapshot in an isolated shadow while proving that its active table and CSV remained unchanged. Version 0.8.3 atomically promoted the official PCP snapshot after a separate full preflight and preserved the complete former active table for immediate rollback. Version 0.8.4 built the official BSI snapshot in an isolated shadow and independently reproduced its complete source equivalence while preserving the active table. Version 0.8.5 added bounded shadow batches, and version 0.8.6 forces the genuinely unbuffered MySQL cursor class, proves bounded production-scale memory and completes the SELECT-only BSI promotion preflight.
 
 ## Completed and Functional Modules
 
@@ -220,9 +220,9 @@ Main file:
 
 ## Latest Documented Validation
 
-Version 0.8.5 validation includes:
+Version 0.8.6 validation includes:
 
-- 276/276 deterministic production unit tests passed.
+- 291/291 deterministic production unit tests passed.
 - 12/12 public-demo contracts passed, covering interval invariance, plausible
   stress and macro scales, cross-asset structure and SQL isolation.
 - The demo smoke test generated 38/38 configured assets, 10 events and aligned
@@ -289,11 +289,16 @@ Version 0.8.5 validation includes:
   `3EA9698143D0269BE8C35D880F88666254D98A5D4998F57C1CD93F3CC94C75FA`.
 - No active CSV changed, no retained or failed table was created and no swap
   was authorized or performed. The BSI shadow remains isolated for review.
-- The transient working-set peaks were traced to the SQLAlchemy mysqlconnector
-  result path used by disk-backed shadow validation. The validator now selects
-  through an explicit `buffered=False` DBAPI cursor, caps fetches at 5,000 rows
-  and closes either cursor path deterministically. Regression tests cover the
-  MySQL path and SQLAlchemy fallback without repeating a production-scale scan.
+- Runtime inspection proved that SQLAlchemy's mysqlconnector connection-level
+  buffering overrode `buffered=False` and returned `CMySQLCursorBuffered`.
+  Version 0.8.6 forces `CMySQLCursor`, fails closed if a buffered class is ever
+  returned and shares that guard across active fingerprints, source audits and
+  shadow validation.
+- The complete SELECT-only BSI promotion preflight matched all 8,055,309 source
+  and shadow rows with zero missing or mismatched rows. Its report SHA-256 is
+  `950B70C560858C51E6A67B9CF89170C0A42AF9DB08B987C03589B7D11BB14DB9`.
+- Observed Python memory stayed near a 218 MB working-set and 555 MB private
+  peak. No database write, CSV write, promotion or cleanup occurred.
 
 Previous v0.7.5 validation included:
 
@@ -317,7 +322,9 @@ Previous v0.7.5 validation included:
 - Confirmed the active database was unchanged and no temporary acceptance schema remained.
 - Completed one-by-one read-only plans for 17/17 EURO contracts with zero database writes.
 - Classified 12 contracts as exact, four as changed and one as blocked.
-- Completed the 7,812,208-row Balance Sheet Items comparison after replacing MySQL Connector's buffered result path with a 5,000-row unbuffered cursor.
+- Completed the earlier 7,812,208-row Balance Sheet Items comparison with a
+  bounded fetch request; v0.8.6 later added the required forced cursor class
+  after proving the connection-level default still selected a buffered cursor.
 - Added a lightweight report consolidator and a Data Quality `EURO Sync` view; neither path scans source CSVs nor connects to MySQL.
 - Exercised the Data Quality audit and EURO Sync tab in a real browser, confirmed the 17/12/4/1/0 status, ZIP export control and zero console errors.
 - Proved through complete source/target key comparison that Direct Debits history loss is entirely caused by a `YEAR` target column receiving annual, semiannual and quarterly periods.
@@ -539,8 +546,8 @@ The isolated MySQL acceptance gate, Direct Debits migration, official ECB
 snapshot staging and the separately controlled BLS and PCP promotions are
 complete. The current priority remains controlled source maintenance:
 
-1. execute and review the prepared read-only BSI promotion preflight, then
-   require a new explicit authorization before any atomic swap;
+1. keep the successfully preflighted BSI shadow isolated and require a new
+   explicit authorization before any atomic swap;
 2. retain the former BLS and PCP tables until a separate retention review;
 3. apply the documented official-snapshot-authoritative retention policy for
    the 344,327 BSI keys withdrawn from the current snapshot;

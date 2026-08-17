@@ -219,6 +219,7 @@ class EcbBsiSwapServiceTests(unittest.TestCase):
         )
 
         self.assertTrue(result["ready_for_swap_authorization"])
+        self.assertEqual("v086", result["version"])
         self.assertFalse(result["database_write_performed"])
         self.assertFalse(result["swap_authorized"])
         self.assertFalse(result["swap_performed"])
@@ -473,6 +474,7 @@ class EcbBsiSwapServiceTests(unittest.TestCase):
             core.call_args.kwargs["source_path_overrides"],
         )
         self.assertEqual(retained_checkpoint, result["retained_checkpoint"])
+        self.assertEqual("v087", result["version"])
         self.assertTrue(result["swap_performed"])
         self.assertFalse(result["rollback_performed"])
 

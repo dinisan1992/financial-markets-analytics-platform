@@ -29,7 +29,7 @@ Functional local platform with:
 - Data quality and validation tools.
 - Cross-platform lint, import-safety, dependency, coverage and unit-test checks through GitHub Actions.
 
-Current project version: **v0.8.5**
+Current project version: **v0.8.6**
 
 ## Main Analytical Capabilities
 
@@ -367,9 +367,9 @@ mode. See `docs/ECB_SHADOW_READINESS.md`.
 
 ## Validation Snapshot
 
-The v0.8.5 release validation includes:
+The v0.8.6 release validation includes:
 
-- 276/276 deterministic unit tests pass.
+- 291/291 deterministic unit tests pass.
 - 12/12 public-demo contracts pass, including fixed-window invariance,
   plausible stress/macro levels, shared equity structure and SQL isolation.
 - The demo smoke test generates all 38 configured assets, 10 events and aligned
@@ -402,11 +402,14 @@ The v0.8.5 release validation includes:
 - Before promotion, two complete source-to-shadow comparisons found zero missing, extra, duplicate or mismatched rows while the active table remained unchanged.
 - Version v0.7.0 atomically promoted that shadow and retained the former 75,647-row table under `euro_direct_debits__pre_v069_20260811_163215` for rollback.
 - The post-swap plan is exact and idempotent: 121,564 unchanged rows, zero inserts, updates, target-only rows or blockers; the schema audit now classifies 17/17 EURO contracts as write-ready.
-- MySQL Connector target scans use an explicitly unbuffered cursor capped at 5,000 rows; the 7,812,208-row balance-sheet plan completed without buffering the result set into memory.
-- Disk-backed shadow validation now uses the same explicit unbuffered MySQL
-  cursor and 5,000-row ceiling. This removes the SQLAlchemy result-buffering
-  path that caused transient multi-gigabyte Python working sets during the BSI
-  build and independent verification.
+- MySQL Connector target scans force the public unbuffered cursor class and
+  reject any cursor whose runtime type remains buffered. This is necessary
+  because SQLAlchemy configures the underlying connection with buffering and
+  the driver treats `buffered=False` as unable to override that default.
+- A complete BSI promotion preflight repeated the 7,812,208-row active
+  fingerprint and 8,055,309-row source/shadow comparison with an observed peak
+  near 218 MB working set and 555 MB private memory, instead of the previous
+  multi-gigabyte growth.
 - EURO row fingerprints now respect target `FLOAT` and `DECIMAL` precision,
   normalize signed zero and ignore outer text whitespace, preventing permanent
   false updates caused by SQL storage representation.
@@ -536,8 +539,8 @@ Planned improvements include:
 - Calibrate risk thresholds by asset class and data provenance.
 - Replace important year-only world events with verified exact dates.
 - Add dry-run and explicit entry points to the remaining SQL-capable ETL scripts.
-- Run and review the prepared SELECT-only BSI promotion preflight. Keep the
-  validated shadow isolated until a later explicit atomic-swap authorization.
+- Keep the successfully preflighted BSI shadow isolated until a later explicit
+  atomic-swap authorization.
 - Retain the former BLS and PCP tables until a separate retention review.
 - Treat the 3,822,937-row Government Finance source expansion as a separate controlled migration.
 - Refresh the remaining stale market sources through verified provider

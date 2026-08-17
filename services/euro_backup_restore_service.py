@@ -24,6 +24,7 @@ from services.euro_rebuild_service import (
 )
 from services.macro_import_service import normalize_column_name
 from services.market_data_sync_service import validate_identifier
+from services.mysql_streaming_service import unbuffered_mysql_cursor
 
 
 BACKUP_VERIFY_VERSION = "v068"
@@ -181,7 +182,7 @@ def _target_value_batches(connection, statement, chunk_size):
     dialect = connection.engine.dialect
     if dialect.name in {"mysql", "mariadb"} and dialect.driver == "mysqlconnector":
         driver_connection = connection.connection.driver_connection
-        cursor = driver_connection.cursor(buffered=False)
+        cursor = unbuffered_mysql_cursor(driver_connection)
         try:
             cursor.execute(statement.text)
             while rows := cursor.fetchmany(chunk_size):

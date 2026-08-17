@@ -34,9 +34,10 @@ from services.market_data_sync_service import validate_identifier
 
 
 IMPORT_KEY = "EURO_BALANCE_SHEET_ITEMS"
-SWAP_VERSION = "v086"
+PREFLIGHT_VERSION = "v086"
+SWAP_VERSION = "v087"
 VERIFICATION_VERSION = "v084"
-SWAP_BSI_CONFIRMATION = "SWAP_EURO_BALANCE_SHEET_ITEMS_V086_ACTIVE"
+SWAP_BSI_CONFIRMATION = "SWAP_EURO_BALANCE_SHEET_ITEMS_V087_ACTIVE"
 
 
 def canonical_evidence(value):
@@ -461,7 +462,7 @@ def preflight_bsi_swap(
         raise RuntimeError("BSI failed-table name already exists")
 
     return {
-        "version": SWAP_VERSION,
+        "version": PREFLIGHT_VERSION,
         "shadow_version": PLAN_VERSION,
         "stage": "swap_preflight",
         "import_key": IMPORT_KEY,

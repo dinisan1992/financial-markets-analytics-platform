@@ -73,12 +73,15 @@ backups, credentials and absolute local paths are not published.
 
 The build and verification completed successfully, but host telemetry observed
 transient Python working-set peaks of approximately 14.2 GB and 12.8 GB during
-the large comparisons. Version v0.8.5 traced those peaks to the SQLAlchemy
-mysqlconnector result path in disk-backed shadow validation and replaced it
-with an explicit `buffered=False` DBAPI cursor capped at 5,000 rows per fetch.
-The SQLAlchemy fallback is also bounded and closed deterministically. Unit
-tests cover both paths; no further production-scale BSI scan or database write
-was performed for this optimization checkpoint.
+the large comparisons. Version v0.8.5 first replaced the SQLAlchemy result
+object with a cursor requesting `buffered=False`. Production telemetry then
+proved that SQLAlchemy's connection-level mysqlconnector default overrode that
+request and still returned `CMySQLCursorBuffered`. Version v0.8.6 forces the
+public `CMySQLCursor` class and fails closed if its runtime type is buffered.
+
+The complete v0.8.6 preflight repeated the active fingerprint and full
+source-to-shadow comparison with an observed peak near 218 MB working set and
+555 MB private memory. It performed no database or active-CSV write.
 
 ## Remaining Authorization Gate
 
