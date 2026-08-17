@@ -29,7 +29,7 @@ Functional local platform with:
 - Data quality and validation tools.
 - Cross-platform lint, import-safety, dependency, coverage and unit-test checks through GitHub Actions.
 
-Current project version: **v0.8.1**
+Current project version: **v0.8.2**
 
 ## Main Analytical Capabilities
 
@@ -367,9 +367,9 @@ mode. See `docs/ECB_SHADOW_READINESS.md`.
 
 ## Validation Snapshot
 
-The v0.8.1 validation includes:
+The v0.8.2 validation includes:
 
-- 251/251 deterministic unit tests pass.
+- 254/254 deterministic unit tests pass.
 - 12/12 public-demo contracts pass, including fixed-window invariance,
   plausible stress/macro levels, shared equity structure and SQL isolation.
 - The demo smoke test generates all 38 configured assets, 10 events and aligned
@@ -443,6 +443,12 @@ The v0.8.1 validation includes:
   differences. The former 1,164,356-row active table remains intact under its
   versioned retained name; no table or source row was deleted. See
   `docs/ECB_BLS_SWAP.md`.
+- The separately authorized PCP build created a 1,081,151-row Card Payments
+  shadow and validated every official source key and mapped value twice with
+  zero mismatches.
+- The 815,173-row PCP active table retained identical data and schema
+  fingerprints. No retained table, swap or active-CSV change was authorized or
+  performed. See `docs/ECB_PCP_SHADOW.md`.
 - Data Quality exposes the latest saved status, source freshness, planned actions and blockers for every EURO contract without rescanning CSVs or querying MySQL.
 
 The retained v0.5.6 database validation includes:
@@ -508,10 +514,10 @@ Planned improvements include:
 - Calibrate risk thresholds by asset class and data provenance.
 - Replace important year-only world events with verified exact dates.
 - Add dry-run and explicit entry points to the remaining SQL-capable ETL scripts.
-- Build and fully validate the staged PCP shadow under a separate authorization,
-  then review its evidence before any promotion.
-- Repeat the same isolated process for BSI only after the PCP checkpoint. Their
-  backups and read-only readiness checks are complete.
+- Review the completed PCP shadow evidence and require separate authorization
+  before any atomic promotion.
+- Repeat the same isolated build process for BSI only after the PCP decision.
+  Its backup and read-only readiness checks are complete.
 - Treat the 3,822,937-row Government Finance source expansion as a separate controlled migration.
 - Refresh the remaining stale market sources through verified provider
   contracts.

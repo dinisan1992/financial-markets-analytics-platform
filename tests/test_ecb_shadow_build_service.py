@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, Mock, patch
 import unittest
 
 from services.ecb_shadow_build_service import (
+    active_table_checkpoint,
     compare_source_shadow_row,
     build_ecb_shadow,
     repair_shadow_storage_hash,
@@ -12,7 +13,7 @@ from services.ecb_shadow_build_service import (
 from services.ecb_shadow_readiness_service import build_confirmation
 
 
-IMPORT_KEY = "EURO_BANK_LENDING_SURVEY"
+IMPORT_KEY = "EURO_CARD_PAYMENTS"
 SUFFIX = "20260817_115720"
 
 
@@ -34,23 +35,30 @@ def readiness_payload():
                 "blockers": [],
                 "ready_for_shadow_build_authorization": True,
                 "candidate": {
-                    "file_name": "Bank Lending Survey.csv",
+                    "file_name": (
+                        "Card payments and cash withdrawals using cards "
+                        "(including fraud data).csv"
+                    ),
                     "bytes": 100,
                     "sha256": "A",
                 },
                 "backup": {
-                    "file_name": "bls.sql",
+                    "file_name": "pcp.sql",
                     "bytes": 200,
                     "sha256": "B",
                 },
                 "audit": {"source_rows": 10, "target_rows": 8},
+                "active_checkpoint": {
+                    "target_rows": 8,
+                    "schema_signature": {"sha256": "ACTIVE"},
+                },
                 "planned_names": {
                     "shadow_table": (
-                        "euro_bank_lending_survey__shadow_v079_"
+                        "euro_card_payments__shadow_v079_"
                         f"{SUFFIX}"
                     ),
                     "retained_table": (
-                        "euro_bank_lending_survey__pre_v079_"
+                        "euro_card_payments__pre_v079_"
                         f"{SUFFIX}"
                     ),
                     "shadow_exists": False,
@@ -62,10 +70,36 @@ def readiness_payload():
 
 
 class EcbShadowBuildServiceTests(unittest.TestCase):
-    def test_only_bls_is_buildable_in_this_checkpoint(self):
+    def test_only_pcp_is_buildable_in_this_checkpoint(self):
         self.assertEqual(IMPORT_KEY, validate_build_import_key(IMPORT_KEY))
         with self.assertRaisesRegex(ValueError, "not authorized"):
-            validate_build_import_key("EURO_CARD_PAYMENTS")
+            validate_build_import_key("EURO_BANK_LENDING_SURVEY")
+
+    @patch("services.ecb_shadow_build_service.table_schema_signature")
+    @patch("services.ecb_shadow_build_service.table_fingerprint")
+    @patch("services.ecb_shadow_build_service.mapped_source_columns")
+    @patch("services.ecb_shadow_build_service.get_macro_import")
+    def test_checkpoint_keeps_historical_bls_evidence_available(
+        self,
+        contract_mock,
+        columns_mock,
+        fingerprint_mock,
+        schema_mock,
+    ):
+        contract_mock.return_value = {
+            "table_name": "euro_bank_lending_survey",
+        }
+        columns_mock.return_value = ("key_code", "time_period")
+        fingerprint_mock.return_value = {"rows": 10, "sha256": "DATA"}
+        schema_mock.return_value = {"sha256": "SCHEMA"}
+
+        checkpoint = active_table_checkpoint(
+            Mock(),
+            "EURO_BANK_LENDING_SURVEY",
+        )
+
+        self.assertEqual("euro_bank_lending_survey", checkpoint["table"])
+        self.assertEqual("DATA", checkpoint["data"]["sha256"])
 
     def test_readiness_report_rejects_executed_statements(self):
         payload = readiness_payload()
@@ -84,7 +118,7 @@ class EcbShadowBuildServiceTests(unittest.TestCase):
         import pandas as pd
 
         contract_mock.return_value = {
-            "table_name": "euro_bank_lending_survey",
+            "table_name": "euro_card_payments",
             "column_aliases": {},
         }
         chunks_mock.return_value = [
@@ -115,7 +149,7 @@ class EcbShadowBuildServiceTests(unittest.TestCase):
             result = compare_source_shadow_row(
                 engine,
                 IMPORT_KEY,
-                "euro_bank_lending_survey__shadow_v079_test",
+                "euro_card_payments__shadow_v079_test",
                 "source.csv",
                 "KEY",
                 "2020-Q2",
@@ -141,6 +175,42 @@ class EcbShadowBuildServiceTests(unittest.TestCase):
 
         core.assert_not_called()
 
+    @patch("services.ecb_shadow_build_service.build_and_validate_shadows")
+    @patch("services.ecb_shadow_build_service.build_ecb_shadow_readiness")
+    def test_changed_active_schema_stops_before_shadow_core(
+        self,
+        fresh_readiness,
+        core,
+    ):
+        payload = readiness_payload()
+        plan = payload["plans"][0]
+        fresh_readiness.return_value = {
+            **plan,
+            "active_checkpoint": {
+                "target_rows": 8,
+                "schema_signature": {"sha256": "CHANGED"},
+            },
+            "ready_for_shadow_build_authorization": True,
+        }
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "active_checkpoint.schema_signature.sha256",
+        ):
+            build_ecb_shadow(
+                Mock(),
+                IMPORT_KEY,
+                confirmation=build_confirmation(IMPORT_KEY),
+                readiness_payload=payload,
+                pin={},
+                audit_payload={"source_rows": 10},
+                staging_dir="staging",
+                backup_dir="backup",
+                workspace_dir="workspace",
+            )
+
+        core.assert_not_called()
+
     @patch("services.ecb_shadow_build_service.compare_source_shadow_row")
     def test_hash_repair_requires_canonical_equivalence(self, diagnose):
         diagnose.return_value = {
@@ -152,12 +222,12 @@ class EcbShadowBuildServiceTests(unittest.TestCase):
             repair_shadow_storage_hash(
                 MagicMock(),
                 IMPORT_KEY,
-                "euro_bank_lending_survey__shadow_v079_test",
+                "euro_card_payments__shadow_v079_test",
                 "source.csv",
                 "KEY",
                 "2020-Q2",
                 confirmation=(
-                    "REPAIR_EURO_BANK_LENDING_SURVEY_V079_SHADOW_HASHES"
+                    "REPAIR_EURO_CARD_PAYMENTS_V079_SHADOW_HASHES"
                 ),
             )
 
@@ -165,7 +235,7 @@ class EcbShadowBuildServiceTests(unittest.TestCase):
     def test_hash_repair_updates_exactly_one_guarded_shadow_row(self, diagnose):
         diagnose.return_value = {
             "import_key": IMPORT_KEY,
-            "shadow_table": "euro_bank_lending_survey__shadow_v079_test",
+            "shadow_table": "euro_card_payments__shadow_v079_test",
             "key_code": "KEY",
             "time_period": "2020-Q2",
             "stored_hash": "A" * 64,
@@ -181,17 +251,17 @@ class EcbShadowBuildServiceTests(unittest.TestCase):
         result = repair_shadow_storage_hash(
             engine,
             IMPORT_KEY,
-            "euro_bank_lending_survey__shadow_v079_test",
+            "euro_card_payments__shadow_v079_test",
             "source.csv",
             "KEY",
             "2020-Q2",
             confirmation=(
-                "REPAIR_EURO_BANK_LENDING_SURVEY_V079_SHADOW_HASHES"
+                "REPAIR_EURO_CARD_PAYMENTS_V079_SHADOW_HASHES"
             ),
         )
 
         statement = str(connection.execute.call_args.args[0])
-        self.assertIn("euro_bank_lending_survey__shadow_v079_test", statement)
+        self.assertIn("euro_card_payments__shadow_v079_test", statement)
         self.assertEqual(1, result["rows_updated"])
         self.assertTrue(result["database_write_performed"])
         self.assertFalse(result["active_table_changed"])
@@ -251,10 +321,15 @@ class EcbShadowBuildServiceTests(unittest.TestCase):
 
         overrides = core.call_args.kwargs["source_path_overrides"]
         self.assertEqual(
-            Path("staging").resolve() / "Bank Lending Survey.csv",
+            Path("staging").resolve()
+            / (
+                "Card payments and cash withdrawals using cards "
+                "(including fraud data).csv"
+            ),
             overrides[IMPORT_KEY],
         )
         self.assertFalse(result["active_table_changed"])
+        self.assertFalse(result["active_csv_write_performed"])
         self.assertFalse(result["swap_authorized"])
         self.assertFalse(result["swap_performed"])
 

@@ -4,6 +4,31 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [v0.8.2] - 2026-08-17 - Verified Official PCP Shadow
+
+### Added
+
+- Restricted the ECB build-only command to `EURO_CARD_PAYMENTS` for this
+  checkpoint; BLS and BSI are not accepted build targets.
+- Bound the builder to the recorded pin-manifest name and SHA-256 in addition
+  to the readiness report, source, backup and exact confirmation.
+- Added active row/schema and complete audit-classification comparisons before
+  any shadow creation, plus explicit active-CSV write evidence.
+
+### Database Evidence
+
+- Created `euro_card_payments__shadow_v079_20260817_115720` and loaded all
+  1,081,151 unique official PCP source rows.
+- Passed two complete memory-bounded validations with zero null keys,
+  duplicates, missing rows, row-hash mismatches or source-hash mismatches.
+- Confirmed that the 815,173-row active table retained identical data and
+  schema fingerprints. No swap, retained table, failed table or active-CSV
+  change was authorized or performed.
+- The build report SHA-256 is
+  `D07C53007549F70E26E3885C1D49A52AF5A2064F8EE0E708A57D5762C1A0306D`;
+  the independent post-build verification SHA-256 is
+  `A564DD9E61E910BC62825A78B31771D82256C57A045C68431E95040DBC8C6E0B`.
+
 ## [v0.8.1] - 2026-08-17 - Atomic Official BLS Promotion
 
 ### Added

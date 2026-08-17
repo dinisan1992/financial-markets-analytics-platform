@@ -547,9 +547,9 @@ Prepare the project for professional presentation.
 
 The current priority is:
 
-1. Obtain separate authorization for a build-only official PCP shadow
-2. Completely validate PCP before considering any promotion
-3. Repeat the separately controlled process for BSI only after PCP
+1. Review the complete and twice-validated official PCP shadow
+2. Obtain separate authorization before any atomic PCP promotion
+3. Repeat the separately controlled build process for BSI only after PCP
 4. Keep the retained BLS checkpoint until its retention review is authorized
 5. Validate stale sources and updater behaviour asset by asset
 6. Confirm the historical WTI contract/source without automatic correction

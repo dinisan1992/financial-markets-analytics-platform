@@ -57,6 +57,18 @@ def _audit_path(audit_dir, import_key):
     return Path(audit_dir) / f"{import_key.lower()}.json"
 
 
+def _verified_pin_file(path, readiness_payload):
+    path = path.expanduser().resolve()
+    if not path.is_file():
+        raise FileNotFoundError(f"ECB pin manifest not found: {path}")
+    if path.name != readiness_payload.get("pin_manifest_file"):
+        raise ValueError("ECB pin manifest file name mismatch")
+    actual_sha256 = file_sha256(path)
+    if actual_sha256 != readiness_payload.get("pin_manifest_sha256"):
+        raise ValueError("ECB pin manifest SHA-256 mismatch")
+    return pinned_plans(load_json(path))
+
+
 def _write_report(output_dir, payload):
     output_dir = output_dir.expanduser().resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -95,6 +107,7 @@ def main(argv=None):
     actual_readiness_sha256 = file_sha256(readiness_report)
     if actual_readiness_sha256 != args.readiness_sha256.upper():
         raise ValueError("Readiness report SHA-256 mismatch")
+    readiness_payload = load_json(readiness_report)
     staging_dir = args.staging_dir.expanduser().resolve()
     backup_dir = args.backup_dir.expanduser().resolve()
     audit_dir = args.audit_dir.expanduser().resolve()
@@ -103,7 +116,7 @@ def main(argv=None):
         if not path.is_dir():
             raise FileNotFoundError(f"Required ECB directory not found: {path}")
     pin_file = args.pin_file.expanduser().resolve()
-    pin = pinned_plans(load_json(pin_file))[args.import_key]
+    pin = _verified_pin_file(pin_file, readiness_payload)[args.import_key]
     audit_payload = load_json(_audit_path(audit_dir, args.import_key))
 
     engine = create_engine(get_sqlalchemy_database_url(), pool_pre_ping=True)
@@ -112,7 +125,7 @@ def main(argv=None):
             engine,
             args.import_key,
             confirmation=args.confirm,
-            readiness_payload=load_json(readiness_report),
+            readiness_payload=readiness_payload,
             pin=pin,
             audit_payload=audit_payload,
             staging_dir=staging_dir,

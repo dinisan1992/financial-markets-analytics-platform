@@ -4,9 +4,10 @@ Version: v0.7.9
 
 Date: 17 August 2026
 
-Status update: the authorized BLS shadow was built and fully validated later
-the same day. The active BLS table remains unchanged and no swap was performed.
-See `docs/ECB_BLS_SHADOW.md`.
+Status update: BLS was subsequently built, validated and promoted through its
+separate atomic checkpoint. PCP was then built and twice validated in an
+isolated shadow without promotion. See `docs/ECB_BLS_SWAP.md` and
+`docs/ECB_PCP_SHADOW.md`.
 
 ## Scope And Safety
 
@@ -105,12 +106,12 @@ files, SQL dumps, credentials and absolute local paths are not published.
 
 ## Next Authorization Gate
 
-All three contracts pass the read-only readiness gate. The controlled order is:
+BLS and PCP completed their separately authorized builds; BLS was later
+promoted and PCP remains an isolated validated shadow. The next gates are:
 
-1. build and completely validate BLS;
-2. build and completely validate PCP;
-3. build and completely validate BSI.
+1. review PCP and require separate authorization before any promotion;
+2. build and completely validate BSI under its own authorization;
+3. review BSI before any later promotion.
 
-Each build is a database write and therefore requires a separate explicit
-authorization. Active-table promotion remains a later, separately confirmed
-operation after complete shadow evidence has been reviewed.
+Each build and promotion remains a distinct database write with a separate
+explicit authorization.

@@ -31,7 +31,7 @@ from services.macro_import_service import normalize_column_name
 from services.market_data_sync_service import validate_identifier
 
 
-BUILDABLE_IMPORT_KEYS = ("EURO_BANK_LENDING_SURVEY",)
+BUILDABLE_IMPORT_KEYS = ("EURO_CARD_PAYMENTS",)
 
 
 def validate_build_import_key(import_key):
@@ -82,7 +82,7 @@ def validate_readiness_report(payload, import_key):
 
 
 def active_table_checkpoint(engine, import_key):
-    key = validate_build_import_key(import_key)
+    key = validate_ecb_import_key(import_key)
     contract = get_macro_import(key)
     table_name = validate_identifier(contract["table_name"])
     columns = mapped_source_columns(contract)
@@ -270,14 +270,33 @@ def _assert_same_readiness(recorded, current):
         ("backup", "sha256"),
         ("audit", "source_rows"),
         ("audit", "target_rows"),
+        ("audit", "source_unique_business_keys"),
+        ("audit", "target_unique_business_keys"),
+        ("audit", "source_rows_missing_from_target"),
+        ("audit", "target_rows_missing_from_source"),
+        ("audit", "row_hash_mismatches"),
+        ("audit", "source_null_business_keys"),
+        ("audit", "target_null_business_keys"),
+        ("audit", "source_duplicate_business_key_groups"),
+        ("audit", "target_duplicate_business_key_groups"),
+        ("active_checkpoint", "target_rows"),
+        ("active_checkpoint", "schema_signature", "sha256"),
         ("planned_names", "shadow_table"),
         ("planned_names", "retained_table"),
     )
+
+    def nested_value(payload, path):
+        value = payload
+        for field in path:
+            if not isinstance(value, dict):
+                return None
+            value = value.get(field)
+        return value
+
     changed = [
-        f"{section}.{field}"
-        for section, field in checks
-        if recorded.get(section, {}).get(field)
-        != current.get(section, {}).get(field)
+        ".".join(path)
+        for path in checks
+        if nested_value(recorded, path) != nested_value(current, path)
     ]
     if changed:
         raise ValueError(f"ECB readiness evidence changed: {changed}")
@@ -395,6 +414,7 @@ def build_ecb_shadow(
         ),
         "active_table_changed": False,
         "active_tables_changed": False,
+        "active_csv_write_performed": False,
         "shadow_ready_for_swap_review": True,
         "swap_authorized": False,
         "swap_performed": False,

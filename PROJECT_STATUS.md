@@ -4,7 +4,7 @@ Last updated: 17 August 2026
 
 ## Current Version
 
-**Macro-Financial Risk & Market Behaviour Analytics Platform v0.8.1**
+**Macro-Financial Risk & Market Behaviour Analytics Platform v0.8.2**
 
 ## Executive Summary
 
@@ -22,7 +22,7 @@ It combines:
 - interactive dashboarding;
 - data quality validation.
 
-The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.7.0 completed the controlled Direct Debits rebuild. Version 0.7.1 separated direct runtime dependencies from development tooling and expanded CI. Version 0.7.2 removed Windows-only CI assumptions. Version 0.7.3 added storage-aware EURO fingerprints and field diagnostics. Version 0.7.4 added official ECB staging for fresh BLS, PCP and BSI snapshots. Version 0.7.5 completed their scoped external-volume backups, retention policy and read-only shadow planning without creating any table or changing active CSVs or MySQL. Version 0.7.6 hardened the public database-free demo with stable date-window semantics, plausible bounded stress and macro profiles, cache-backed data access, dedicated CI contracts and a discoverable live deployment. Version 0.7.7 introduced release-aware module invalidation. Version 0.7.8 completed that handoff by deactivating prior demo patches and clearing stale Streamlit data caches before the new backend was activated. Version 0.7.9 added a reproducible, SELECT-only readiness gate for the three staged ECB snapshots. Version 0.8.0 built and twice validated the official BLS snapshot in an isolated versioned shadow. Version 0.8.1 atomically promoted that snapshot after complete revalidation and preserved the former active table as the immediate rollback checkpoint.
+The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.7.0 completed the controlled Direct Debits rebuild. Version 0.7.1 separated direct runtime dependencies from development tooling and expanded CI. Version 0.7.2 removed Windows-only CI assumptions. Version 0.7.3 added storage-aware EURO fingerprints and field diagnostics. Version 0.7.4 added official ECB staging for fresh BLS, PCP and BSI snapshots. Version 0.7.5 completed their scoped external-volume backups, retention policy and read-only shadow planning without creating any table or changing active CSVs or MySQL. Version 0.7.6 hardened the public database-free demo with stable date-window semantics, plausible bounded stress and macro profiles, cache-backed data access, dedicated CI contracts and a discoverable live deployment. Version 0.7.7 introduced release-aware module invalidation. Version 0.7.8 completed that handoff by deactivating prior demo patches and clearing stale Streamlit data caches before the new backend was activated. Version 0.7.9 added a reproducible, SELECT-only readiness gate for the three staged ECB snapshots. Version 0.8.0 built and twice validated the official BLS snapshot in an isolated versioned shadow. Version 0.8.1 atomically promoted that snapshot after complete revalidation and preserved the former active table as the immediate rollback checkpoint. Version 0.8.2 built and twice validated the official PCP snapshot in an isolated shadow while proving that its active table and CSV remained unchanged.
 
 ## Completed and Functional Modules
 
@@ -220,9 +220,9 @@ Main file:
 
 ## Latest Documented Validation
 
-Version 0.8.1 validation includes:
+Version 0.8.2 validation includes:
 
-- 251/251 deterministic production unit tests passed.
+- 254/254 deterministic production unit tests passed.
 - 12/12 public-demo contracts passed, covering interval invariance, plausible
   stress and macro scales, cross-asset structure and SQL isolation.
 - The demo smoke test generated 38/38 configured assets, 10 events and aligned
@@ -251,6 +251,17 @@ Version 0.8.1 validation includes:
 - The former 1,164,356-row active table remains intact as
   `euro_bank_lending_survey__pre_v079_20260817_115720`; no failed or shadow
   artifact remains and rollback does not require restoring the SQL dump.
+- The PCP-only builder reverified the pinned readiness report, source, scoped
+  backup, audit classifications, active schema and available capacity before
+  creating `euro_card_payments__shadow_v079_20260817_115720`.
+- Two complete validations matched all 1,081,151 source rows and unique keys,
+  with zero null keys, duplicates, missing rows or hash mismatches.
+- The 815,173-row PCP active table remained at data SHA-256
+  `491E0A03679544679FF7381D4027461C7BBF576F54E08F7C051BAA2EDA82887C`
+  and schema SHA-256
+  `A0379A34BB5AFCBD7AA588F6F0C068243920400D0BE81CE1CF1F050CF89C8A8B`.
+- No PCP swap, retained table, failed table or active-CSV change was authorized
+  or performed.
 
 Previous v0.7.5 validation included:
 
@@ -493,13 +504,14 @@ Planned work:
 The project already contains a validated multi-asset, FED macro and EURO macro analytical layer.
 
 The isolated MySQL acceptance gate, Direct Debits migration, official ECB
-snapshot staging and BLS promotion are complete. The current priority remains
-controlled source maintenance:
+snapshot staging, BLS promotion and PCP shadow build are complete. The current
+priority remains controlled source maintenance:
 
-1. obtain separate authorization to build and completely validate the staged
-   PCP shadow without promoting it;
-2. review the PCP evidence and decide on its promotion independently;
-3. repeat the isolated build/review process for BSI only after PCP;
+1. review the completed PCP shadow evidence and require separate authorization
+   before any atomic promotion;
+2. preserve the former PCP table under the planned retained name if promotion
+   is later authorized;
+3. repeat the isolated build/review process for BSI only after the PCP decision;
 4. apply the documented official-snapshot-authoritative retention policy for
    the 6,168 PCP and 344,327 BSI keys withdrawn from current snapshots;
 5. treat the Government Finance expansion as a dedicated migration with a
