@@ -547,14 +547,15 @@ Prepare the project for professional presentation.
 
 The current priority is:
 
-1. Obtain separate authorization for the prepared BSI-only shadow build
-2. Keep the retained BLS and PCP checkpoints until their retention review is authorized
-3. Validate the complete official BSI source against the isolated shadow twice before any promotion decision
-4. Preserve the withdrawn BSI keys in a retained rollback checkpoint
-5. Validate stale sources and updater behaviour asset by asset
-6. Confirm the historical WTI contract/source without automatic correction
-7. Design Event Study v2 with benchmarks and abnormal returns
-8. Begin machine learning only after data quality and feature governance are stable
+1. Profile and reduce the transient BSI verification memory peaks
+2. Prepare a BSI-only atomic promotion command and independent read-only preflight
+3. Obtain separate authorization only after reviewing the complete promotion evidence
+4. Preserve the former active BSI table as the immediate rollback checkpoint
+5. Keep the retained BLS and PCP checkpoints until their retention review is authorized
+6. Validate stale sources and updater behaviour asset by asset
+7. Confirm the historical WTI contract/source without automatic correction
+8. Design Event Study v2 with benchmarks and abnormal returns
+9. Begin machine learning only after data quality and feature governance are stable
 
 ---
 

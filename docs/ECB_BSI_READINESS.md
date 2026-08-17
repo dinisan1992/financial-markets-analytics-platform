@@ -1,15 +1,20 @@
 # Official BSI Shadow Readiness
 
-Status: ready for separate shadow-build authorization
+Status: completed by the separately authorized v0.8.4 shadow build
 
 Date: 17 August 2026
 
 ## Scope
 
-This checkpoint is restricted to `EURO_BALANCE_SHEET_ITEMS` (`BSI`). It
+This document records the final pre-write state for
+`EURO_BALANCE_SHEET_ITEMS` (`BSI`). It
 revalidates the official staged snapshot, scoped SQL backup, current active
 table, future table names and storage capacity. No shadow, retained or failed
-table was created, and no active CSV or MySQL row was changed.
+table was created by this readiness pass, and no active CSV or MySQL row was
+changed by it.
+
+The separately authorized v0.8.4 operation subsequently created and validated
+the planned shadow. See `docs/ECB_BSI_SHADOW.md` for the current evidence.
 
 The current build command accepts BSI only. BLS and PCP are rejected targets,
 and the command exposes no swap or promotion mode. Its only cleanup path is an
@@ -106,3 +111,10 @@ The SELECT-only readiness report SHA-256 is
 It records zero SQL writes, zero active-CSV writes, zero executed statements,
 zero errors and no blockers. Raw reports and machine-specific paths remain
 excluded from Git.
+
+## Completion
+
+The exact confirmation was later supplied and the planned shadow was built.
+All 8,055,309 official rows passed two complete build validations and one
+independent post-build validation. Promotion remains a separate, unauthorized
+operation.

@@ -4,7 +4,7 @@ All notable changes to this project will be documented here.
 
 ---
 
-## [Unreleased] - Isolated BSI Shadow Preparation
+## [v0.8.4] - 2026-08-17 - Build And Validate Official BSI Shadow
 
 ### Added
 
@@ -16,10 +16,29 @@ All notable changes to this project will be documented here.
   values before accepting the readiness evidence.
 - Added guarded failure cleanup that can drop only the exact newly generated
   shadow and then proves that the active table checkpoint is unchanged.
+- Added a BSI-only post-build verifier with no confirmation, build, cleanup or
+  swap mode. It chains the signed readiness/build reports and repeats the
+  complete source-to-shadow comparison through read-only SQL access.
+
+### Database Evidence
+
+- Created `euro_balance_sheet_items__shadow_v079_20260817_141854` and loaded
+  all 8,055,309 unique official source rows from `1980-01` through `2026-Q2`.
+- Passed two build validations plus one independent post-build validation with
+  zero null keys, duplicate groups, missing rows, row-hash mismatches or
+  source-hash mismatches.
+- Preserved the 7,812,208-row active table with identical before/after data and
+  schema fingerprints. No active CSV, retained table or failed table changed.
+- Recorded build report SHA-256
+  `F3D9C448D68781630B666272F940E020398C1F194EFCC7001DE3F0D8BA19DEE6`
+  and independent verification SHA-256
+  `D9F1EB83336C617EC32B8E7B3AAB5E25E1DC22AF66D8B6BBD1DAA99E0E2577EB`.
+- Left the shadow isolated with `swap_authorized: false` and
+  `swap_performed: false`.
 
 ### Validation
 
-- Passed 270/270 deterministic unit tests, including current BSI-only builder
+- Passed 275/275 deterministic unit tests, including current BSI-only builder
   guards and historical PCP/BLS regression coverage.
 - Confirmed 7,812,208 unchanged active rows, safe period/value types and no
   shadow, retained or failed-name collision.
@@ -29,6 +48,11 @@ All notable changes to this project will be documented here.
   any future promotion remain separately authorized operations.
 - Covered successful cleanup, non-shadow refusal and failed-build active-table
   preservation with deterministic tests.
+- Confirmed the independent verifier exposes no database-write or promotion
+  option and rejects altered reports, unsupported imports and invalid inputs.
+- Observed transient high Python working sets during the complete BSI
+  comparisons; dedicated peak-memory profiling remains a follow-up before
+  unattended execution.
 
 ## [v0.8.3] - 2026-08-17 - Atomic Official PCP Promotion
 

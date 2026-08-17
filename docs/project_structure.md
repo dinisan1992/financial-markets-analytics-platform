@@ -21,6 +21,7 @@ The root is reserved for entry points and shared modules:
 - `README.md`, `PROJECT_STATUS.md`, `requirements.txt`, `requirements-dev.txt`, `ruff.toml`, `.coveragerc`, `.env.example`, `.gitignore`, `VERSION`.
 - `docs/CI.md` - dependency, lint, import-safety, test-matrix and coverage contracts.
 - `docs/ECB_PCP_SWAP.md` - signed v0.8.3 PCP active/retained promotion evidence.
+- `docs/ECB_BSI_SHADOW.md` - signed v0.8.4 BSI build and independent verification evidence.
 
 ## Dashboard
 
@@ -56,6 +57,7 @@ Market data maintenance entry points:
 - `project_scripts/diagnostics/audit_euro_streaming_completeness.py` - memory-bounded, SELECT-only source-to-target comparison with an optional explicit staged-source directory.
 - `project_scripts/diagnostics/plan_ecb_shadow_refresh.py` - BLS/PCP/BSI readiness gate that verifies pinned evidence and emits SQL previews only.
 - `project_scripts/diagnostics/build_ecb_shadow.py` - exact-confirmation ECB shadow builder currently restricted to BSI and exposing no swap mode.
+- `project_scripts/diagnostics/verify_ecb_shadow_build.py` - BSI-only independent post-build verification with no write or promotion mode.
 - `project_scripts/diagnostics/repair_ecb_shadow_hash.py` - guarded representation-equivalent technical-hash repair followed by two complete validations.
 - `project_scripts/diagnostics/swap_ecb_bls.py` - swap-only BLS promotion bound to pinned readiness/build reports and exact confirmation.
 - `project_scripts/diagnostics/preflight_ecb_pcp_swap.py` - complete SELECT-only PCP promotion preflight with no swap option.
@@ -74,6 +76,7 @@ Market data maintenance entry points:
 - `services/euro_direct_debits_swap_service.py` - Direct Debits promotion checks, retained checkpoint and post-swap evidence.
 - `services/ecb_shadow_readiness_service.py` - read-only ECB hash, backup, audit, schema, capacity and future-name validation.
 - `services/ecb_shadow_build_service.py` - pinned external-source build, active-table checkpoint, guarded partial-shadow failure cleanup, storage diagnosis and shadow-only repair controls.
+- `services/ecb_shadow_post_build_service.py` - signed BSI evidence chaining, pinned-file checks and complete read-only source/shadow revalidation.
 - `services/ecb_bls_swap_service.py` - BLS preflight, atomic promotion, retained-table proof, complete source audit and automatic rollback controls.
 - `services/ecb_pcp_swap_service.py` - chained PCP evidence checks, live preflight, atomic promotion and automatic rollback controls.
 

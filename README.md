@@ -29,7 +29,7 @@ Functional local platform with:
 - Data quality and validation tools.
 - Cross-platform lint, import-safety, dependency, coverage and unit-test checks through GitHub Actions.
 
-Current project version: **v0.8.3**
+Current project version: **v0.8.4**
 
 ## Main Analytical Capabilities
 
@@ -367,9 +367,9 @@ mode. See `docs/ECB_SHADOW_READINESS.md`.
 
 ## Validation Snapshot
 
-The v0.8.3 release validation includes:
+The v0.8.4 release validation includes:
 
-- 270/270 deterministic unit tests pass.
+- 275/275 deterministic unit tests pass.
 - 12/12 public-demo contracts pass, including fixed-window invariance,
   plausible stress/macro levels, shared equity structure and SQL isolation.
 - The demo smoke test generates all 38 configured assets, 10 events and aligned
@@ -458,11 +458,15 @@ The v0.8.3 release validation includes:
   active with zero differences; the former 815,173-row table remains intact as
   the immediate rollback checkpoint. No CSV changed and no shadow or failed
   artifact remains. See `docs/ECB_PCP_SWAP.md`.
-- A fresh BSI-only readiness checkpoint reverified the 8,055,309-row official
-  source, 7,812,208-row active table, 5.13 GB scoped backup, unused future
-  names and current storage capacity with zero database writes. The builder is
-  now restricted to BSI and still exposes no swap mode. See
-  `docs/ECB_BSI_READINESS.md`.
+- The separately authorized BSI build created
+  `euro_balance_sheet_items__shadow_v079_20260817_141854` with all 8,055,309
+  official source rows and validated every mapped value twice with zero
+  missing, duplicate or hash-mismatched rows.
+- A separate SELECT-only verifier chained the signed readiness and build
+  reports, rehashed the official source and scoped backup, repeated the full
+  source-to-shadow comparison and proved that the 7,812,208-row active table
+  retained its exact data and schema fingerprints. No CSV changed and no swap
+  was authorized or performed. See `docs/ECB_BSI_SHADOW.md`.
 - Data Quality exposes the latest saved status, source freshness, planned actions and blockers for every EURO contract without rescanning CSVs or querying MySQL.
 
 The retained v0.5.6 database validation includes:

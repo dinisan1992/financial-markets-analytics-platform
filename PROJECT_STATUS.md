@@ -4,7 +4,7 @@ Last updated: 17 August 2026
 
 ## Current Version
 
-**Macro-Financial Risk & Market Behaviour Analytics Platform v0.8.3**
+**Macro-Financial Risk & Market Behaviour Analytics Platform v0.8.4**
 
 ## Executive Summary
 
@@ -22,7 +22,7 @@ It combines:
 - interactive dashboarding;
 - data quality validation.
 
-The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.7.0 completed the controlled Direct Debits rebuild. Version 0.7.1 separated direct runtime dependencies from development tooling and expanded CI. Version 0.7.2 removed Windows-only CI assumptions. Version 0.7.3 added storage-aware EURO fingerprints and field diagnostics. Version 0.7.4 added official ECB staging for fresh BLS, PCP and BSI snapshots. Version 0.7.5 completed their scoped external-volume backups, retention policy and read-only shadow planning without creating any table or changing active CSVs or MySQL. Version 0.7.6 hardened the public database-free demo with stable date-window semantics, plausible bounded stress and macro profiles, cache-backed data access, dedicated CI contracts and a discoverable live deployment. Version 0.7.7 introduced release-aware module invalidation. Version 0.7.8 completed that handoff by deactivating prior demo patches and clearing stale Streamlit data caches before the new backend was activated. Version 0.7.9 added a reproducible, SELECT-only readiness gate for the three staged ECB snapshots. Version 0.8.0 built and twice validated the official BLS snapshot in an isolated versioned shadow. Version 0.8.1 atomically promoted that snapshot after complete revalidation and preserved the former active table as the immediate rollback checkpoint. Version 0.8.2 built and twice validated the official PCP snapshot in an isolated shadow while proving that its active table and CSV remained unchanged. Version 0.8.3 atomically promoted the official PCP snapshot after a separate full preflight and preserved the complete former active table for immediate rollback.
+The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.7.0 completed the controlled Direct Debits rebuild. Version 0.7.1 separated direct runtime dependencies from development tooling and expanded CI. Version 0.7.2 removed Windows-only CI assumptions. Version 0.7.3 added storage-aware EURO fingerprints and field diagnostics. Version 0.7.4 added official ECB staging for fresh BLS, PCP and BSI snapshots. Version 0.7.5 completed their scoped external-volume backups, retention policy and read-only shadow planning without creating any table or changing active CSVs or MySQL. Version 0.7.6 hardened the public database-free demo with stable date-window semantics, plausible bounded stress and macro profiles, cache-backed data access, dedicated CI contracts and a discoverable live deployment. Version 0.7.7 introduced release-aware module invalidation. Version 0.7.8 completed that handoff by deactivating prior demo patches and clearing stale Streamlit data caches before the new backend was activated. Version 0.7.9 added a reproducible, SELECT-only readiness gate for the three staged ECB snapshots. Version 0.8.0 built and twice validated the official BLS snapshot in an isolated versioned shadow. Version 0.8.1 atomically promoted that snapshot after complete revalidation and preserved the former active table as the immediate rollback checkpoint. Version 0.8.2 built and twice validated the official PCP snapshot in an isolated shadow while proving that its active table and CSV remained unchanged. Version 0.8.3 atomically promoted the official PCP snapshot after a separate full preflight and preserved the complete former active table for immediate rollback. Version 0.8.4 built the official BSI snapshot in an isolated shadow and independently reproduced its complete source equivalence while preserving the active table.
 
 ## Completed and Functional Modules
 
@@ -220,9 +220,9 @@ Main file:
 
 ## Latest Documented Validation
 
-Version 0.8.3 validation includes:
+Version 0.8.4 validation includes:
 
-- 270/270 deterministic production unit tests passed.
+- 275/275 deterministic production unit tests passed.
 - 12/12 public-demo contracts passed, covering interval invariance, plausible
   stress and macro scales, cross-asset structure and SQL isolation.
 - The demo smoke test generated 38/38 configured assets, 10 events and aligned
@@ -273,13 +273,25 @@ Version 0.8.3 validation includes:
   `euro_card_payments__pre_v079_20260817_115720` with its exact pre-swap data
   and schema fingerprints. No shadow or failed-table artifact remains, no CSV
   changed and rollback was not required.
-- A fresh BSI-only readiness pass reverified the 8,055,309-row source,
-  7,812,208-row active table, candidate and backup hashes, safe live schema,
-  unused versioned names and current storage capacity without database writes.
-- The current builder accepts only `EURO_BALANCE_SHEET_ITEMS`. Its planned
-  shadow build remains unavailable until a separate explicit authorization and
-  cannot perform a swap. A failed build can remove only its exact generated
-  partial shadow and must reprove that the active checkpoint is unchanged.
+- The separately authorized BSI-only builder reverified the readiness report,
+  4.46 GB source, 5.13 GB scoped backup, active checkpoint, future names and
+  capacity before creating
+  `euro_balance_sheet_items__shadow_v079_20260817_141854`.
+- The shadow contains all 8,055,309 official source rows and unique business
+  keys from `1980-01` through `2026-Q2`, with zero null keys, duplicate groups,
+  missing rows, row-hash mismatches or source-hash mismatches.
+- Two complete build validations and a third independent SELECT-only
+  verification reproduced every mapped value. The independent report SHA-256
+  is `D9F1EB83336C617EC32B8E7B3AAB5E25E1DC22AF66D8B6BBD1DAA99E0E2577EB`.
+- The active table remains at 7,812,208 rows with data SHA-256
+  `D8DB709C3DD8C9F67A119E7375D208FA91EAAF86786A1BB9F4DECE471D78D22A`
+  and schema SHA-256
+  `3EA9698143D0269BE8C35D880F88666254D98A5D4998F57C1CD93F3CC94C75FA`.
+- No active CSV changed, no retained or failed table was created and no swap
+  was authorized or performed. The BSI shadow remains isolated for review.
+- Host telemetry observed transient Python working-set peaks during the large
+  comparisons. The disk-backed path completed successfully, but peak-memory
+  profiling remains required before unattended BSI automation.
 
 Previous v0.7.5 validation included:
 
