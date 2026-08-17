@@ -4,7 +4,7 @@ All notable changes to this project will be documented here.
 
 ---
 
-## [Unreleased] - Guarded PCP Promotion Preparation
+## [v0.8.3] - 2026-08-17 - Atomic Official PCP Promotion
 
 ### Added
 
@@ -27,6 +27,20 @@ All notable changes to this project will be documented here.
   database writes and no swap authorization or execution.
 - Recorded the ignored preflight report SHA-256 as
   `DAE34DE8DDF6EC04FBCA35789187C2C4994066C842F5DA5107230F860331902A`.
+
+### Database Evidence
+
+- Atomically promoted the complete 1,081,151-row official PCP snapshot after
+  explicit authorization and another complete source-to-shadow validation.
+- Confirmed 1,081,151 unique active keys, zero null keys and zero complete
+  source-to-active differences from `2000` through `2026-Q1`.
+- Preserved the former 815,173-row active table as
+  `euro_card_payments__pre_v079_20260817_115720` with its exact pre-swap data
+  and schema fingerprints.
+- Removed the technical hash only after promoted-state validation; no rollback
+  was required, no active CSV changed and no shadow or failed artifact remains.
+- Recorded the successful atomic-swap report SHA-256 as
+  `0A6BB320DB9CEA1078B944B5FE9A0AE0B96D3FF5E598D8302ED89DB2D3F938A7`.
 
 ## [v0.8.2] - 2026-08-17 - Verified Official PCP Shadow
 

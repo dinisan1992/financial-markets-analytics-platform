@@ -20,6 +20,7 @@ The root is reserved for entry points and shared modules:
 - `euro_data_loader.py` - EURO macro/market loading helpers.
 - `README.md`, `PROJECT_STATUS.md`, `requirements.txt`, `requirements-dev.txt`, `ruff.toml`, `.coveragerc`, `.env.example`, `.gitignore`, `VERSION`.
 - `docs/CI.md` - dependency, lint, import-safety, test-matrix and coverage contracts.
+- `docs/ECB_PCP_SWAP.md` - signed v0.8.3 PCP active/retained promotion evidence.
 
 ## Dashboard
 

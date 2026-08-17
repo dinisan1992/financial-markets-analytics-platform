@@ -4,7 +4,7 @@ Last updated: 17 August 2026
 
 ## Current Version
 
-**Macro-Financial Risk & Market Behaviour Analytics Platform v0.8.2**
+**Macro-Financial Risk & Market Behaviour Analytics Platform v0.8.3**
 
 ## Executive Summary
 
@@ -22,7 +22,7 @@ It combines:
 - interactive dashboarding;
 - data quality validation.
 
-The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.7.0 completed the controlled Direct Debits rebuild. Version 0.7.1 separated direct runtime dependencies from development tooling and expanded CI. Version 0.7.2 removed Windows-only CI assumptions. Version 0.7.3 added storage-aware EURO fingerprints and field diagnostics. Version 0.7.4 added official ECB staging for fresh BLS, PCP and BSI snapshots. Version 0.7.5 completed their scoped external-volume backups, retention policy and read-only shadow planning without creating any table or changing active CSVs or MySQL. Version 0.7.6 hardened the public database-free demo with stable date-window semantics, plausible bounded stress and macro profiles, cache-backed data access, dedicated CI contracts and a discoverable live deployment. Version 0.7.7 introduced release-aware module invalidation. Version 0.7.8 completed that handoff by deactivating prior demo patches and clearing stale Streamlit data caches before the new backend was activated. Version 0.7.9 added a reproducible, SELECT-only readiness gate for the three staged ECB snapshots. Version 0.8.0 built and twice validated the official BLS snapshot in an isolated versioned shadow. Version 0.8.1 atomically promoted that snapshot after complete revalidation and preserved the former active table as the immediate rollback checkpoint. Version 0.8.2 built and twice validated the official PCP snapshot in an isolated shadow while proving that its active table and CSV remained unchanged.
+The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.7.0 completed the controlled Direct Debits rebuild. Version 0.7.1 separated direct runtime dependencies from development tooling and expanded CI. Version 0.7.2 removed Windows-only CI assumptions. Version 0.7.3 added storage-aware EURO fingerprints and field diagnostics. Version 0.7.4 added official ECB staging for fresh BLS, PCP and BSI snapshots. Version 0.7.5 completed their scoped external-volume backups, retention policy and read-only shadow planning without creating any table or changing active CSVs or MySQL. Version 0.7.6 hardened the public database-free demo with stable date-window semantics, plausible bounded stress and macro profiles, cache-backed data access, dedicated CI contracts and a discoverable live deployment. Version 0.7.7 introduced release-aware module invalidation. Version 0.7.8 completed that handoff by deactivating prior demo patches and clearing stale Streamlit data caches before the new backend was activated. Version 0.7.9 added a reproducible, SELECT-only readiness gate for the three staged ECB snapshots. Version 0.8.0 built and twice validated the official BLS snapshot in an isolated versioned shadow. Version 0.8.1 atomically promoted that snapshot after complete revalidation and preserved the former active table as the immediate rollback checkpoint. Version 0.8.2 built and twice validated the official PCP snapshot in an isolated shadow while proving that its active table and CSV remained unchanged. Version 0.8.3 atomically promoted the official PCP snapshot after a separate full preflight and preserved the complete former active table for immediate rollback.
 
 ## Completed and Functional Modules
 
@@ -220,7 +220,7 @@ Main file:
 
 ## Latest Documented Validation
 
-Version 0.8.2 and the current main-branch preparation validation include:
+Version 0.8.3 validation includes:
 
 - 267/267 deterministic production unit tests passed.
 - 12/12 public-demo contracts passed, covering interval invariance, plausible
@@ -260,15 +260,19 @@ Version 0.8.2 and the current main-branch preparation validation include:
   `491E0A03679544679FF7381D4027461C7BBF576F54E08F7C051BAA2EDA82887C`
   and schema SHA-256
   `A0379A34BB5AFCBD7AA588F6F0C068243920400D0BE81CE1CF1F050CF89C8A8B`.
-- No PCP swap, retained table, failed table or active-CSV change was authorized
-  or performed.
 - A separate PCP-only promotion command now requires the exact readiness,
   build and independent post-build report chain, delays technical-hash removal
   until after the atomic rename is validated and automatically restores the
   former active table after any post-swap failure.
-- Its independent SELECT-only preflight again matched all 1,081,151 source and
-  shadow rows with zero mismatches. The active table remained at 815,173 rows;
-  promotion is prepared but still unauthorized.
+- Its independent SELECT-only preflight matched all 1,081,151 source and shadow
+  rows with zero mismatches while the active table remained at 815,173 rows.
+- After separate authorization, the atomic promotion repeated the complete
+  validation and made the 1,081,151-row official snapshot active. The final
+  source audit found zero missing, extra or mismatched rows.
+- The former 815,173-row table remains intact as
+  `euro_card_payments__pre_v079_20260817_115720` with its exact pre-swap data
+  and schema fingerprints. No shadow or failed-table artifact remains, no CSV
+  changed and rollback was not required.
 
 Previous v0.7.5 validation included:
 
@@ -511,20 +515,17 @@ Planned work:
 The project already contains a validated multi-asset, FED macro and EURO macro analytical layer.
 
 The isolated MySQL acceptance gate, Direct Debits migration, official ECB
-snapshot staging, BLS promotion, PCP shadow build and the read-only PCP
-promotion preflight are complete. The current priority remains controlled
-source maintenance:
+snapshot staging and the separately controlled BLS and PCP promotions are
+complete. The current priority remains controlled source maintenance:
 
-1. obtain explicit authorization before executing the prepared PCP atomic
-   promotion;
-2. preserve the former PCP table under the planned retained name if promotion
-   is later authorized;
-3. repeat the isolated build/review process for BSI only after the PCP decision;
-4. apply the documented official-snapshot-authoritative retention policy for
-   the 6,168 PCP and 344,327 BSI keys withdrawn from current snapshots;
-5. treat the Government Finance expansion as a dedicated migration with a
+1. repeat the isolated build/review process for BSI using its completed backup
+   and readiness evidence;
+2. retain the former BLS and PCP tables until a separate retention review;
+3. apply the documented official-snapshot-authoritative retention policy for
+   the 344,327 BSI keys withdrawn from the current snapshot;
+4. treat the Government Finance expansion as a dedicated migration with a
    fresh scoped backup and capacity preflight;
-6. update stale market sources, beginning with verified official feeds, and
+5. update stale market sources, beginning with verified official feeds, and
    confirm the seven inferred source contracts;
-7. design Event Study v2 with benchmark and abnormal-return contracts;
-8. calibrate risk thresholds by asset history and class.
+6. design Event Study v2 with benchmark and abnormal-return contracts;
+7. calibrate risk thresholds by asset history and class.

@@ -1,6 +1,6 @@
 # PCP Atomic Promotion Runbook
 
-Status: preflight complete; promotion not authorized or performed
+Status: completed successfully in v0.8.3
 
 Date: 17 August 2026
 
@@ -48,8 +48,8 @@ Raw reports remain local because they contain machine-specific paths.
 
 ## Atomic Procedure
 
-After separate authorization, `project_scripts/diagnostics/swap_ecb_pcp.py`
-will perform this single-table sequence:
+Following separate authorization, `project_scripts/diagnostics/swap_ecb_pcp.py`
+performed this single-table sequence:
 
 1. Verify all three report hashes and their cross-report identities.
 2. Re-hash the official CSV and scoped structure-and-data SQL backup.
@@ -82,6 +82,9 @@ withdrawn or superseded row remains available in the retained table.
 
 ## Authorization Boundary
 
-This document, the service, tests and read-only preflight do not authorize the
-promotion. The exact confirmation is supplied only after an explicit decision
-to change the database. BSI remains outside this scope.
+The preflight did not authorize the promotion. A later explicit decision
+supplied the exact confirmation and the operation completed with
+`swap_performed: true`, `rollback_performed: false` and a zero-difference final
+source audit. The signed swap report SHA-256 is
+`0A6BB320DB9CEA1078B944B5FE9A0AE0B96D3FF5E598D8302ED89DB2D3F938A7`.
+BSI remained outside this scope. See `docs/ECB_PCP_SWAP.md` for the final state.

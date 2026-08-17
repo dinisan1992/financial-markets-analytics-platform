@@ -29,7 +29,7 @@ Functional local platform with:
 - Data quality and validation tools.
 - Cross-platform lint, import-safety, dependency, coverage and unit-test checks through GitHub Actions.
 
-Current project version: **v0.8.2**
+Current project version: **v0.8.3**
 
 ## Main Analytical Capabilities
 
@@ -367,7 +367,7 @@ mode. See `docs/ECB_SHADOW_READINESS.md`.
 
 ## Validation Snapshot
 
-The v0.8.2 release and current main-branch validation include:
+The v0.8.3 release validation includes:
 
 - 267/267 deterministic unit tests pass.
 - 12/12 public-demo contracts pass, including fixed-window invariance,
@@ -446,14 +446,18 @@ The v0.8.2 release and current main-branch validation include:
 - The separately authorized PCP build created a 1,081,151-row Card Payments
   shadow and validated every official source key and mapped value twice with
   zero mismatches.
-- The 815,173-row PCP active table retained identical data and schema
-  fingerprints. No retained table, swap or active-CSV change was authorized or
-  performed. See `docs/ECB_PCP_SHADOW.md`.
+- Before promotion, the 815,173-row PCP active table retained identical data
+  and schema fingerprints while the shadow remained isolated. See
+  `docs/ECB_PCP_SHADOW.md`.
 - A separate PCP-only atomic promotion command is now guarded by the signed
   readiness, build and independent verification reports. Its SELECT-only
   preflight repeated the complete 1,081,151-row source-to-shadow comparison
-  with zero differences and zero database writes. Promotion remains
-  unauthorized; see `docs/ECB_PCP_PROMOTION.md`.
+  with zero differences and zero database writes.
+- Version v0.8.3 atomically promoted the official PCP snapshot after explicit
+  authorization and complete revalidation. The 1,081,151-row source is now
+  active with zero differences; the former 815,173-row table remains intact as
+  the immediate rollback checkpoint. No CSV changed and no shadow or failed
+  artifact remains. See `docs/ECB_PCP_SWAP.md`.
 - Data Quality exposes the latest saved status, source freshness, planned actions and blockers for every EURO contract without rescanning CSVs or querying MySQL.
 
 The retained v0.5.6 database validation includes:
@@ -519,10 +523,9 @@ Planned improvements include:
 - Calibrate risk thresholds by asset class and data provenance.
 - Replace important year-only world events with verified exact dates.
 - Add dry-run and explicit entry points to the remaining SQL-capable ETL scripts.
-- Obtain explicit authorization before running the prepared PCP atomic
-  promotion; the independent full preflight is complete.
-- Repeat the same isolated build process for BSI only after the PCP decision.
-  Its backup and read-only readiness checks are complete.
+- Repeat the isolated build process for BSI now that the PCP promotion is
+  complete. Its backup and read-only readiness checks are already complete.
+- Retain the former BLS and PCP tables until a separate retention review.
 - Treat the 3,822,937-row Government Finance source expansion as a separate controlled migration.
 - Refresh the remaining stale market sources through verified provider
   contracts.

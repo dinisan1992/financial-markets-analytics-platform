@@ -547,10 +547,10 @@ Prepare the project for professional presentation.
 
 The current priority is:
 
-1. Obtain separate authorization for the fully preflighted PCP atomic promotion
-2. Preserve and verify the former PCP active table as the immediate rollback checkpoint
-3. Repeat the separately controlled build process for BSI only after PCP
-4. Keep the retained BLS checkpoint until its retention review is authorized
+1. Repeat the separately controlled build process for BSI using its completed readiness evidence
+2. Keep the retained BLS and PCP checkpoints until their retention review is authorized
+3. Validate the official BSI snapshot against its future active table before promotion
+4. Preserve the withdrawn BSI keys in a retained rollback checkpoint
 5. Validate stale sources and updater behaviour asset by asset
 6. Confirm the historical WTI contract/source without automatic correction
 7. Design Event Study v2 with benchmarks and abnormal returns
