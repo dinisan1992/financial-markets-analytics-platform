@@ -549,8 +549,8 @@ The current priority is:
 
 1. Keep the reviewed BLS, PCP and BSI rollback checkpoints until a future,
    separately authorized deletion review has newer verified backups
-2. Prepare the Government Finance expansion as a dedicated migration with a
-   fresh scoped backup and capacity preflight
+2. Refresh and validate the official `GFS` snapshot, then create a fresh scoped
+   Government Finance backup and repeat the capacity preflight
 3. Validate stale sources and updater behaviour asset by asset
 4. Confirm the historical WTI contract/source without automatic correction
 5. Design Event Study v2 with benchmarks and abnormal returns

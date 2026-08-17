@@ -4,7 +4,7 @@ Last updated: 17 August 2026
 
 ## Current Version
 
-**Macro-Financial Risk & Market Behaviour Analytics Platform v0.8.8**
+**Macro-Financial Risk & Market Behaviour Analytics Platform v0.8.9**
 
 ## Executive Summary
 
@@ -22,7 +22,7 @@ It combines:
 - interactive dashboarding;
 - data quality validation.
 
-The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.7.0 completed the controlled Direct Debits rebuild. Version 0.7.1 separated direct runtime dependencies from development tooling and expanded CI. Version 0.7.2 removed Windows-only CI assumptions. Version 0.7.3 added storage-aware EURO fingerprints and field diagnostics. Version 0.7.4 added official ECB staging for fresh BLS, PCP and BSI snapshots. Version 0.7.5 completed their scoped external-volume backups, retention policy and read-only shadow planning without creating any table or changing active CSVs or MySQL. Version 0.7.6 hardened the public database-free demo with stable date-window semantics, plausible bounded stress and macro profiles, cache-backed data access, dedicated CI contracts and a discoverable live deployment. Version 0.7.7 introduced release-aware module invalidation. Version 0.7.8 completed that handoff by deactivating prior demo patches and clearing stale Streamlit data caches before the new backend was activated. Version 0.7.9 added a reproducible, SELECT-only readiness gate for the three staged ECB snapshots. Version 0.8.0 built and twice validated the official BLS snapshot in an isolated versioned shadow. Version 0.8.1 atomically promoted that snapshot after complete revalidation and preserved the former active table as the immediate rollback checkpoint. Version 0.8.2 built and twice validated the official PCP snapshot in an isolated shadow while proving that its active table and CSV remained unchanged. Version 0.8.3 atomically promoted the official PCP snapshot after a separate full preflight and preserved the complete former active table for immediate rollback. Version 0.8.4 built the official BSI snapshot in an isolated shadow and independently reproduced its complete source equivalence while preserving the active table. Version 0.8.5 added bounded shadow batches, version 0.8.6 forces the genuinely unbuffered MySQL cursor class and completes the SELECT-only BSI promotion preflight, version 0.8.7 atomically promotes the official BSI snapshot after complete revalidation, and version 0.8.8 completes a reusable read-only retention review of the BLS, PCP and BSI rollback checkpoints.
+The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.7.0 completed the controlled Direct Debits rebuild. Version 0.7.1 separated direct runtime dependencies from development tooling and expanded CI. Version 0.7.2 removed Windows-only CI assumptions. Version 0.7.3 added storage-aware EURO fingerprints and field diagnostics. Version 0.7.4 added official ECB staging for fresh BLS, PCP and BSI snapshots. Version 0.7.5 completed their scoped external-volume backups, retention policy and read-only shadow planning without creating any table or changing active CSVs or MySQL. Version 0.7.6 hardened the public database-free demo with stable date-window semantics, plausible bounded stress and macro profiles, cache-backed data access, dedicated CI contracts and a discoverable live deployment. Version 0.7.7 introduced release-aware module invalidation. Version 0.7.8 completed that handoff by deactivating prior demo patches and clearing stale Streamlit data caches before the new backend was activated. Version 0.7.9 added a reproducible, SELECT-only readiness gate for the three staged ECB snapshots. Version 0.8.0 built and twice validated the official BLS snapshot in an isolated versioned shadow. Version 0.8.1 atomically promoted that snapshot after complete revalidation and preserved the former active table as the immediate rollback checkpoint. Version 0.8.2 built and twice validated the official PCP snapshot in an isolated shadow while proving that its active table and CSV remained unchanged. Version 0.8.3 atomically promoted the official PCP snapshot after a separate full preflight and preserved the complete former active table for immediate rollback. Version 0.8.4 built the official BSI snapshot in an isolated shadow and independently reproduced its complete source equivalence while preserving the active table. Version 0.8.5 added bounded shadow batches, version 0.8.6 forces the genuinely unbuffered MySQL cursor class and completes the SELECT-only BSI promotion preflight, version 0.8.7 atomically promotes the official BSI snapshot after complete revalidation, version 0.8.8 completes a reusable read-only retention review, and version 0.8.9 registers the official GFS source and closes the Government Finance discovery gate without downloading or changing data.
 
 ## Completed and Functional Modules
 
@@ -220,7 +220,7 @@ Main file:
 
 ## Latest Documented Validation
 
-Version 0.8.8 validation includes:
+Version 0.8.9 validation includes:
 
 - 295/295 deterministic production unit tests passed.
 - 12/12 public-demo contracts passed, covering interval invariance, plausible
@@ -311,6 +311,15 @@ Version 0.8.8 validation includes:
 - This lightweight review deliberately does not repeat full data fingerprints;
   those remain pinned in the signed promotion evidence. Deletion remains
   unavailable and requires a future independent authorization boundary.
+- The Government Finance import contract now pins the official ECB `GFS`
+  dataflow and reproducible API download URL.
+- Read-only discovery confirms 2,263,500 live rows in a 2.00 GiB InnoDB table,
+  the expected unique `key_code + time_period` index and a prior signed plan of
+  6,086,437 source rows, 3,822,937 inserts, 28,799 updates and zero target-only
+  rows.
+- A conservative shadow estimate plus 5 GiB operating reserve currently leaves
+  only about 2.3 GiB margin. Fresh source, full audit, scoped backup and a new
+  capacity check are mandatory before any build authorization.
 - Runtime inspection proved that SQLAlchemy's mysqlconnector connection-level
   buffering overrode `buffered=False` and returned `CMySQLCursorBuffered`.
   Version 0.8.6 forces `CMySQLCursor`, fails closed if a buffered class is ever
@@ -572,8 +581,8 @@ complete. The current priority remains controlled source maintenance:
    separately authorized deletion review has newer verified backups;
 2. monitor future official ECB snapshots through the same signed, one-table
    preflight and atomic-promotion controls;
-3. treat the Government Finance expansion as a dedicated migration with a
-   fresh scoped backup and capacity preflight;
+3. refresh and validate the official `GFS` snapshot, then create a fresh scoped
+   backup and repeat the Government Finance capacity preflight;
 4. update stale market sources, beginning with verified official feeds, and
    confirm the seven inferred source contracts;
 5. design Event Study v2 with benchmark and abnormal-return contracts;

@@ -4,6 +4,34 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [v0.8.9] - 2026-08-17 - Pin Official GFS Source
+
+### Changed
+
+- Registered the ECB `GFS` dataflow and reproducible API download URL for the
+  Government Finance import contract.
+- Kept downloads explicit: importing the manifest or running the application
+  never fetches or replaces the 4.28 GB local CSV.
+
+### Read-Only Evidence
+
+- Confirmed the current target at 2,263,500 rows and 2,148,106,240 bytes, with
+  primary key `id` and a unique `key_code + time_period` business index.
+- Reused the signed full-plan baseline of 6,086,437 unique source rows,
+  3,822,937 inserts, 28,799 updates and zero target-only rows.
+- Estimated a new shadow conservatively at 6.724 GiB. With the 5 GiB operating
+  reserve, current free space leaves about 2.315 GiB margin and must be checked
+  again immediately before any build.
+- Classified the migration as blocked before backup: the local source predates
+  the latest official dataset, no fresh full audit exists and no scoped backup
+  has been created for this cycle.
+- Performed zero database writes, CSV writes, downloads, backups or builds.
+
+### Validation
+
+- Passed 19/19 focused source/manifest tests and the complete 295/295 unit-test
+  suite, Ruff and `pip check`.
+
 ## [v0.8.8] - 2026-08-17 - Review ECB Rollback Retention
 
 ### Added

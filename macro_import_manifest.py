@@ -206,6 +206,7 @@ MACRO_IMPORTS = {
         "Government Finance Statistics.csv",
         "euro_government_finance_statistics",
         "tools/legacy/government_finance_statistics.py",
+        source_dataflow="GFS",
     ),
     "EURO_CONSUMER_PRICES": _euro(
         "Indices of Consumer Prices_euro.csv",

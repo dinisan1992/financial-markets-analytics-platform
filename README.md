@@ -29,7 +29,7 @@ Functional local platform with:
 - Data quality and validation tools.
 - Cross-platform lint, import-safety, dependency, coverage and unit-test checks through GitHub Actions.
 
-Current project version: **v0.8.8**
+Current project version: **v0.8.9**
 
 ## Main Analytical Capabilities
 
@@ -367,7 +367,7 @@ mode. See `docs/ECB_SHADOW_READINESS.md`.
 
 ## Validation Snapshot
 
-The v0.8.8 release validation includes:
+The v0.8.9 release validation includes:
 
 - 295/295 deterministic unit tests pass.
 - 12/12 public-demo contracts pass, including fixed-window invariance,
@@ -427,6 +427,11 @@ The v0.8.8 release validation includes:
   review recommends retaining all three until a newer verified backup and an
   adequate observation window are separately reviewed; it exposes no deletion
   or database-write path. See `docs/ECB_RETENTION_REVIEW.md`.
+- Government Finance now exposes the official ECB `GFS` dataflow and explicit
+  API download URL in the import manifest. No download is automatic.
+- Its read-only discovery confirms a 6,086,437-row reviewed source baseline
+  versus 2,263,500 live rows, but blocks migration planning until a fresh
+  official snapshot and scoped backup exist. See `docs/ECB_GFS_READINESS.md`.
 - EURO row fingerprints now respect target `FLOAT` and `DECIMAL` precision,
   normalize signed zero and ignore outer text whitespace, preventing permanent
   false updates caused by SQL storage representation.
@@ -565,7 +570,8 @@ Planned improvements include:
   separately authorized deletion review has newer verified backups.
 - Monitor future official ECB snapshots through the same signed, one-table
   preflight and atomic-promotion controls.
-- Treat the 3,822,937-row Government Finance source expansion as a separate controlled migration.
+- Refresh and validate the official `GFS` snapshot before creating a fresh
+  Government Finance scoped backup or shadow plan.
 - Refresh the remaining stale market sources through verified provider
   contracts.
 - Develop Event Study v2 with benchmark, abnormal-return and cumulative

@@ -51,6 +51,7 @@ class OfficialEuroSourceServiceTests(unittest.TestCase):
             "EURO_CARD_PAYMENTS": "PCP",
             "EURO_BANK_LENDING_SURVEY": "BLS",
             "EURO_BALANCE_SHEET_ITEMS": "BSI",
+            "EURO_GOVERNMENT_FINANCE": "GFS",
         }
         for import_key, dataflow in expected.items():
             with self.subTest(import_key=import_key):
