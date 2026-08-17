@@ -56,6 +56,7 @@ Market data maintenance entry points:
 - `project_scripts/diagnostics/plan_ecb_shadow_refresh.py` - BLS/PCP/BSI readiness gate that verifies pinned evidence and emits SQL previews only.
 - `project_scripts/diagnostics/build_ecb_shadow.py` - exact-confirmation ECB shadow builder currently restricted to BLS and exposing no swap mode.
 - `project_scripts/diagnostics/repair_ecb_shadow_hash.py` - guarded representation-equivalent technical-hash repair followed by two complete validations.
+- `project_scripts/diagnostics/swap_ecb_bls.py` - swap-only BLS promotion bound to pinned readiness/build reports and exact confirmation.
 - `project_scripts/diagnostics/build_euro_direct_debits_shadow.py` - build-only v0.6.9 Direct Debits shadow loader with pinned inputs and no swap mode.
 - `project_scripts/diagnostics/swap_euro_direct_debits.py` - separately confirmed v0.7.0 atomic promotion with retained-table rollback.
 - `project_scripts/diagnostics/remediate_market_tables.py` - reversible shadow-table remediation.
@@ -70,6 +71,7 @@ Market data maintenance entry points:
 - `services/euro_direct_debits_swap_service.py` - Direct Debits promotion checks, retained checkpoint and post-swap evidence.
 - `services/ecb_shadow_readiness_service.py` - read-only ECB hash, backup, audit, schema, capacity and future-name validation.
 - `services/ecb_shadow_build_service.py` - pinned external-source build, active-table checkpoint, storage diagnosis and shadow-only repair controls.
+- `services/ecb_bls_swap_service.py` - BLS preflight, atomic promotion, retained-table proof, complete source audit and automatic rollback controls.
 
 ## Public Demo
 

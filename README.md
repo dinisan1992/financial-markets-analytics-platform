@@ -29,7 +29,7 @@ Functional local platform with:
 - Data quality and validation tools.
 - Cross-platform lint, import-safety, dependency, coverage and unit-test checks through GitHub Actions.
 
-Current project version: **v0.8.0**
+Current project version: **v0.8.1**
 
 ## Main Analytical Capabilities
 
@@ -367,9 +367,9 @@ mode. See `docs/ECB_SHADOW_READINESS.md`.
 
 ## Validation Snapshot
 
-The v0.8.0 validation includes:
+The v0.8.1 validation includes:
 
-- 245/245 deterministic unit tests pass.
+- 251/251 deterministic unit tests pass.
 - 12/12 public-demo contracts pass, including fixed-window invariance,
   plausible stress/macro levels, shared equity structure and SQL isolation.
 - The demo smoke test generates all 38 configured assets, 10 events and aligned
@@ -437,9 +437,12 @@ The v0.8.0 validation includes:
   technical hash normalization gap. The canonical hash now treats both as
   financial zero; exactly one guarded shadow-only hash was repaired and the
   complete validation then reported zero mismatches.
-- The active BLS table remained at 1,164,356 rows with identical data and
-  schema SHA-256 fingerprints before and after the build. No swap was
-  authorized or performed. See `docs/ECB_BLS_SHADOW.md`.
+- The separately authorized atomic BLS promotion revalidated the pinned source,
+  backup, active checkpoint and complete shadow before changing table names.
+- The official 1,225,110-row snapshot is active with zero source/target
+  differences. The former 1,164,356-row active table remains intact under its
+  versioned retained name; no table or source row was deleted. See
+  `docs/ECB_BLS_SWAP.md`.
 - Data Quality exposes the latest saved status, source freshness, planned actions and blockers for every EURO contract without rescanning CSVs or querying MySQL.
 
 The retained v0.5.6 database validation includes:
@@ -505,10 +508,10 @@ Planned improvements include:
 - Calibrate risk thresholds by asset class and data provenance.
 - Replace important year-only world events with verified exact dates.
 - Add dry-run and explicit entry points to the remaining SQL-capable ETL scripts.
-- Review and separately authorize the atomic BLS promotion; its official
-  1,225,110-row shadow is complete and the active table is unchanged.
-- Build and fully validate the staged PCP and BSI shadows one at a time after
-  the BLS decision. Their backups and read-only readiness checks are complete.
+- Build and fully validate the staged PCP shadow under a separate authorization,
+  then review its evidence before any promotion.
+- Repeat the same isolated process for BSI only after the PCP checkpoint. Their
+  backups and read-only readiness checks are complete.
 - Treat the 3,822,937-row Government Finance source expansion as a separate controlled migration.
 - Refresh the remaining stale market sources through verified provider
   contracts.

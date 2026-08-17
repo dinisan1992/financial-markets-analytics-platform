@@ -1,6 +1,6 @@
 # Official BLS Shadow Build
 
-Version: v0.8.0
+Version: v0.8.0 (promoted by v0.8.1)
 
 Date: 17 August 2026
 
@@ -85,17 +85,9 @@ The shadow schema SHA-256 is
 Its composite business key remains the primary key and its technical source
 hash column remains present for pre-promotion review.
 
-## Remaining Authorization Gate
+## Promotion Status
 
-The shadow is ready for swap review, but promotion has not been authorized or
-performed. A future atomic operation must:
-
-1. revalidate the official candidate, backup and complete shadow again;
-2. confirm the active data/schema fingerprints above;
-3. rename the current active table to the planned versioned retained name;
-4. promote the validated shadow atomically;
-5. validate the promoted table before removing any technical hash column;
-6. roll back atomically on any failed post-swap check.
-
-The former active table must remain intact under its retained name so rollback
-does not depend on reimporting a SQL dump.
+The separate v0.8.1 authorization gate was subsequently satisfied. The pinned
+candidate, backup, active checkpoint and complete shadow were revalidated, the
+shadow was promoted atomically, and the former active table was retained. See
+`ECB_BLS_SWAP.md` for the post-promotion evidence and rollback contract.

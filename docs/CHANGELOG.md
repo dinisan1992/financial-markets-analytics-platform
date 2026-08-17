@@ -4,6 +4,35 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [v0.8.1] - 2026-08-17 - Atomic Official BLS Promotion
+
+### Added
+
+- Added a BLS-only atomic promotion service and command bound to the SHA-256
+  pinned v0.7.9 readiness report, v0.8.0 build report, official source, scoped
+  SQL backup and exact confirmation phrase.
+- Added pre-swap active/shadow evidence checks, post-swap retained-table proof,
+  complete source-to-active validation and automatic inverse-rename rollback.
+
+### Fixed
+
+- Normalized JSON lists and runtime tuples before comparing persisted database
+  evidence, avoiding representation-only preflight failures.
+- Made retained-table comparison independent of the active table name while
+  continuing to require exact data and schema fingerprints.
+
+### Database Evidence
+
+- Atomically promoted the 1,225,110-row official BLS snapshot and preserved the
+  former 1,164,356-row active table as
+  `euro_bank_lending_survey__pre_v079_20260817_115720`.
+- Confirmed 1,225,110 unique business keys, zero null keys, zero missing/extra
+  rows and zero mapped-value hash mismatches against the official source.
+- Removed the technical source hash only from the promoted active table after
+  validation. No table, source row or active CSV was deleted or overwritten.
+- The signed local operation report has SHA-256
+  `FA5371950D032E0CFE1F42967F240DEEA5EB9731B374150AE1F536C28405090A`.
+
 ## [v0.8.0] - 2026-08-17 - Verified Official BLS Shadow
 
 ### Added
