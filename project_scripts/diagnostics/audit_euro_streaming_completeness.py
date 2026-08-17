@@ -16,7 +16,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from config import get_sqlalchemy_database_url
-from macro_import_manifest import get_macro_import_keys
+from macro_import_manifest import get_macro_import, get_macro_import_keys
 from services.euro_streaming_validation_service import (
     DEFAULT_CHUNK_SIZE,
     TARGET_IMPORT_KEYS,
@@ -24,7 +24,7 @@ from services.euro_streaming_validation_service import (
 )
 
 
-def parse_args():
+def parse_args(argv=None):
     parser = argparse.ArgumentParser(
         description=(
             "Read-only, memory-bounded comparison of EURO CSV sources with MySQL."
@@ -59,11 +59,20 @@ def parse_args():
         help="Existing directory for the temporary SQLite comparison store.",
     )
     parser.add_argument(
+        "--source-dir",
+        type=Path,
+        default=None,
+        help=(
+            "Directory containing staged CSV files. This overrides source paths "
+            "for this read-only audit without changing EURO_SOURCE_DIR."
+        ),
+    )
+    parser.add_argument(
         "--fail-on-difference",
         action="store_true",
         help="Return exit code 2 when a completed comparison finds differences.",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     if not args.import_keys:
         args.import_keys = list(TARGET_IMPORT_KEYS)
     supported_import_keys = set(get_macro_import_keys("EURO"))
@@ -87,6 +96,13 @@ def main():
         if args.workspace_dir is not None
         else None
     )
+    source_dir = (
+        args.source_dir.expanduser().resolve()
+        if args.source_dir is not None
+        else None
+    )
+    if source_dir is not None and not source_dir.is_dir():
+        raise FileNotFoundError(f"EURO source directory not found: {source_dir}")
     if workspace_dir is not None:
         workspace_dir.mkdir(parents=True, exist_ok=True)
 
@@ -111,6 +127,12 @@ def main():
         for import_key in args.import_keys:
             print(f"Auditing {import_key}...", flush=True)
             try:
+                contract = get_macro_import(import_key)
+                source_path = (
+                    source_dir / Path(contract["csv_path"]).name
+                    if source_dir is not None
+                    else None
+                )
                 validation = audit_euro_source_against_target(
                     engine,
                     import_key,
@@ -119,6 +141,7 @@ def main():
                     sample_limit=args.sample_limit,
                     sample_strategy=args.sample_strategy,
                     progress_callback=progress,
+                    source_path=source_path,
                 )
             except Exception as exc:
                 error = {
@@ -160,6 +183,9 @@ def main():
         "valid_count": sum(bool(result["valid"]) for result in results),
         "difference_count": sum(not bool(result["valid"]) for result in results),
         "database_write_performed": False,
+        "source_directory_override": (
+            str(source_dir) if source_dir is not None else None
+        ),
         "results": results,
         "errors": errors,
     }

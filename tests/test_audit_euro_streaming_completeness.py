@@ -1,4 +1,5 @@
 from unittest.mock import patch
+from pathlib import Path
 import unittest
 
 from project_scripts.diagnostics.audit_euro_streaming_completeness import (
@@ -32,6 +33,17 @@ class EuroStreamingAuditCliTests(unittest.TestCase):
             args = parse_args()
 
         self.assertEqual([import_key], args.import_keys)
+
+    def test_source_directory_override_is_explicit(self):
+        args = parse_args(
+            [
+                TARGET_IMPORT_KEYS[0],
+                "--source-dir",
+                "staged-euro",
+            ]
+        )
+
+        self.assertEqual(Path("staged-euro"), args.source_dir)
 
 
 if __name__ == "__main__":

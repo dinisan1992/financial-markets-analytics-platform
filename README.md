@@ -29,7 +29,7 @@ Functional local platform with:
 - Data quality and validation tools.
 - Cross-platform lint, import-safety, dependency, coverage and unit-test checks through GitHub Actions.
 
-Current project version: **v0.7.8**
+Current project version: **v0.7.9**
 
 ## Main Analytical Capabilities
 
@@ -349,11 +349,27 @@ validates schema, hashes each candidate and can compare staged snapshots with
 active CSVs through a disk-backed index. It cannot replace active CSVs and has
 no SQL write mode. See `docs/ECB_SOURCE_REFRESH.md`.
 
+Version v0.7.9 adds a separate read-only readiness gate for those candidates:
+
+```powershell
+python project_scripts/diagnostics/plan_ecb_shadow_refresh.py `
+  --staging-dir <external-staging-directory> `
+  --backup-dir <external-backup-directory> `
+  --audit-dir <fresh-audit-directory> `
+  --workspace-dir <external-workspace-directory> `
+  --pin-file <reviewed-shadow-plan.json>
+```
+
+The command verifies candidate and backup hashes, consumes a fresh complete
+source-to-target audit, checks live table state and storage capacity, and emits
+DDL/swap/rollback previews. It deliberately exposes no build, apply or swap
+mode. See `docs/ECB_SHADOW_READINESS.md`.
+
 ## Validation Snapshot
 
-The v0.7.8 validation includes:
+The v0.7.9 validation includes:
 
-- 222/222 deterministic unit tests pass.
+- 234/234 deterministic unit tests pass.
 - 12/12 public-demo contracts pass, including fixed-window invariance,
   plausible stress/macro levels, shared equity structure and SQL isolation.
 - The demo smoke test generates all 38 configured assets, 10 events and aligned
@@ -408,6 +424,12 @@ The v0.7.8 validation includes:
   tables on a separate physical volume with independently verified SHA-256.
 - Versioned shadow and retained-table SQL previews are complete; schema
   inspection confirms none was executed or created.
+- A fresh 10,361,570-row source-to-live-table audit reproduced the reviewed
+  BLS, PCP and BSI classifications with zero database writes.
+- The read-only v0.7.9 readiness gate reverified all candidate and backup
+  hashes, current row counts, planned table-name availability and storage
+  capacity; all three contracts are ready for separately authorized,
+  one-at-a-time shadow builds.
 - Data Quality exposes the latest saved status, source freshness, planned actions and blockers for every EURO contract without rescanning CSVs or querying MySQL.
 
 The retained v0.5.6 database validation includes:
@@ -473,11 +495,9 @@ Planned improvements include:
 - Calibrate risk thresholds by asset class and data provenance.
 - Replace important year-only world events with verified exact dates.
 - Add dry-run and explicit entry points to the remaining SQL-capable ETL scripts.
-- Create scoped external-volume backups and controlled shadows before deciding
-  whether to promote the staged BLS, PCP and BSI snapshots. The scoped backups
-  are complete; shadow construction remains separately authorized.
-- Define an explicit retention policy for ECB keys withdrawn from current PCP
-  and BSI snapshots.
+- Build and fully validate the staged BLS, PCP and BSI shadows one at a time.
+  Backups, retention policy and read-only readiness checks are complete;
+  construction remains separately authorized because it writes to MySQL.
 - Treat the 3,822,937-row Government Finance source expansion as a separate controlled migration.
 - Refresh the remaining stale market sources through verified provider
   contracts.

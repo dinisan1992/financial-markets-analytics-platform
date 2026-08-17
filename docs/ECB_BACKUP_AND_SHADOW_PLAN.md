@@ -4,6 +4,10 @@ Version: v0.7.5
 
 Date: 11 August 2026
 
+Status update: the complete read-only revalidation and capacity gate was passed
+on 17 August 2026. See `docs/ECB_SHADOW_READINESS.md`. Shadow construction and
+active-table promotion remain separately authorized database operations.
+
 ## Completed Safety Gate
 
 Fresh one-table structure-and-data backups were created for the three active

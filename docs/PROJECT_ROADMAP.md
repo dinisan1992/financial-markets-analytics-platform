@@ -547,13 +547,13 @@ Prepare the project for professional presentation.
 
 The current priority is:
 
-1. Validate stale sources and updater behaviour asset by asset
-2. Define duplicate keep rules after backup and dry-run
-3. Confirm the historical WTI contract/source without automatic correction
-4. Classify zero-return series by native frequency and forward-fill policy
-5. Prepare read-only previews for every proposed remediation action
-6. Apply database changes only after explicit approval and backup
-7. Compare post-update audits with automatically archived baselines
+1. Obtain explicit authorization for the first ECB database write
+2. Build and fully validate the BLS shadow without changing the active table
+3. Repeat the separately controlled process for PCP and then BSI
+4. Authorize each atomic promotion only after reviewing complete shadow evidence
+5. Validate stale sources and updater behaviour asset by asset
+6. Confirm the historical WTI contract/source without automatic correction
+7. Design Event Study v2 with benchmarks and abnormal returns
 8. Begin machine learning only after data quality and feature governance are stable
 
 ---

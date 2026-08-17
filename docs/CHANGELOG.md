@@ -4,6 +4,31 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [v0.7.9] - 2026-08-17 - ECB Shadow Readiness Gate
+
+### Added
+
+- Added an explicit staged-source override to the memory-bounded EURO
+  completeness auditor without changing configured active CSV paths.
+- Added a SELECT-only ECB shadow-readiness service and command that reverify
+  candidate files, scoped SQL backups, fresh audit evidence, live table state,
+  future table-name availability and storage capacity.
+- Added inspectable DDL, atomic-swap and rollback previews with no execution
+  path, plus deterministic tests for the safety and readiness contracts.
+
+### Validation
+
+- Reaudited all 10,361,570 staged BLS, PCP and BSI business keys against live
+  MySQL and reproduced the reviewed source-only, target-only and mismatch
+  classifications.
+- Reverified all three candidate SHA-256 hashes and all three independently
+  stored structure-and-data backup hashes.
+- Confirmed adequate database and external workspace capacity, including a
+  5 GiB operating reserve, and confirmed that all planned shadow and retained
+  table names are unused.
+- Performed zero database writes, zero active-CSV writes and zero SQL statement
+  execution from generated previews.
+
 ## [v0.7.8] - 2026-08-17 - Atomic Demo Runtime Handoff
 
 ### Fixed

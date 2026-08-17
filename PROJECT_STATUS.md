@@ -4,7 +4,7 @@ Last updated: 17 August 2026
 
 ## Current Version
 
-**Macro-Financial Risk & Market Behaviour Analytics Platform v0.7.8**
+**Macro-Financial Risk & Market Behaviour Analytics Platform v0.7.9**
 
 ## Executive Summary
 
@@ -22,7 +22,7 @@ It combines:
 - interactive dashboarding;
 - data quality validation.
 
-The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.7.0 completed the controlled Direct Debits rebuild. Version 0.7.1 separated direct runtime dependencies from development tooling and expanded CI. Version 0.7.2 removed Windows-only CI assumptions. Version 0.7.3 added storage-aware EURO fingerprints and field diagnostics. Version 0.7.4 added official ECB staging for fresh BLS, PCP and BSI snapshots. Version 0.7.5 completed their scoped external-volume backups, retention policy and read-only shadow planning without creating any table or changing active CSVs or MySQL. Version 0.7.6 hardens the public database-free demo with stable date-window semantics, plausible bounded stress and macro profiles, cache-backed data access, dedicated CI contracts and a discoverable live deployment. Version 0.7.7 introduced release-aware module invalidation. Version 0.7.8 completes that handoff by deactivating prior demo patches and clearing stale Streamlit data caches before the new backend is activated.
+The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.7.0 completed the controlled Direct Debits rebuild. Version 0.7.1 separated direct runtime dependencies from development tooling and expanded CI. Version 0.7.2 removed Windows-only CI assumptions. Version 0.7.3 added storage-aware EURO fingerprints and field diagnostics. Version 0.7.4 added official ECB staging for fresh BLS, PCP and BSI snapshots. Version 0.7.5 completed their scoped external-volume backups, retention policy and read-only shadow planning without creating any table or changing active CSVs or MySQL. Version 0.7.6 hardened the public database-free demo with stable date-window semantics, plausible bounded stress and macro profiles, cache-backed data access, dedicated CI contracts and a discoverable live deployment. Version 0.7.7 introduced release-aware module invalidation. Version 0.7.8 completed that handoff by deactivating prior demo patches and clearing stale Streamlit data caches before the new backend was activated. Version 0.7.9 adds a reproducible, SELECT-only readiness gate for the three staged ECB snapshots; no shadow or active table has been changed.
 
 ## Completed and Functional Modules
 
@@ -220,9 +220,9 @@ Main file:
 
 ## Latest Documented Validation
 
-Version 0.7.8 validation includes:
+Version 0.7.9 validation includes:
 
-- 222/222 deterministic production unit tests passed.
+- 234/234 deterministic production unit tests passed.
 - 12/12 public-demo contracts passed, covering interval invariance, plausible
   stress and macro scales, cross-asset structure and SQL isolation.
 - The demo smoke test generated 38/38 configured assets, 10 events and aligned
@@ -232,6 +232,11 @@ Version 0.7.8 validation includes:
 - CI now executes demo page rendering on Linux and demo tests/smoke checks on
   Windows and Linux under Python 3.11 and 3.12.
 - No database writes, SQL schema changes or active-CSV promotions were made.
+- A fresh 10,361,570-row staged-source audit reproduced the complete BLS, PCP
+  and BSI comparison baseline against live MySQL.
+- All candidate and backup hashes, live table counts, future table names and
+  capacity gates passed; the planner emitted previews only and cannot execute
+  a build or swap.
 
 Previous v0.7.5 validation included:
 
@@ -477,11 +482,12 @@ The isolated MySQL acceptance gate, Direct Debits migration and official ECB
 snapshot staging are complete. The current priority remains controlled source
 maintenance:
 
-1. revalidate the completed BLS, PCP and BSI backup and candidate hashes before
-   each shadow build;
-2. request explicit authorization before replacing active CSVs, building
+1. request explicit authorization before replacing active CSVs, building
    shadows or executing any SQL write;
-3. build and completely validate one versioned shadow at a time;
+2. build and completely validate one versioned shadow at a time, beginning
+   with BLS, followed by PCP and then the larger BSI table;
+3. revalidate the completed BLS, PCP and BSI backup and candidate hashes again
+   immediately before each separately authorized build;
 4. apply the documented official-snapshot-authoritative retention policy for
    the 6,168 PCP and 344,327 BSI keys withdrawn from current snapshots;
 5. treat the Government Finance expansion as a dedicated migration with a

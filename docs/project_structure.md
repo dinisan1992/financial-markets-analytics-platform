@@ -52,6 +52,8 @@ Market data maintenance entry points:
 - `project_scripts/diagnostics/verify_euro_table_backup.py` - exact-confirmation restore and fingerprint verification in a generated isolated schema.
 - `project_scripts/diagnostics/diagnose_euro_direct_debits.py` - SELECT-only diagnosis of Direct Debits period-key loss.
 - `project_scripts/diagnostics/plan_euro_direct_debits_rebuild.py` - read-only Direct Debits shadow DDL, swap and rollback plan with no write mode.
+- `project_scripts/diagnostics/audit_euro_streaming_completeness.py` - memory-bounded, SELECT-only source-to-target comparison with an optional explicit staged-source directory.
+- `project_scripts/diagnostics/plan_ecb_shadow_refresh.py` - BLS/PCP/BSI readiness gate that verifies pinned evidence and emits SQL previews only.
 - `project_scripts/diagnostics/build_euro_direct_debits_shadow.py` - build-only v0.6.9 Direct Debits shadow loader with pinned inputs and no swap mode.
 - `project_scripts/diagnostics/swap_euro_direct_debits.py` - separately confirmed v0.7.0 atomic promotion with retained-table rollback.
 - `project_scripts/diagnostics/remediate_market_tables.py` - reversible shadow-table remediation.
@@ -64,6 +66,7 @@ Market data maintenance entry points:
 - `services/euro_backup_restore_service.py` - reusable active/restore fingerprints, schema comparison and isolated cleanup controls.
 - `services/euro_direct_debits_shadow_service.py` - pinned Direct Debits source/backup gates, shadow-only build and complete before/after validation.
 - `services/euro_direct_debits_swap_service.py` - Direct Debits promotion checks, retained checkpoint and post-swap evidence.
+- `services/ecb_shadow_readiness_service.py` - read-only ECB hash, backup, audit, schema, capacity and future-name validation.
 
 ## Public Demo
 
