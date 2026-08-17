@@ -29,7 +29,7 @@ Functional local platform with:
 - Data quality and validation tools.
 - Cross-platform lint, import-safety, dependency, coverage and unit-test checks through GitHub Actions.
 
-Current project version: **v0.8.6**
+Current project version: **v0.8.7**
 
 ## Main Analytical Capabilities
 
@@ -367,7 +367,7 @@ mode. See `docs/ECB_SHADOW_READINESS.md`.
 
 ## Validation Snapshot
 
-The v0.8.6 release validation includes:
+The v0.8.7 release validation includes:
 
 - 291/291 deterministic unit tests pass.
 - 12/12 public-demo contracts pass, including fixed-window invariance,
@@ -376,7 +376,7 @@ The v0.8.6 release validation includes:
   macro data; its dedicated AppTest renders 9/9 pages without exceptions.
 - The complete active Python tree compiles successfully and `pip check` reports no broken requirements.
 - Ruff passes across the active Python tree with no lint errors.
-- Branch coverage is measured across `app`, `app_pages`, `dashboard` and `services`, with a 40% regression gate over the current 44% baseline.
+- Branch coverage is measured across `app`, `app_pages`, `dashboard` and `services`, with a 40% regression gate over the current 46% baseline.
 - GitHub Actions runs static/import-safety/demo-page checks and a four-environment
   unit and demo-test matrix covering Windows, Linux, Python 3.11 and Python 3.12.
 - 38/38 configured SQL assets recalculate successfully with database writes disabled.
@@ -410,6 +410,16 @@ The v0.8.6 release validation includes:
   fingerprint and 8,055,309-row source/shadow comparison with an observed peak
   near 218 MB working set and 555 MB private memory, instead of the previous
   multi-gigabyte growth.
+- Version v0.8.7 repeated the signed BSI evidence chain and complete
+  source-to-shadow validation immediately before an explicitly authorized
+  atomic rename.
+- The official 8,055,309-row BSI snapshot is now active with zero source/target
+  differences. The complete former 7,812,208-row table remains available as
+  `euro_balance_sheet_items__pre_v079_20260817_141854`.
+- Independent post-swap checks found no shadow or failed-table artifact and no
+  technical hash column in the active schema. No CSV changed and rollback was
+  not required. The ignored local promotion report SHA-256 is
+  `EEDA230CDC30CE0E7037F975B57E5D397B4B4C67860CF1EE628CC8FE708F687B`.
 - EURO row fingerprints now respect target `FLOAT` and `DECIMAL` precision,
   normalize signed zero and ignore outer text whitespace, preventing permanent
   false updates caused by SQL storage representation.
@@ -473,7 +483,12 @@ The v0.8.6 release validation includes:
   reports, rehashed the official source and scoped backup, repeated the full
   source-to-shadow comparison and proved that the 7,812,208-row active table
   retained its exact data and schema fingerprints. No CSV changed and no swap
-  was authorized or performed. See `docs/ECB_BSI_SHADOW.md`.
+  was authorized or performed at that checkpoint. See
+  `docs/ECB_BSI_SHADOW.md`.
+- After a separate exact authorization, the BSI-only promotion repeated the
+  complete validation, atomically activated all 8,055,309 official rows and
+  retained the exact former active table. No source row was deleted from the
+  rollback checkpoint. See `docs/ECB_BSI_PROMOTION.md`.
 - Data Quality exposes the latest saved status, source freshness, planned actions and blockers for every EURO contract without rescanning CSVs or querying MySQL.
 
 The retained v0.5.6 database validation includes:
@@ -539,9 +554,10 @@ Planned improvements include:
 - Calibrate risk thresholds by asset class and data provenance.
 - Replace important year-only world events with verified exact dates.
 - Add dry-run and explicit entry points to the remaining SQL-capable ETL scripts.
-- Keep the successfully preflighted BSI shadow isolated until a later explicit
-  atomic-swap authorization.
-- Retain the former BLS and PCP tables until a separate retention review.
+- Retain the former BLS, PCP and BSI tables until a separate rollback-retention
+  review.
+- Monitor future official ECB snapshots through the same signed, one-table
+  preflight and atomic-promotion controls.
 - Treat the 3,822,937-row Government Finance source expansion as a separate controlled migration.
 - Refresh the remaining stale market sources through verified provider
   contracts.

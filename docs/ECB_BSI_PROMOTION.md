@@ -1,6 +1,6 @@
 # BSI Atomic Promotion Runbook
 
-Status: prepared, not executed and not authorized
+Status: completed and independently verified
 
 Date: 17 August 2026
 
@@ -44,8 +44,8 @@ ignored local report SHA-256 is
 
 ## Atomic Procedure
 
-Only after a successful reviewed preflight and a separate exact authorization,
-`project_scripts/diagnostics/swap_ecb_bsi.py` can perform this sequence:
+After the successful reviewed preflight and a separate exact authorization,
+`project_scripts/diagnostics/swap_ecb_bsi.py` performed this sequence:
 
 1. Repeat all pinned report, source, backup, active and shadow checks.
 2. Repeat the complete official-source-to-shadow validation.
@@ -62,21 +62,28 @@ Any failure after the atomic rename invokes the inverse atomic rename. The
 former active table is restored and the failed promoted table is retained for
 diagnosis; no table or source row is automatically deleted.
 
-## Expected State
+## Final State
 
 | Role | Table | Rows |
 | --- | --- | ---: |
-| Future active | `euro_balance_sheet_items` | 8,055,309 |
+| Active official snapshot | `euro_balance_sheet_items` | 8,055,309 |
 | Immediate rollback checkpoint | `euro_balance_sheet_items__pre_v079_20260817_141854` | 7,812,208 |
 
-The official snapshot is authoritative for a future active table. It contains
-587,428 official-source-only keys and omits 344,327 active-only keys relative
-to the current table. Every withdrawn or superseded active row will remain
-available in the complete retained rollback checkpoint.
+The official snapshot is authoritative for the active table. It introduced
+587,428 official-source-only keys and withdrew 344,327 former active-only keys.
+Every withdrawn or superseded row remains available in the complete retained
+rollback checkpoint.
 
-## Authorization Boundary
+## Execution Evidence
 
-No BSI preflight, rename, hash removal, cleanup, CSV write or database write was
-executed while preparing this runbook. The existing active table and validated
-shadow remain unchanged. Promotion requires a later user message containing
-the exact confirmation shown above after the read-only preflight is reviewed.
+The exact confirmation was received after the read-only preflight was reviewed.
+The command repeated all pinned checks, performed the atomic rename, validated
+the retained and promoted states, removed the technical hash and completed the
+full official-source-to-active audit. It reported `swap_performed: true` and
+`rollback_performed: false`.
+
+Independent read-only checks confirmed 8,055,309 active rows, 7,812,208 retained
+rows, no shadow or failed-table artifact and no technical hash column in the
+active schema. No active CSV changed. The ignored local promotion report
+SHA-256 is
+`EEDA230CDC30CE0E7037F975B57E5D397B4B4C67860CF1EE628CC8FE708F687B`.

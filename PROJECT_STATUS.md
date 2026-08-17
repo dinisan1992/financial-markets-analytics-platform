@@ -4,7 +4,7 @@ Last updated: 17 August 2026
 
 ## Current Version
 
-**Macro-Financial Risk & Market Behaviour Analytics Platform v0.8.6**
+**Macro-Financial Risk & Market Behaviour Analytics Platform v0.8.7**
 
 ## Executive Summary
 
@@ -22,7 +22,7 @@ It combines:
 - interactive dashboarding;
 - data quality validation.
 
-The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.7.0 completed the controlled Direct Debits rebuild. Version 0.7.1 separated direct runtime dependencies from development tooling and expanded CI. Version 0.7.2 removed Windows-only CI assumptions. Version 0.7.3 added storage-aware EURO fingerprints and field diagnostics. Version 0.7.4 added official ECB staging for fresh BLS, PCP and BSI snapshots. Version 0.7.5 completed their scoped external-volume backups, retention policy and read-only shadow planning without creating any table or changing active CSVs or MySQL. Version 0.7.6 hardened the public database-free demo with stable date-window semantics, plausible bounded stress and macro profiles, cache-backed data access, dedicated CI contracts and a discoverable live deployment. Version 0.7.7 introduced release-aware module invalidation. Version 0.7.8 completed that handoff by deactivating prior demo patches and clearing stale Streamlit data caches before the new backend was activated. Version 0.7.9 added a reproducible, SELECT-only readiness gate for the three staged ECB snapshots. Version 0.8.0 built and twice validated the official BLS snapshot in an isolated versioned shadow. Version 0.8.1 atomically promoted that snapshot after complete revalidation and preserved the former active table as the immediate rollback checkpoint. Version 0.8.2 built and twice validated the official PCP snapshot in an isolated shadow while proving that its active table and CSV remained unchanged. Version 0.8.3 atomically promoted the official PCP snapshot after a separate full preflight and preserved the complete former active table for immediate rollback. Version 0.8.4 built the official BSI snapshot in an isolated shadow and independently reproduced its complete source equivalence while preserving the active table. Version 0.8.5 added bounded shadow batches, and version 0.8.6 forces the genuinely unbuffered MySQL cursor class, proves bounded production-scale memory and completes the SELECT-only BSI promotion preflight.
+The Streamlit application is separated into page modules, analytical services, visualization components and reusable data-access functions. Version 0.7.0 completed the controlled Direct Debits rebuild. Version 0.7.1 separated direct runtime dependencies from development tooling and expanded CI. Version 0.7.2 removed Windows-only CI assumptions. Version 0.7.3 added storage-aware EURO fingerprints and field diagnostics. Version 0.7.4 added official ECB staging for fresh BLS, PCP and BSI snapshots. Version 0.7.5 completed their scoped external-volume backups, retention policy and read-only shadow planning without creating any table or changing active CSVs or MySQL. Version 0.7.6 hardened the public database-free demo with stable date-window semantics, plausible bounded stress and macro profiles, cache-backed data access, dedicated CI contracts and a discoverable live deployment. Version 0.7.7 introduced release-aware module invalidation. Version 0.7.8 completed that handoff by deactivating prior demo patches and clearing stale Streamlit data caches before the new backend was activated. Version 0.7.9 added a reproducible, SELECT-only readiness gate for the three staged ECB snapshots. Version 0.8.0 built and twice validated the official BLS snapshot in an isolated versioned shadow. Version 0.8.1 atomically promoted that snapshot after complete revalidation and preserved the former active table as the immediate rollback checkpoint. Version 0.8.2 built and twice validated the official PCP snapshot in an isolated shadow while proving that its active table and CSV remained unchanged. Version 0.8.3 atomically promoted the official PCP snapshot after a separate full preflight and preserved the complete former active table for immediate rollback. Version 0.8.4 built the official BSI snapshot in an isolated shadow and independently reproduced its complete source equivalence while preserving the active table. Version 0.8.5 added bounded shadow batches, version 0.8.6 forces the genuinely unbuffered MySQL cursor class and completes the SELECT-only BSI promotion preflight, and version 0.8.7 atomically promotes the official BSI snapshot after complete revalidation while preserving the former active table for rollback.
 
 ## Completed and Functional Modules
 
@@ -220,7 +220,7 @@ Main file:
 
 ## Latest Documented Validation
 
-Version 0.8.6 validation includes:
+Version 0.8.7 validation includes:
 
 - 291/291 deterministic production unit tests passed.
 - 12/12 public-demo contracts passed, covering interval invariance, plausible
@@ -229,6 +229,8 @@ Version 0.8.6 validation includes:
   macro data without database access.
 - 9/9 demo Streamlit pages rendered through `AppTest` without exceptions.
 - Ruff and dependency checks passed across the complete active tree.
+- Branch coverage measured 46% across `app`, `app_pages`, `dashboard` and
+  `services`, above the enforced 40% regression gate.
 - CI now executes demo page rendering on Linux and demo tests/smoke checks on
   Windows and Linux under Python 3.11 and 3.12.
 - No active CSV was changed and no table or source row was deleted.
@@ -283,12 +285,21 @@ Version 0.8.6 validation includes:
 - Two complete build validations and a third independent SELECT-only
   verification reproduced every mapped value. The independent report SHA-256
   is `D9F1EB83336C617EC32B8E7B3AAB5E25E1DC22AF66D8B6BBD1DAA99E0E2577EB`.
-- The active table remains at 7,812,208 rows with data SHA-256
+- The pre-promotion active table contained 7,812,208 rows with data SHA-256
   `D8DB709C3DD8C9F67A119E7375D208FA91EAAF86786A1BB9F4DECE471D78D22A`
   and schema SHA-256
   `3EA9698143D0269BE8C35D880F88666254D98A5D4998F57C1CD93F3CC94C75FA`.
-- No active CSV changed, no retained or failed table was created and no swap
-  was authorized or performed. The BSI shadow remains isolated for review.
+- After separate exact authorization, version 0.8.7 repeated the pinned report,
+  source, backup, active and shadow checks and atomically promoted the official
+  8,055,309-row snapshot.
+- The complete former 7,812,208-row active table remains intact as
+  `euro_balance_sheet_items__pre_v079_20260817_141854` for immediate rollback.
+- The complete final source-to-active audit found zero differences. No BSI
+  shadow or failed-table artifact remains, the active schema contains no
+  technical hash column, no CSV changed and rollback was not required.
+- Independent read-only SQL checks reproduced both final row counts. The
+  ignored local promotion report SHA-256 is
+  `EEDA230CDC30CE0E7037F975B57E5D397B4B4C67860CF1EE628CC8FE708F687B`.
 - Runtime inspection proved that SQLAlchemy's mysqlconnector connection-level
   buffering overrode `buffered=False` and returned `CMySQLCursorBuffered`.
   Version 0.8.6 forces `CMySQLCursor`, fails closed if a buffered class is ever
@@ -543,17 +554,16 @@ Planned work:
 The project already contains a validated multi-asset, FED macro and EURO macro analytical layer.
 
 The isolated MySQL acceptance gate, Direct Debits migration, official ECB
-snapshot staging and the separately controlled BLS and PCP promotions are
+snapshot staging and the separately controlled BLS, PCP and BSI promotions are
 complete. The current priority remains controlled source maintenance:
 
-1. keep the successfully preflighted BSI shadow isolated and require a new
-   explicit authorization before any atomic swap;
-2. retain the former BLS and PCP tables until a separate retention review;
-3. apply the documented official-snapshot-authoritative retention policy for
-   the 344,327 BSI keys withdrawn from the current snapshot;
-4. treat the Government Finance expansion as a dedicated migration with a
+1. retain the former BLS, PCP and BSI tables until a separate rollback-retention
+   review;
+2. monitor future official ECB snapshots through the same signed, one-table
+   preflight and atomic-promotion controls;
+3. treat the Government Finance expansion as a dedicated migration with a
    fresh scoped backup and capacity preflight;
-5. update stale market sources, beginning with verified official feeds, and
+4. update stale market sources, beginning with verified official feeds, and
    confirm the seven inferred source contracts;
-6. design Event Study v2 with benchmark and abnormal-return contracts;
-7. calibrate risk thresholds by asset history and class.
+5. design Event Study v2 with benchmark and abnormal-return contracts;
+6. calibrate risk thresholds by asset history and class.

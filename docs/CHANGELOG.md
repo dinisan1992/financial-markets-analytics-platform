@@ -4,22 +4,42 @@ All notable changes to this project will be documented here.
 
 ---
 
-## [Unreleased] - BSI Atomic Promotion Preparation
+## [v0.8.7] - 2026-08-17 - Promote Official BSI Snapshot
 
-### Added
+### Changed
 
-- Added a separate BSI-only atomic promotion command requiring the exact
-  `SWAP_EURO_BALANCE_SHEET_ITEMS_V087_ACTIVE` confirmation.
-- Bound the command to the signed readiness, shadow-build and independent
+- Executed the separate BSI-only atomic promotion command after receiving the
+  exact `SWAP_EURO_BALANCE_SHEET_ITEMS_V087_ACTIVE` confirmation.
+- Revalidated the signed readiness, shadow-build and independent
   post-build report chain, current pinned files and live table checkpoints.
-- Added retained-table proof, delayed technical-hash removal, complete final
-  source audit and automatic inverse-rename rollback after any failure.
+- Atomically promoted the validated official snapshot, retained the complete
+  former active table and removed the technical hash only after the renamed
+  state passed its checks.
+
+### Database Evidence
+
+- `euro_balance_sheet_items` now contains all 8,055,309 official source rows;
+  the complete final source audit reports zero differences.
+- The exact former 7,812,208-row table remains available as
+  `euro_balance_sheet_items__pre_v079_20260817_141854` for immediate rollback.
+- No BSI shadow or failed-table artifact remains, the active schema contains
+  no technical hash column, no CSV changed and rollback was not required.
+- Recorded ignored local promotion report SHA-256
+  `EEDA230CDC30CE0E7037F975B57E5D397B4B4C67860CF1EE628CC8FE708F687B`.
 
 ### Validation
 
-- The v0.8.6 SELECT-only preflight is complete and reviewed.
-- No database write, active-CSV write, swap, hash removal or cleanup has been
-  authorized or performed. The active table and validated shadow are unchanged.
+- Passed 291/291 deterministic unit tests, Ruff, compilation and `pip check`;
+  branch coverage is 46% against the enforced 40% gate.
+- Passed 12/12 public-demo contracts, the complete 38-asset smoke test and
+  9/9 Streamlit demo-page renders without exceptions.
+- Rendered 9/9 production Streamlit pages against the live database through
+  read-only access after the promotion, including EURO Macro.
+- Repeated direct read-only checks confirmed 8,055,309 active rows, 7,812,208
+  retained rows, no shadow/failed table and no technical hash in the active
+  schema.
+- Observed Python memory remained bounded near 208 MB working set and 541 MB
+  private memory during the guarded production operation.
 
 ## [v0.8.6] - 2026-08-17 - Force Unbuffered BSI Preflight
 

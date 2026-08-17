@@ -83,11 +83,10 @@ The complete v0.8.6 preflight repeated the active fingerprint and full
 source-to-shadow comparison with an observed peak near 218 MB working set and
 555 MB private memory. It performed no database or active-CSV write.
 
-## Remaining Authorization Gate
+## Promotion Outcome
 
-The shadow is ready for review but promotion has not been authorized or
-performed. A future BSI-only swap checkpoint must revalidate the complete
-signed evidence chain, retain the former active table under its versioned name,
-validate the promoted official snapshot and automatically reverse the atomic
-rename after any post-swap failure. That guarded implementation is now prepared
-but remains unexecuted; see `docs/ECB_BSI_PROMOTION.md`.
+Version v0.8.7 subsequently revalidated the complete signed evidence chain and,
+after separate exact authorization, atomically promoted this shadow. The
+official 8,055,309-row snapshot is active, the former 7,812,208-row table is
+retained under its versioned name, no shadow or failed artifact remains and no
+rollback was required. See `docs/ECB_BSI_PROMOTION.md`.
