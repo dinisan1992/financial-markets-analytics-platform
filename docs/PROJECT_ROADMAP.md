@@ -547,10 +547,10 @@ Prepare the project for professional presentation.
 
 The current priority is:
 
-1. Obtain explicit authorization for the first ECB database write
-2. Build and fully validate the BLS shadow without changing the active table
-3. Repeat the separately controlled process for PCP and then BSI
-4. Authorize each atomic promotion only after reviewing complete shadow evidence
+1. Review the completed and twice-validated official BLS shadow
+2. Obtain separate authorization before any atomic BLS promotion
+3. Preserve the former active BLS table as a versioned retained checkpoint
+4. Repeat the separately controlled build process for PCP and then BSI
 5. Validate stale sources and updater behaviour asset by asset
 6. Confirm the historical WTI contract/source without automatic correction
 7. Design Event Study v2 with benchmarks and abnormal returns

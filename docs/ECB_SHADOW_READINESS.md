@@ -4,6 +4,10 @@ Version: v0.7.9
 
 Date: 17 August 2026
 
+Status update: the authorized BLS shadow was built and fully validated later
+the same day. The active BLS table remains unchanged and no swap was performed.
+See `docs/ECB_BLS_SHADOW.md`.
+
 ## Scope And Safety
 
 This checkpoint revalidates the official staged Bank Lending Survey (`BLS`),

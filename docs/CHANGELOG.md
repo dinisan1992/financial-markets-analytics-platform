@@ -4,6 +4,38 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [v0.8.0] - 2026-08-17 - Verified Official BLS Shadow
+
+### Added
+
+- Added an ECB build-only command restricted to the Bank Lending Survey and
+  bound to the reviewed v0.7.9 readiness report, source, backup, audit and
+  exact confirmation.
+- Added explicit external-source overrides to the shared memory-bounded shadow
+  loader while preserving configured active CSV paths as the default.
+- Added a guarded shadow-hash repair command with no swap path and complete
+  before/after active-table fingerprints.
+
+### Fixed
+
+- Canonical decimal hashing now treats signed zero as financial zero even when
+  target SQL type metadata is unavailable.
+- Validation errors now retain bounded samples for rows whose stored technical
+  hash differs from their post-storage canonical value.
+
+### Database Evidence
+
+- Created `euro_bank_lending_survey__shadow_v079_20260817_115720` and loaded all
+  1,225,110 unique official BLS source rows.
+- Isolated one representation-only difference: CSV `-0E-12` was stored by
+  MySQL as `0E-12`. No financial value required correction.
+- Updated exactly one guarded technical shadow hash after proving source and
+  stored row equivalence, then passed two complete independent validations
+  with zero mismatches.
+- Confirmed identical 1,164,356-row active data and schema fingerprints before
+  and after the operation. No active table, active CSV or retained table was
+  changed; no swap was authorized or performed.
+
 ## [v0.7.9] - 2026-08-17 - ECB Shadow Readiness Gate
 
 ### Added

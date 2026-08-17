@@ -70,6 +70,7 @@ class EuroRebuildValidation:
     database_write_performed: bool
     memory_bounded_validation: bool = False
     comparison_store_bytes: int = 0
+    row_hash_mismatch_samples: tuple[dict, ...] = ()
 
     @property
     def valid(self):
@@ -253,8 +254,10 @@ def normalize_numeric_for_storage(value, target_type):
     decimal_value, invalid = _decimal_value(value)
     if invalid:
         raise ValueError(f"Invalid decimal value: {value}")
-    if decimal_value is None or not target_type:
+    if decimal_value is None:
         return decimal_value
+    if not target_type:
+        return decimal_value.copy_abs() if decimal_value == 0 else decimal_value
     target_type = str(target_type).upper()
     decimal_match = re.search(
         r"(?:DECIMAL|NUMERIC)\(\d+\s*,\s*(\d+)\)",
@@ -311,9 +314,12 @@ def canonical_row_hash(columns, record, column_types=None):
     return sha256(payload).hexdigest().upper()
 
 
-def _source_chunks(contract, chunk_size):
+def _source_chunks(contract, chunk_size, source_path=None):
+    path = Path(source_path or contract["csv_path"]).expanduser().resolve()
+    if not path.is_file():
+        raise FileNotFoundError(f"EURO source CSV not found: {path}")
     return pd.read_csv(
-        contract["csv_path"],
+        path,
         chunksize=max(1, int(chunk_size)),
         dtype=str,
         keep_default_na=False,
@@ -333,9 +339,9 @@ def normalize_source_frame(contract, frame, expected_columns):
     return _normalize_source_frame(contract, frame, expected_columns)
 
 
-def source_chunks(contract, chunk_size):
+def source_chunks(contract, chunk_size, source_path=None):
     """Read a EURO CSV in bounded string-preserving chunks."""
-    return _source_chunks(contract, chunk_size)
+    return _source_chunks(contract, chunk_size, source_path=source_path)
 
 
 def record_batches(records, batch_size):
@@ -344,14 +350,18 @@ def record_batches(records, batch_size):
         yield records[start:start + batch_size]
 
 
-def source_fingerprints(import_key, chunk_size=5000):
+def source_fingerprints(import_key, chunk_size=5000, source_path=None):
     contract = get_macro_import(import_key)
     columns = _mapped_source_columns(contract)
     fingerprints = {}
     non_null_values = 0
     invalid_numeric_rows = 0
 
-    for raw_chunk in _source_chunks(contract, chunk_size):
+    for raw_chunk in _source_chunks(
+        contract,
+        chunk_size,
+        source_path=source_path,
+    ):
         chunk = _normalize_source_frame(contract, raw_chunk, columns)
         for values in chunk.itertuples(index=False, name=None):
             record, invalid_columns = normalize_row(columns, values)
@@ -378,6 +388,7 @@ def source_fingerprints_to_store(
     import_key,
     fingerprint_store,
     chunk_size=5000,
+    source_path=None,
 ):
     contract = get_macro_import(import_key)
     columns = _mapped_source_columns(contract)
@@ -387,7 +398,11 @@ def source_fingerprints_to_store(
     non_null_values = 0
     invalid_numeric_rows = 0
 
-    for raw_chunk in _source_chunks(contract, chunk_size):
+    for raw_chunk in _source_chunks(
+        contract,
+        chunk_size,
+        source_path=source_path,
+    ):
         chunk = _normalize_source_frame(contract, raw_chunk, columns)
         fingerprints = []
         chunk_keys = set()
@@ -539,6 +554,7 @@ def load_source_into_shadow(
     shadow_table,
     chunk_size=5000,
     insert_batch_size=250,
+    source_path=None,
 ):
     contract = get_macro_import(import_key)
     shadow_table = validate_identifier(shadow_table)
@@ -554,7 +570,11 @@ def load_source_into_shadow(
     non_null_values = 0
     invalid_numeric_rows = 0
 
-    for raw_chunk in _source_chunks(contract, chunk_size):
+    for raw_chunk in _source_chunks(
+        contract,
+        chunk_size,
+        source_path=source_path,
+    ):
         chunk = _normalize_source_frame(contract, raw_chunk, columns)
         records = []
         for values in chunk.itertuples(index=False, name=None):
@@ -601,6 +621,7 @@ def load_source_into_shadow_disk_backed(
     fingerprint_store,
     chunk_size=5000,
     insert_batch_size=250,
+    source_path=None,
 ):
     contract = get_macro_import(import_key)
     shadow_table = validate_identifier(shadow_table)
@@ -617,7 +638,11 @@ def load_source_into_shadow_disk_backed(
     non_null_values = 0
     invalid_numeric_rows = 0
 
-    for raw_chunk in _source_chunks(contract, chunk_size):
+    for raw_chunk in _source_chunks(
+        contract,
+        chunk_size,
+        source_path=source_path,
+    ):
         chunk = _normalize_source_frame(contract, raw_chunk, columns)
         records = []
         fingerprints = []
@@ -809,6 +834,7 @@ def validate_shadow_disk_backed(
 
     fingerprint_store.clear(TARGET_DATASET)
     row_hash_mismatches = 0
+    row_hash_mismatch_samples = []
     streamed_shadow_rows = 0
     chunk_size = max(1, int(chunk_size))
     with engine.connect() as connection:
@@ -826,8 +852,18 @@ def validate_shadow_disk_backed(
                 record = {column: row[column] for column in columns}
                 actual_hash = canonical_row_hash(columns, record)
                 stored_hash = str(row[HASH_COLUMN]).strip().upper()
+                key = tuple(record[column] for column in BUSINESS_KEY)
                 if actual_hash != stored_hash:
                     row_hash_mismatches += 1
+                    if len(row_hash_mismatch_samples) < 10:
+                        row_hash_mismatch_samples.append(
+                            {
+                                "key_code": key[0],
+                                "time_period": key[1],
+                                "stored_hash": stored_hash,
+                                "actual_hash": actual_hash,
+                            }
+                        )
                 if len(stored_hash) != 64:
                     raise ValueError(
                         f"Invalid stored row hash in {shadow_table}: {stored_hash}"
@@ -838,7 +874,6 @@ def validate_shadow_disk_backed(
                     raise ValueError(
                         f"Invalid stored row hash in {shadow_table}: {stored_hash}"
                     ) from exc
-                key = tuple(record[column] for column in BUSINESS_KEY)
                 if any(value is None for value in key):
                     raise ValueError(
                         f"Null shadow business key in {import_key}: {key}"
@@ -884,6 +919,7 @@ def validate_shadow_disk_backed(
         database_write_performed=bool(database_write_performed),
         memory_bounded_validation=True,
         comparison_store_bytes=fingerprint_store.size_bytes,
+        row_hash_mismatch_samples=tuple(row_hash_mismatch_samples),
     )
     if target_summary["duplicate_groups"] != duplicate_groups:
         raise RuntimeError(f"Shadow duplicate count mismatch: {shadow_table}")
@@ -910,14 +946,25 @@ def build_and_validate_shadows(
     version="v055",
     memory_bounded=False,
     workspace_dir=None,
+    source_path_overrides=None,
 ):
     if confirmation != BUILD_CONFIRMATION:
         raise ValueError(f"--confirm must exactly match {BUILD_CONFIRMATION}")
     tables = tuple(get_macro_import(key)["table_name"] for key in import_keys)
     backup = validate_scoped_backup(backup_file, tables)
     validations = []
+    source_path_overrides = {
+        str(key).upper(): value
+        for key, value in (source_path_overrides or {}).items()
+    }
+    unexpected_overrides = sorted(set(source_path_overrides) - set(import_keys))
+    if unexpected_overrides:
+        raise ValueError(
+            f"Source overrides outside build scope: {unexpected_overrides}"
+        )
 
     for import_key in import_keys:
+        source_path = source_path_overrides.get(import_key)
         print(f"Building shadow: {import_key}")
         shadow = create_shadow_schema(
             engine,
@@ -938,6 +985,7 @@ def build_and_validate_shadows(
                         fingerprint_store,
                         chunk_size=chunk_size,
                         insert_batch_size=insert_batch_size,
+                        source_path=source_path,
                     )
                 )
                 validation = validate_shadow_disk_backed(
@@ -958,6 +1006,7 @@ def build_and_validate_shadows(
                     shadow,
                     chunk_size=chunk_size,
                     insert_batch_size=insert_batch_size,
+                    source_path=source_path,
                 )
             )
             validation = validate_shadow(
@@ -1038,9 +1087,20 @@ def validate_existing_shadows(
     version="v055",
     memory_bounded=False,
     workspace_dir=None,
+    source_path_overrides=None,
 ):
     validations = []
+    source_path_overrides = {
+        str(key).upper(): value
+        for key, value in (source_path_overrides or {}).items()
+    }
+    unexpected_overrides = sorted(set(source_path_overrides) - set(import_keys))
+    if unexpected_overrides:
+        raise ValueError(
+            f"Source overrides outside validation scope: {unexpected_overrides}"
+        )
     for import_key in import_keys:
+        source_path = source_path_overrides.get(import_key)
         active = get_macro_import(import_key)["table_name"]
         shadow = shadow_table_name(active, suffix, version=version)
         if not _table_exists(engine, shadow):
@@ -1055,6 +1115,7 @@ def validate_existing_shadows(
                         import_key,
                         fingerprint_store,
                         chunk_size=chunk_size,
+                        source_path=source_path,
                     )
                 )
                 validations.append(
@@ -1074,6 +1135,7 @@ def validate_existing_shadows(
             columns, fingerprints, non_null_values = source_fingerprints(
                 import_key,
                 chunk_size=chunk_size,
+                source_path=source_path,
             )
             validations.append(
                 validate_shadow(
@@ -1102,6 +1164,7 @@ def swap_validated_shadows(
     drop_hash_before_swap=True,
     post_swap_validator=None,
     post_hash_drop_validator=None,
+    source_path_overrides=None,
 ):
     if confirmation != SWAP_CONFIRMATION:
         raise ValueError(f"--confirm must exactly match {SWAP_CONFIRMATION}")
@@ -1127,6 +1190,7 @@ def swap_validated_shadows(
         version=version,
         memory_bounded=memory_bounded,
         workspace_dir=workspace_dir,
+        source_path_overrides=source_path_overrides,
     )
     expected_rows = {
         validation.active_table: validation.source_rows

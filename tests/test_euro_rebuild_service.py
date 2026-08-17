@@ -17,6 +17,7 @@ from services.euro_rebuild_service import (
     swap_validated_shadows,
     validate_scoped_backup,
     versioned_table_name,
+    source_chunks,
 )
 
 
@@ -129,10 +130,38 @@ class EuroRebuildServiceTests(unittest.TestCase):
             canonical_row_hash(columns, target, column_types),
         )
 
+    def test_canonical_hash_treats_signed_zero_as_zero_without_type_metadata(self):
+        columns = ("key_code", "time_period", "obs_value")
+        source, _ = normalize_row(columns, ("A", "2024-Q1", "-0E-12"))
+        target, _ = normalize_row(columns, ("A", "2024-Q1", "0E-12"))
+
+        self.assertEqual(
+            canonical_row_hash(columns, source),
+            canonical_row_hash(columns, target),
+        )
+
     def test_record_batches_bound_mysql_packet_size(self):
         batches = list(record_batches(list(range(11)), 4))
 
         self.assertEqual([[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10]], batches)
+
+    def test_source_chunks_can_use_an_explicit_external_path(self):
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            configured = root / "configured.csv"
+            external = root / "external.csv"
+            configured.write_text("value\nconfigured\n", encoding="utf-8")
+            external.write_text("value\nexternal\n", encoding="utf-8")
+
+            chunks = list(
+                source_chunks(
+                    {"csv_path": configured},
+                    chunk_size=10,
+                    source_path=external,
+                )
+            )
+
+        self.assertEqual("external", chunks[0].iloc[0]["value"])
 
     @patch("services.euro_rebuild_service.inspect")
     @patch("services.euro_rebuild_service._business_key_is_unique", return_value=True)
