@@ -12,7 +12,8 @@ table, future table names and storage capacity. No shadow, retained or failed
 table was created, and no active CSV or MySQL row was changed.
 
 The current build command accepts BSI only. BLS and PCP are rejected targets,
-and the command exposes no swap, promotion or cleanup mode.
+and the command exposes no swap or promotion mode. Its only cleanup path is an
+automatic failure handler restricted to the exact generated shadow name.
 
 ## Pinned Inputs
 
@@ -88,7 +89,10 @@ If separately authorized, the builder will:
 4. Validate every business key and mapped value against the source.
 5. Repeat that complete validation independently.
 6. Recompute the active checkpoint and fail if the active table changed.
-7. Emit a signed ignored local report with `swap_authorized: false` and
+7. If any build or validation step fails, drop only the exact generated
+   partial shadow and recompute the active checkpoint before surfacing the
+   failure.
+8. Emit a signed ignored local report with `swap_authorized: false` and
    `swap_performed: false`.
 
 No promotion is bundled with this operation. The active-only keys remain in

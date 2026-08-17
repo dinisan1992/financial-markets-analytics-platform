@@ -14,10 +14,12 @@ All notable changes to this project will be documented here.
   names, current live schema/count checks and post-PCP storage capacity.
 - Recalculated the 4.46 GB official CSV and 5.13 GB scoped-backup SHA-256
   values before accepting the readiness evidence.
+- Added guarded failure cleanup that can drop only the exact newly generated
+  shadow and then proves that the active table checkpoint is unchanged.
 
 ### Validation
 
-- Passed 267/267 deterministic unit tests, including current BSI-only builder
+- Passed 270/270 deterministic unit tests, including current BSI-only builder
   guards and historical PCP/BLS regression coverage.
 - Confirmed 7,812,208 unchanged active rows, safe period/value types and no
   shadow, retained or failed-name collision.
@@ -25,6 +27,8 @@ All notable changes to this project will be documented here.
   required, including the 5 GiB reserve.
 - Performed zero SQL writes and zero active-CSV writes. Shadow construction and
   any future promotion remain separately authorized operations.
+- Covered successful cleanup, non-shadow refusal and failed-build active-table
+  preservation with deterministic tests.
 
 ## [v0.8.3] - 2026-08-17 - Atomic Official PCP Promotion
 

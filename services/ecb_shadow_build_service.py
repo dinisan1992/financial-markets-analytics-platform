@@ -302,6 +302,20 @@ def _assert_same_readiness(recorded, current):
         raise ValueError(f"ECB readiness evidence changed: {changed}")
 
 
+def drop_failed_generated_shadow(engine, shadow_table):
+    """Remove only the planned generated shadow after a failed build."""
+    shadow_table = validate_identifier(shadow_table)
+    if "__shadow_" not in shadow_table:
+        raise ValueError("Refusing cleanup outside a generated shadow table")
+    if not inspect(engine).has_table(shadow_table):
+        return False
+    with engine.begin() as connection:
+        connection.execute(text(f"DROP TABLE `{shadow_table}`"))
+    if inspect(engine).has_table(shadow_table):
+        raise RuntimeError(f"Failed shadow cleanup did not finish: {shadow_table}")
+    return True
+
+
 def build_ecb_shadow(
     engine,
     import_key,
@@ -351,49 +365,73 @@ def build_ecb_shadow(
         / current_readiness["backup"]["file_name"]
     )
     active_before = active_table_checkpoint(engine, key)
-    result = build_and_validate_shadows(
-        engine=engine,
-        backup_file=backup_path,
-        confirmation=BUILD_CONFIRMATION,
-        suffix=suffix,
-        chunk_size=chunk_size,
-        insert_batch_size=insert_batch_size,
-        import_keys=(key,),
-        version=PLAN_VERSION,
-        memory_bounded=True,
-        workspace_dir=workspace_dir,
-        source_path_overrides={key: source_path},
-    )
-    validation = result["validations"][0]
     planned_shadow = current_readiness["planned_names"]["shadow_table"]
-    if validation.shadow_table != planned_shadow:
-        raise RuntimeError("Built ECB shadow name differs from readiness plan")
-    if not validation.valid:
-        raise RuntimeError("Built ECB shadow failed complete source validation")
-    if validation.shadow_rows != int(audit_payload["source_rows"]):
-        raise RuntimeError("Built ECB shadow row count differs from staged source")
+    try:
+        result = build_and_validate_shadows(
+            engine=engine,
+            backup_file=backup_path,
+            confirmation=BUILD_CONFIRMATION,
+            suffix=suffix,
+            chunk_size=chunk_size,
+            insert_batch_size=insert_batch_size,
+            import_keys=(key,),
+            version=PLAN_VERSION,
+            memory_bounded=True,
+            workspace_dir=workspace_dir,
+            source_path_overrides={key: source_path},
+        )
+        validation = result["validations"][0]
+        if validation.shadow_table != planned_shadow:
+            raise RuntimeError(
+                "Built ECB shadow name differs from readiness plan"
+            )
+        if not validation.valid:
+            raise RuntimeError(
+                "Built ECB shadow failed complete source validation"
+            )
+        if validation.shadow_rows != int(audit_payload["source_rows"]):
+            raise RuntimeError(
+                "Built ECB shadow row count differs from staged source"
+            )
 
-    repeated_validation = validate_existing_shadows(
-        engine,
-        suffix,
-        chunk_size,
-        (key,),
-        version=PLAN_VERSION,
-        memory_bounded=True,
-        workspace_dir=workspace_dir,
-        source_path_overrides={key: source_path},
-    )[0]
-    if not repeated_validation.valid:
-        raise RuntimeError("Independent ECB shadow revalidation failed")
-    if repeated_validation.shadow_rows != validation.shadow_rows:
-        raise RuntimeError("Repeated ECB shadow row count changed")
+        repeated_validation = validate_existing_shadows(
+            engine,
+            suffix,
+            chunk_size,
+            (key,),
+            version=PLAN_VERSION,
+            memory_bounded=True,
+            workspace_dir=workspace_dir,
+            source_path_overrides={key: source_path},
+        )[0]
+        if not repeated_validation.valid:
+            raise RuntimeError("Independent ECB shadow revalidation failed")
+        if repeated_validation.shadow_rows != validation.shadow_rows:
+            raise RuntimeError("Repeated ECB shadow row count changed")
 
-    evidence = shadow_table_evidence(engine, validation.shadow_table)
-    if not evidence["hash_column_present"]:
-        raise RuntimeError("ECB shadow source hash column is missing")
-    active_after = active_table_checkpoint(engine, key)
-    if active_after != active_before:
-        raise RuntimeError("Active ECB table changed during shadow build")
+        evidence = shadow_table_evidence(engine, validation.shadow_table)
+        if not evidence["hash_column_present"]:
+            raise RuntimeError("ECB shadow source hash column is missing")
+        active_after = active_table_checkpoint(engine, key)
+        if active_after != active_before:
+            raise RuntimeError("Active ECB table changed during shadow build")
+    except Exception:
+        try:
+            removed = drop_failed_generated_shadow(engine, planned_shadow)
+            print(
+                "Failed generated shadow removed: "
+                f"{planned_shadow} | removed={removed}"
+            )
+            active_after_failure = active_table_checkpoint(engine, key)
+            if active_after_failure != active_before:
+                raise RuntimeError(
+                    "Active ECB table changed during failed shadow build"
+                )
+        except Exception as cleanup_error:
+            raise RuntimeError(
+                "ECB shadow build failed and guarded cleanup did not complete"
+            ) from cleanup_error
+        raise
 
     return {
         "version": PLAN_VERSION,
@@ -415,6 +453,7 @@ def build_ecb_shadow(
         "active_table_changed": False,
         "active_tables_changed": False,
         "active_csv_write_performed": False,
+        "failed_shadow_cleanup_policy": "drop_generated_shadow_only",
         "shadow_ready_for_swap_review": True,
         "swap_authorized": False,
         "swap_performed": False,

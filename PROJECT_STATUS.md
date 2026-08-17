@@ -222,7 +222,7 @@ Main file:
 
 Version 0.8.3 validation includes:
 
-- 267/267 deterministic production unit tests passed.
+- 270/270 deterministic production unit tests passed.
 - 12/12 public-demo contracts passed, covering interval invariance, plausible
   stress and macro scales, cross-asset structure and SQL isolation.
 - The demo smoke test generated 38/38 configured assets, 10 events and aligned
@@ -278,7 +278,8 @@ Version 0.8.3 validation includes:
   unused versioned names and current storage capacity without database writes.
 - The current builder accepts only `EURO_BALANCE_SHEET_ITEMS`. Its planned
   shadow build remains unavailable until a separate explicit authorization and
-  cannot perform a swap.
+  cannot perform a swap. A failed build can remove only its exact generated
+  partial shadow and must reprove that the active checkpoint is unchanged.
 
 Previous v0.7.5 validation included:
 

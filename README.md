@@ -369,7 +369,7 @@ mode. See `docs/ECB_SHADOW_READINESS.md`.
 
 The v0.8.3 release validation includes:
 
-- 267/267 deterministic unit tests pass.
+- 270/270 deterministic unit tests pass.
 - 12/12 public-demo contracts pass, including fixed-window invariance,
   plausible stress/macro levels, shared equity structure and SQL isolation.
 - The demo smoke test generates all 38 configured assets, 10 events and aligned

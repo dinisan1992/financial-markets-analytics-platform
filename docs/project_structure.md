@@ -73,7 +73,7 @@ Market data maintenance entry points:
 - `services/euro_direct_debits_shadow_service.py` - pinned Direct Debits source/backup gates, shadow-only build and complete before/after validation.
 - `services/euro_direct_debits_swap_service.py` - Direct Debits promotion checks, retained checkpoint and post-swap evidence.
 - `services/ecb_shadow_readiness_service.py` - read-only ECB hash, backup, audit, schema, capacity and future-name validation.
-- `services/ecb_shadow_build_service.py` - pinned external-source build, active-table checkpoint, storage diagnosis and shadow-only repair controls.
+- `services/ecb_shadow_build_service.py` - pinned external-source build, active-table checkpoint, guarded partial-shadow failure cleanup, storage diagnosis and shadow-only repair controls.
 - `services/ecb_bls_swap_service.py` - BLS preflight, atomic promotion, retained-table proof, complete source audit and automatic rollback controls.
 - `services/ecb_pcp_swap_service.py` - chained PCP evidence checks, live preflight, atomic promotion and automatic rollback controls.
 

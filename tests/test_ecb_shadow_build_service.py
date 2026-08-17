@@ -1,11 +1,12 @@
 from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import ANY, MagicMock, Mock, patch
 import unittest
 
 from services.ecb_shadow_build_service import (
     active_table_checkpoint,
     compare_source_shadow_row,
     build_ecb_shadow,
+    drop_failed_generated_shadow,
     repair_shadow_storage_hash,
     validate_build_import_key,
     validate_readiness_report,
@@ -110,6 +111,29 @@ class EcbShadowBuildServiceTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "zero executed statements"):
             validate_readiness_report(payload, IMPORT_KEY)
 
+    def test_cleanup_refuses_non_shadow_table(self):
+        with self.assertRaisesRegex(ValueError, "outside a generated shadow"):
+            drop_failed_generated_shadow(Mock(), "euro_balance_sheet_items")
+
+    @patch("services.ecb_shadow_build_service.inspect")
+    def test_cleanup_drops_only_existing_generated_shadow(self, inspect_mock):
+        engine = MagicMock()
+        inspect_mock.side_effect = [
+            Mock(has_table=Mock(return_value=True)),
+            Mock(has_table=Mock(return_value=False)),
+        ]
+
+        removed = drop_failed_generated_shadow(
+            engine,
+            "euro_balance_sheet_items__shadow_v079_test",
+        )
+
+        connection = engine.begin.return_value.__enter__.return_value
+        statement = str(connection.execute.call_args.args[0])
+        self.assertIn("DROP TABLE", statement)
+        self.assertIn("__shadow_v079_test", statement)
+        self.assertTrue(removed)
+
     @patch("services.ecb_shadow_build_service.source_chunks")
     @patch("services.ecb_shadow_build_service.get_macro_import")
     def test_row_comparison_identifies_storage_column(
@@ -176,6 +200,46 @@ class EcbShadowBuildServiceTests(unittest.TestCase):
             )
 
         core.assert_not_called()
+
+    @patch("services.ecb_shadow_build_service.drop_failed_generated_shadow")
+    @patch("services.ecb_shadow_build_service.active_table_checkpoint")
+    @patch("services.ecb_shadow_build_service.build_and_validate_shadows")
+    @patch("services.ecb_shadow_build_service.build_ecb_shadow_readiness")
+    def test_failed_build_removes_partial_shadow_and_preserves_active(
+        self,
+        fresh_readiness,
+        core,
+        active_checkpoint,
+        cleanup,
+    ):
+        payload = readiness_payload()
+        plan = payload["plans"][0]
+        fresh_readiness.return_value = {
+            **plan,
+            "ready_for_shadow_build_authorization": True,
+        }
+        core.side_effect = RuntimeError("forced build failure")
+        before = {"data": "same", "schema": "same"}
+        active_checkpoint.side_effect = [before, before]
+        cleanup.return_value = True
+
+        with self.assertRaisesRegex(RuntimeError, "forced build failure"):
+            build_ecb_shadow(
+                Mock(),
+                IMPORT_KEY,
+                confirmation=build_confirmation(IMPORT_KEY),
+                readiness_payload=payload,
+                pin={},
+                audit_payload={"source_rows": 10},
+                staging_dir="staging",
+                backup_dir="backup",
+                workspace_dir="workspace",
+            )
+
+        cleanup.assert_called_once_with(
+            ANY,
+            plan["planned_names"]["shadow_table"],
+        )
 
     @patch("services.ecb_shadow_build_service.build_and_validate_shadows")
     @patch("services.ecb_shadow_build_service.build_ecb_shadow_readiness")
