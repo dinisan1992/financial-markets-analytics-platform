@@ -547,15 +547,14 @@ Prepare the project for professional presentation.
 
 The current priority is:
 
-1. Profile and reduce the transient BSI verification memory peaks
-2. Prepare a BSI-only atomic promotion command and independent read-only preflight
-3. Obtain separate authorization only after reviewing the complete promotion evidence
-4. Preserve the former active BSI table as the immediate rollback checkpoint
-5. Keep the retained BLS and PCP checkpoints until their retention review is authorized
-6. Validate stale sources and updater behaviour asset by asset
-7. Confirm the historical WTI contract/source without automatic correction
-8. Design Event Study v2 with benchmarks and abnormal returns
-9. Begin machine learning only after data quality and feature governance are stable
+1. Keep the reviewed BLS, PCP and BSI rollback checkpoints until a future,
+   separately authorized deletion review has newer verified backups
+2. Prepare the Government Finance expansion as a dedicated migration with a
+   fresh scoped backup and capacity preflight
+3. Validate stale sources and updater behaviour asset by asset
+4. Confirm the historical WTI contract/source without automatic correction
+5. Design Event Study v2 with benchmarks and abnormal returns
+6. Begin machine learning only after data quality and feature governance are stable
 
 ---
 

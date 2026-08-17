@@ -29,7 +29,7 @@ Functional local platform with:
 - Data quality and validation tools.
 - Cross-platform lint, import-safety, dependency, coverage and unit-test checks through GitHub Actions.
 
-Current project version: **v0.8.7**
+Current project version: **v0.8.8**
 
 ## Main Analytical Capabilities
 
@@ -367,16 +367,16 @@ mode. See `docs/ECB_SHADOW_READINESS.md`.
 
 ## Validation Snapshot
 
-The v0.8.7 release validation includes:
+The v0.8.8 release validation includes:
 
-- 291/291 deterministic unit tests pass.
+- 295/295 deterministic unit tests pass.
 - 12/12 public-demo contracts pass, including fixed-window invariance,
   plausible stress/macro levels, shared equity structure and SQL isolation.
 - The demo smoke test generates all 38 configured assets, 10 events and aligned
   macro data; its dedicated AppTest renders 9/9 pages without exceptions.
 - The complete active Python tree compiles successfully and `pip check` reports no broken requirements.
 - Ruff passes across the active Python tree with no lint errors.
-- Branch coverage is measured across `app`, `app_pages`, `dashboard` and `services`, with a 40% regression gate over the current 46% baseline.
+- Branch coverage is measured across `app`, `app_pages`, `dashboard` and `services`, with a 40% regression gate over the current 47% baseline.
 - GitHub Actions runs static/import-safety/demo-page checks and a four-environment
   unit and demo-test matrix covering Windows, Linux, Python 3.11 and Python 3.12.
 - 38/38 configured SQL assets recalculate successfully with database writes disabled.
@@ -420,6 +420,13 @@ The v0.8.7 release validation includes:
   technical hash column in the active schema. No CSV changed and rollback was
   not required. The ignored local promotion report SHA-256 is
   `EEDA230CDC30CE0E7037F975B57E5D397B4B4C67860CF1EE628CC8FE708F687B`.
+- A reusable SELECT-only retention review confirms the exact expected active
+  and retained row counts for BLS, PCP and BSI, their composite primary keys,
+  schema signatures and absence of residual shadow/failed artifacts.
+- The three retained checkpoints occupy approximately 7.25 GiB in MySQL. The
+  review recommends retaining all three until a newer verified backup and an
+  adequate observation window are separately reviewed; it exposes no deletion
+  or database-write path. See `docs/ECB_RETENTION_REVIEW.md`.
 - EURO row fingerprints now respect target `FLOAT` and `DECIMAL` precision,
   normalize signed zero and ignore outer text whitespace, preventing permanent
   false updates caused by SQL storage representation.
@@ -554,8 +561,8 @@ Planned improvements include:
 - Calibrate risk thresholds by asset class and data provenance.
 - Replace important year-only world events with verified exact dates.
 - Add dry-run and explicit entry points to the remaining SQL-capable ETL scripts.
-- Retain the former BLS, PCP and BSI tables until a separate rollback-retention
-  review.
+- Keep the reviewed BLS, PCP and BSI rollback checkpoints until a future,
+  separately authorized deletion review has newer verified backups.
 - Monitor future official ECB snapshots through the same signed, one-table
   preflight and atomic-promotion controls.
 - Treat the 3,822,937-row Government Finance source expansion as a separate controlled migration.

@@ -4,6 +4,40 @@ All notable changes to this project will be documented here.
 
 ---
 
+## [v0.8.8] - 2026-08-17 - Review ECB Rollback Retention
+
+### Added
+
+- Added a reusable SELECT-only retention service and diagnostic command for
+  the BLS, PCP and BSI rollback checkpoints.
+- Recorded exact active/retained counts, schema signatures, composite primary
+  keys, technical-hash state, storage estimates and residual shadow/failed
+  artifacts in an ignored signed local report.
+- Added a fail-closed `review_required` state for missing tables, changed row
+  counts or residual build artifacts. The only automated recommendation is
+  `retain`; the command has no deletion or database-write path.
+
+### Evidence
+
+- Verified 1,164,356 retained BLS rows, 815,173 retained PCP rows and
+  7,812,208 retained BSI rows, alongside all three expected active counts.
+- Confirmed `key_code + time_period` primary keys, no technical hash column and
+  no residual shadow/failed artifact for all three contracts.
+- The retained checkpoints occupy 7,787,757,568 bytes (approximately 7.25 GiB)
+  according to current MySQL table metadata.
+- Recorded ignored local report SHA-256
+  `400AFDA3369BE6FC19D8696525F1C588A903CABF0719D02220B0A86F143571C0`.
+- Performed zero database writes and deleted zero tables. Full row fingerprints
+  were deliberately not repeated; signed promotion evidence remains the data
+  integrity baseline.
+
+### Validation
+
+- Passed 295/295 deterministic unit tests, Ruff and `pip check`; branch
+  coverage is 47% against the enforced 40% gate.
+- Passed compilation, 12/12 demo contracts, the 38-asset demo smoke test and
+  9/9 Streamlit demo-page renders without exceptions.
+
 ## [v0.8.7] - 2026-08-17 - Promote Official BSI Snapshot
 
 ### Changed
