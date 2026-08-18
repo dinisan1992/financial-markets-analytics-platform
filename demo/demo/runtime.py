@@ -7,14 +7,15 @@ from typing import Any
 
 import pandas as pd
 
-from demo.data import (
-    build_demo_multi_asset_price_frame,
-    demo_table_columns,
-    demo_table_exists,
-    load_demo_asset_data,
-    load_demo_events,
-    load_demo_events_from_table,
-    load_demo_macro_pair,
+from demo.snapshot_data import (
+    build_snapshot_multi_asset_price_frame,
+    load_snapshot_asset_data,
+    load_snapshot_events,
+    load_snapshot_events_from_table,
+    load_snapshot_macro_pair,
+    snapshot_manifest,
+    snapshot_table_columns,
+    snapshot_table_exists,
 )
 
 
@@ -29,13 +30,6 @@ def _patch(module, name: str, replacement) -> None:
 
 
 def _install_database_loader_stubs() -> None:
-    """Install lightweight demo substitutes before the main app imports SQL loaders.
-
-    The normal `macro_data_loader.py` and `euro_data_loader.py` import
-    SQLAlchemy at module import time. A public demo should not require a SQL
-    dependency merely to start, so the demo entrypoint installs modules with
-    only the names the Streamlit application imports.
-    """
     from asset_config import ASSETS
 
     for module_name in ("macro_data_loader", "euro_data_loader"):
@@ -57,7 +51,7 @@ def _install_database_loader_stubs() -> None:
         forward_fill=True,
         **kwargs,
     ):
-        return load_demo_macro_pair(
+        return load_snapshot_macro_pair(
             assets_config=ASSETS,
             macro_key=macro_key,
             market_asset=market_asset,
@@ -81,7 +75,7 @@ def _install_database_loader_stubs() -> None:
         forward_fill=True,
         **kwargs,
     ):
-        return load_demo_macro_pair(
+        return load_snapshot_macro_pair(
             assets_config=ASSETS,
             macro_key=euro_series_key,
             market_asset=market_asset,
@@ -94,19 +88,12 @@ def _install_database_loader_stubs() -> None:
 
 
 def activate_demo_mode() -> None:
-    """Patch the read-only data boundaries used by the Streamlit application.
-
-    This function is called before `streamlit_app.py` is executed. It deliberately
-    avoids importing the normal SQL-backed macro/euro loader modules.
-    """
     global _ACTIVE
     if _ACTIVE:
         return
 
     os.environ["DATA_MODE"] = "demo"
-
-    # Critical: install these before importing anything that may cause the main
-    # app to resolve macro_data_loader/euro_data_loader.
+    manifest = snapshot_manifest()
     _install_database_loader_stubs()
 
     import streamlit as st
@@ -132,7 +119,7 @@ def activate_demo_mode() -> None:
 
     @st.cache_data(show_spinner=False, max_entries=256)
     def cached_asset_data(asset_key, start_date, end_date):
-        return load_demo_asset_data(
+        return load_snapshot_asset_data(
             assets_config=ASSETS,
             asset_key=asset_key,
             start_date=start_date,
@@ -141,7 +128,7 @@ def activate_demo_mode() -> None:
 
     @st.cache_data(show_spinner=False, max_entries=64)
     def cached_macro_pair(macro_key, market_asset, start_date, end_date):
-        return load_demo_macro_pair(
+        return load_snapshot_macro_pair(
             assets_config=ASSETS,
             macro_key=macro_key,
             market_asset=market_asset,
@@ -157,7 +144,7 @@ def activate_demo_mode() -> None:
         forward_fill,
         return_load_report,
     ):
-        return build_demo_multi_asset_price_frame(
+        return build_snapshot_multi_asset_price_frame(
             assets_config=ASSETS,
             selected_assets=list(selected_assets),
             start_date=start_date,
@@ -168,10 +155,11 @@ def activate_demo_mode() -> None:
 
     def demo_setup_page(*args, **kwargs):
         result = original_setup_page(*args, **kwargs)
+        generated = str(manifest.get("generated_at_utc", ""))[:10]
         st.info(
-            "Demo Mode — deterministic synthetic data for portfolio demonstration only. "
-            "No MySQL connection, private CSV, credential or live market feed is used. "
-            "Displayed prices, returns, regimes and event reactions are illustrative."
+            "Public Demo — static read-only snapshot of the same historical observations "
+            "used by the local platform. No MySQL connection or credentials are used online. "
+            f"Snapshot generated: {generated or 'unknown'}."
         )
         with st.sidebar:
             st.link_button(
@@ -185,10 +173,10 @@ def activate_demo_mode() -> None:
     demo_setup_page._mfi_demo_original = original_setup_page
 
     def get_table_columns(engine, table_name):
-        return demo_table_columns(table_name, ASSETS)
+        return snapshot_table_columns(table_name, ASSETS)
 
     def table_exists(engine, table_name):
-        return demo_table_exists(table_name, ASSETS)
+        return snapshot_table_exists(table_name, ASSETS)
 
     def load_events_from_table(
         engine,
@@ -198,7 +186,7 @@ def activate_demo_mode() -> None:
         table_exists_func=None,
         get_table_columns_func=None,
     ):
-        return load_demo_events_from_table(
+        return load_snapshot_events_from_table(
             table_name=table_name,
             start_date=start_date,
             end_date=end_date,
@@ -275,14 +263,14 @@ def activate_demo_mode() -> None:
             coverage = frame[["snapped_at", "price"]].copy()
             frame_map[asset_key] = coverage
 
-            demo_cfg = dict(asset_cfg)
-            demo_cfg.update(
+            snapshot_cfg = dict(asset_cfg)
+            snapshot_cfg.update(
                 {
-                    "table_name": f"demo::{asset_key}",
-                    "source_type": "deterministic_demo",
-                    "source_provider": "Synthetic Demo Generator",
+                    "table_name": f"snapshot::{asset_key}",
+                    "source_type": "public_static_snapshot",
+                    "source_provider": "Local validated database snapshot",
                     "source_identifier": asset_key,
-                    "source_identity_status": "demo",
+                    "source_identity_status": "snapshot",
                     "source_reference": "",
                     "script_name": "",
                 }
@@ -290,7 +278,7 @@ def activate_demo_mode() -> None:
             rows.append(
                 data_quality_service.audit_asset_frame(
                     asset_key=asset_key,
-                    asset_cfg=demo_cfg,
+                    asset_cfg=snapshot_cfg,
                     frame=frame,
                     as_of=as_of_date,
                 )
@@ -302,7 +290,7 @@ def activate_demo_mode() -> None:
         return cached_asset_audit(cache_date(as_of))
 
     def audit_event_coverage(engine, asset_frames):
-        events = load_demo_events()
+        events = load_snapshot_events()
         if events.empty:
             return pd.DataFrame()
 
@@ -330,8 +318,7 @@ def activate_demo_mode() -> None:
                     "assets_total": len(asset_frames),
                     "coverage_pct": (
                         round(covered / len(asset_frames) * 100, 2)
-                        if asset_frames
-                        else 0.0
+                        if asset_frames else 0.0
                     ),
                     "daily_event_study_eligible": (
                         event.get("date_precision", "exact") == "exact"
@@ -341,7 +328,6 @@ def activate_demo_mode() -> None:
         return pd.DataFrame(rows)
 
     def load_latest_euro_sync_status(report_root=None, as_of=None):
-        # Database synchronization is intentionally unavailable in demo mode.
         return pd.DataFrame(columns=euro_sync_status_service.STATUS_COLUMNS)
 
     _patch(layout, "setup_page", demo_setup_page)
@@ -364,7 +350,6 @@ def activate_demo_mode() -> None:
 
 
 def deactivate_demo_mode() -> None:
-    """Restore monkey-patched project functions and original loader modules."""
     global _ACTIVE
 
     while _PATCHES:
@@ -377,7 +362,6 @@ def deactivate_demo_mode() -> None:
         else:
             sys.modules[module_name] = original
     _STUBBED_MODULES.clear()
-
     _ACTIVE = False
 
 

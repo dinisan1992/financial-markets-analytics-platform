@@ -1,0 +1,395 @@
+{
+  "snapshot_format": 1,
+  "generated_at_utc": "2026-08-18T10:11:38.972040+00:00",
+  "date_start": "2000-01-01",
+  "date_end": null,
+  "contains_credentials": false,
+  "contains_database_connection_data": false,
+  "data_policy": "Read-only static snapshot of the same market/macro observations used by the local application. Only whitelisted analytical columns are exported.",
+  "assets": {
+    "BTC": {
+      "path": "public_snapshot/assets/BTC.jsonl",
+      "rows": 4545,
+      "bytes": 557870,
+      "sha256": "7d6e02a2f66ce90296ea1f4dae1421ec6dc409a101feee1fd6764308037f12a8"
+    },
+    "SP500": {
+      "path": "public_snapshot/assets/SP500.jsonl",
+      "rows": 6480,
+      "bytes": 812070,
+      "sha256": "375d5857685d9230c53d99525698b668ae252097c03e5a648c82268836798c00"
+    },
+    "STOXX600": {
+      "path": "public_snapshot/assets/STOXX600.jsonl",
+      "rows": 3210,
+      "bytes": 393062,
+      "sha256": "61d3175ac12290e40d2dc87a93cfccad2ef550e0fb6db6ec7bfcf6c4cd07bf77"
+    },
+    "FTSE100": {
+      "path": "public_snapshot/assets/FTSE100.jsonl",
+      "rows": 6256,
+      "bytes": 736171,
+      "sha256": "6d9c8fe30b453ac17d87a87b25ecc5e4b7420c6e463d0f126e417911470bc8d8"
+    },
+    "GOLD": {
+      "path": "public_snapshot/assets/GOLD.jsonl",
+      "rows": 6535,
+      "bytes": 743372,
+      "sha256": "0899d11ff2dad31c40c91da1bb919ebf65d4e6322de9950b0f3b50120e61a543"
+    },
+    "DXY": {
+      "path": "public_snapshot/assets/DXY.jsonl",
+      "rows": 6665,
+      "bytes": 755512,
+      "sha256": "77aaca0e14232284663f2906b3de6a0f0f96762efdf484397a583222421c8cc2"
+    },
+    "EURO": {
+      "path": "public_snapshot/assets/EURO.jsonl",
+      "rows": 7621,
+      "bytes": 866698,
+      "sha256": "f3ea058ea3658fafe5f7b96a26818903e169c7de38403c9e878a5c529e0daeca"
+    },
+    "YUAN": {
+      "path": "public_snapshot/assets/YUAN.jsonl",
+      "rows": 5347,
+      "bytes": 480062,
+      "sha256": "a88ad8375c887098a6619b9d0c4d9045be1dbbf6fcab1238277209be50a53db9"
+    },
+    "LIBRA": {
+      "path": "public_snapshot/assets/LIBRA.jsonl",
+      "rows": 6722,
+      "bytes": 603334,
+      "sha256": "438a268369b9876e1c3bcc7300273c57b522e227dfb754ef305a5d3308855b01"
+    },
+    "SSECOMPOSITE": {
+      "path": "public_snapshot/assets/SSECOMPOSITE.jsonl",
+      "rows": 6234,
+      "bytes": 793747,
+      "sha256": "a9c453e1515b713167368fe815409dc9ee2f2f4e3e4677f731b834009fd01d33"
+    },
+    "NASDAQ100": {
+      "path": "public_snapshot/assets/NASDAQ100.jsonl",
+      "rows": 6626,
+      "bytes": 1591526,
+      "sha256": "4f61143e64f23137a25ff95fc05865df44b0ae728b659502418c479ee3fdb66d"
+    },
+    "DOWJONES": {
+      "path": "public_snapshot/assets/DOWJONES.jsonl",
+      "rows": 6626,
+      "bytes": 1612960,
+      "sha256": "09813212e6e490f2ebfe10c81270dcf72d5570c983a8f03206f4316109cb9847"
+    },
+    "RUSSELL2000": {
+      "path": "public_snapshot/assets/RUSSELL2000.jsonl",
+      "rows": 6626,
+      "bytes": 1562424,
+      "sha256": "a7cf3b70f50b4bbc9d08a0172e734addfa725c735267b83daa5fa09cc479b128"
+    },
+    "EUROSTOXX50": {
+      "path": "public_snapshot/assets/EUROSTOXX50.jsonl",
+      "rows": 4787,
+      "bytes": 1123549,
+      "sha256": "71d3d1b819d6be5b8c57dc5d142db42e6f8f7da2c7b37c50de13f658fae1f944"
+    },
+    "DAX": {
+      "path": "public_snapshot/assets/DAX.jsonl",
+      "rows": 6689,
+      "bytes": 1602822,
+      "sha256": "e38a018818960249998e5840adcfe4b17b526882dbf097230370de6593e8f263"
+    },
+    "CAC40": {
+      "path": "public_snapshot/assets/CAC40.jsonl",
+      "rows": 6733,
+      "bytes": 1588676,
+      "sha256": "791dad8693e0b67fd209f351b290d712dce178c32ec0fb1e5d1a3f6ad060c80d"
+    },
+    "NIKKEI225": {
+      "path": "public_snapshot/assets/NIKKEI225.jsonl",
+      "rows": 6451,
+      "bytes": 1561572,
+      "sha256": "756d3fbb1617636b1a0780195518097ab143b828fdf923efa91435a97eaff2b7"
+    },
+    "EMERGING_MARKETS": {
+      "path": "public_snapshot/assets/EMERGING_MARKETS.jsonl",
+      "rows": 5803,
+      "bytes": 1252291,
+      "sha256": "5c504c1e412e5c09d03477e3f482c57544ccfff9c644bf6a00231e81abc1449d"
+    },
+    "VIX": {
+      "path": "public_snapshot/assets/VIX.jsonl",
+      "rows": 6627,
+      "bytes": 1272551,
+      "sha256": "c76a039f7b02007d91114ca6572dc530ea52f78dc72285829f254af994e7b495"
+    },
+    "MOVE_INDEX": {
+      "path": "public_snapshot/assets/MOVE_INDEX.jsonl",
+      "rows": 5805,
+      "bytes": 1248667,
+      "sha256": "1399ca6b315fefe9c3e17507063c47ba6cdc7dcd6e416a59e97e78e63f4ffbb6"
+    },
+    "BRENT_OIL": {
+      "path": "public_snapshot/assets/BRENT_OIL.jsonl",
+      "rows": 4672,
+      "bytes": 1033123,
+      "sha256": "1e8619284dd64e465079d7619f053fc7fc62d01db1754a2299b4d69e014fe716"
+    },
+    "WTI_OIL": {
+      "path": "public_snapshot/assets/WTI_OIL.jsonl",
+      "rows": 6454,
+      "bytes": 1410740,
+      "sha256": "69150944a217d490424258e87776ac1dc7f1e005370d95f5fdafea20d759a5be"
+    },
+    "NATURAL_GAS": {
+      "path": "public_snapshot/assets/NATURAL_GAS.jsonl",
+      "rows": 6451,
+      "bytes": 961127,
+      "sha256": "92079ed0cdb9a585ef1b73cc0a9ff297db23f8626827b2c67fc927a159eea79e"
+    },
+    "COPPER": {
+      "path": "public_snapshot/assets/COPPER.jsonl",
+      "rows": 6450,
+      "bytes": 936287,
+      "sha256": "003b5b1d48ecbaaede20fa0d3d48460c8c28dc66fbc13bf73a39e7265e746cf1"
+    },
+    "SILVER": {
+      "path": "public_snapshot/assets/SILVER.jsonl",
+      "rows": 6447,
+      "bytes": 1198893,
+      "sha256": "13990bdc01da9b1f737857bfda3298fcc2ef9665ff4c58caa1f4c10802ff4155"
+    },
+    "WHEAT": {
+      "path": "public_snapshot/assets/WHEAT.jsonl",
+      "rows": 6469,
+      "bytes": 968916,
+      "sha256": "f181ce96c54e8b3afacfbc4818c1b88875efe4070f6fa8f4927e2d73e390d8f4"
+    },
+    "CORN": {
+      "path": "public_snapshot/assets/CORN.jsonl",
+      "rows": 6457,
+      "bytes": 971304,
+      "sha256": "713dda8b8c3c596fee480ba3d0f81a95059dc8a2d828b52839aab81be8dc21b4"
+    },
+    "YEN": {
+      "path": "public_snapshot/assets/YEN.jsonl",
+      "rows": 6841,
+      "bytes": 1532208,
+      "sha256": "35c95c470867d8cea3b58430909f742142b736a086de64f3ca94f4ada967fd4b"
+    },
+    "SWISS_FRANC": {
+      "path": "public_snapshot/assets/SWISS_FRANC.jsonl",
+      "rows": 5887,
+      "bytes": 884882,
+      "sha256": "fa2bc6f08779ab1dc12ed57eda7c7a7f3e4a6f0a3d628e92ab36f6e72ac30baf"
+    },
+    "US10Y": {
+      "path": "public_snapshot/assets/US10Y.jsonl",
+      "rows": 6620,
+      "bytes": 955501,
+      "sha256": "04d36ae7edc35a013c5f49905ecbaf292e63288d4aff300f6e684b9227c0815b"
+    },
+    "US3M": {
+      "path": "public_snapshot/assets/US3M.jsonl",
+      "rows": 6620,
+      "bytes": 943396,
+      "sha256": "15a0407fd01bbee7ee246a4fdc82aea560ea14bb21ae9835a6fdaae5d3fbcf00"
+    },
+    "US2Y": {
+      "path": "public_snapshot/assets/US2Y.jsonl",
+      "rows": 6647,
+      "bytes": 923279,
+      "sha256": "9e3d7c789ef8e75d820536523b8685f0449b2d9d2bbdf56c77754fb8eff8b0e4"
+    },
+    "US30Y": {
+      "path": "public_snapshot/assets/US30Y.jsonl",
+      "rows": 6620,
+      "bytes": 955787,
+      "sha256": "d430aca371de06a92680d3c081e224211e5ef368e18771b8db820111b5313318"
+    },
+    "GERMANY10Y": {
+      "path": "public_snapshot/assets/GERMANY10Y.jsonl",
+      "rows": 315,
+      "bytes": 57308,
+      "sha256": "06ba521e666aa7862115c4ecc6689de82766b68680ba939c096a382cd5573518"
+    },
+    "UK10Y": {
+      "path": "public_snapshot/assets/UK10Y.jsonl",
+      "rows": 315,
+      "bytes": 48604,
+      "sha256": "e6ff7d5b52212c132474bda9a0957e9ba87d57df98ed6dc253a5f91f7fcc8c43"
+    },
+    "JAPAN10Y": {
+      "path": "public_snapshot/assets/JAPAN10Y.jsonl",
+      "rows": 315,
+      "bytes": 46078,
+      "sha256": "fa6bbb7f334a7c648dca044ec648d8faa0d2b70ce5179be6609da82584cf013f"
+    },
+    "FINANCIAL_CONDITIONS": {
+      "path": "public_snapshot/assets/FINANCIAL_CONDITIONS.jsonl",
+      "rows": 1374,
+      "bytes": 201632,
+      "sha256": "9e5ca71743fe0a7817b4102dcaa5170782f8d5fc01a57a06ff96d4ab0a666856"
+    },
+    "TED_SPREAD": {
+      "path": "public_snapshot/assets/TED_SPREAD.jsonl",
+      "rows": 1228,
+      "bytes": 173684,
+      "sha256": "2a48ecbd9a56d8373d2bcfe48772bc7efd608f32babb34014c1a56cfcb90f6c6"
+    }
+  },
+  "fed": {
+    "FED_FUNDS_RATE": {
+      "path": "public_snapshot/fed/FED_FUNDS_RATE.jsonl",
+      "rows": 309,
+      "bytes": 19433,
+      "sha256": "7f98de4bccc8591de059baae0abe0ddd7c16abaf848925aebaa0b7f0986f517f"
+    },
+    "FED_M2": {
+      "path": "public_snapshot/fed/FED_M2.jsonl",
+      "rows": 308,
+      "bytes": 21131,
+      "sha256": "08ac96793072896e7f438636cd8ae13708926df5903f295dc52376aa49d593fb"
+    },
+    "FED_TOTAL_ASSETS": {
+      "path": "public_snapshot/fed/FED_TOTAL_ASSETS.jsonl",
+      "rows": 1191,
+      "bytes": 80687,
+      "sha256": "5245db13a551b3aef7befe7e6e7726e370d1355333a07ddd7af1278cc27206fd"
+    },
+    "FED_RESERVE_BANK_CREDIT": {
+      "path": "public_snapshot/fed/FED_RESERVE_BANK_CREDIT.jsonl",
+      "rows": 309,
+      "bytes": 26870,
+      "sha256": "ecf359298df52585f846e17b06f5c47eaa8a8344657e2dd02e7476f550a20733"
+    },
+    "FED_DEPOSITS": {
+      "path": "public_snapshot/fed/FED_DEPOSITS.jsonl",
+      "rows": 1343,
+      "bytes": 101853,
+      "sha256": "c79ec5b9e8b2b6ba55ce0fa31a95f3e5ccb8b6e650373dfcde9a9c66cc95412a"
+    },
+    "FED_BANK_CREDIT": {
+      "path": "public_snapshot/fed/FED_BANK_CREDIT.jsonl",
+      "rows": 1343,
+      "bytes": 107855,
+      "sha256": "6e12f746a9db79e524bbe6477d640d020928b6675cdea3164be7aaef0ea87420"
+    },
+    "FED_LOANS_LEASES": {
+      "path": "public_snapshot/fed/FED_LOANS_LEASES.jsonl",
+      "rows": 1343,
+      "bytes": 108874,
+      "sha256": "254d0fdb5fbdecc9a2facc5ef6a83ffa5d9e6343d99d646a7e966fe536d61214"
+    },
+    "FED_SECURITIES_BANK_CREDIT": {
+      "path": "public_snapshot/fed/FED_SECURITIES_BANK_CREDIT.jsonl",
+      "rows": 1343,
+      "bytes": 121986,
+      "sha256": "2e6dbd239f6ab3feccb63327808178f55f04b4f164d0e502cd6e539aeaffdc30"
+    },
+    "FED_CONSUMER_LOANS_CREDIT_CARDS": {
+      "path": "public_snapshot/fed/FED_CONSUMER_LOANS_CREDIT_CARDS.jsonl",
+      "rows": 1318,
+      "bytes": 125026,
+      "sha256": "a925ad868c6b675cc10c85589639fd6fc9c8d6e1bb92d6194530503ead6fcf48"
+    },
+    "FED_CREDIT_CARD_DELINQUENCY": {
+      "path": "public_snapshot/fed/FED_CREDIT_CARD_DELINQUENCY.jsonl",
+      "rows": 102,
+      "bytes": 7737,
+      "sha256": "7a1cdabde79e595bf010cc42a42567a25d76b9ee7c9f402ba39cc5497efc845f"
+    },
+    "FED_CHARGE_OFF_RATE_CREDIT_CARDS": {
+      "path": "public_snapshot/fed/FED_CHARGE_OFF_RATE_CREDIT_CARDS.jsonl",
+      "rows": 102,
+      "bytes": 8296,
+      "sha256": "2a0d718b2d1719bf3e270b8d134581ea7a39c469205cbcb49595af5272089d13"
+    }
+  },
+  "euro": {
+    "EURO_HICP_PROCESSED_FOOD": {
+      "path": "public_snapshot/euro/EURO_HICP_PROCESSED_FOOD.jsonl",
+      "rows": 309,
+      "bytes": 26818,
+      "sha256": "48d3eaa6e7afefbec3b82f22e647e17f7dfb4403bfad28080321729bd53f79af"
+    },
+    "EURO_HICP_EX_TOBACCO": {
+      "path": "public_snapshot/euro/EURO_HICP_EX_TOBACCO.jsonl",
+      "rows": 308,
+      "bytes": 22189,
+      "sha256": "6471397cab86597c972747d4f0ba15b44567377b879d6b3c8d97010f6b66ea04"
+    },
+    "EURO_HICP_SERVICES": {
+      "path": "public_snapshot/euro/EURO_HICP_SERVICES.jsonl",
+      "rows": 309,
+      "bytes": 24881,
+      "sha256": "314045a059b1def75c7154a1903b863087d341c2cd69b62e772828e0649c0504"
+    },
+    "EURO_HICP_INDUSTRIAL_GOODS": {
+      "path": "public_snapshot/euro/EURO_HICP_INDUSTRIAL_GOODS.jsonl",
+      "rows": 309,
+      "bytes": 27370,
+      "sha256": "52a11c81722ec440f6f09b76b26b2a18d17bee727b494535d625f5c40f86ab87"
+    },
+    "EURO_HICP_ADMINISTERED_ENERGY_FOOD": {
+      "path": "public_snapshot/euro/EURO_HICP_ADMINISTERED_ENERGY_FOOD.jsonl",
+      "rows": 297,
+      "bytes": 28783,
+      "sha256": "be6e6d10ce3798f354b494235889fde0d9c5e0dcbb29a75dee68ffada0d6901d"
+    },
+    "EURO_MFI_CORPORATE_LOANS_AT": {
+      "path": "public_snapshot/euro/EURO_MFI_CORPORATE_LOANS_AT.jsonl",
+      "rows": 308,
+      "bytes": 23378,
+      "sha256": "c1f00ed413fd35f81743515a3ebd533d8a8a05d29c2d5ee80680fe44b7006c45"
+    },
+    "EURO_MFI_HOUSEHOLD_CONSUMPTION_LOANS_AT": {
+      "path": "public_snapshot/euro/EURO_MFI_HOUSEHOLD_CONSUMPTION_LOANS_AT.jsonl",
+      "rows": 308,
+      "bytes": 27195,
+      "sha256": "eb5807ab2cd2148c7437c19996736a31974a14c4de61bf4c11342193aab96efc"
+    },
+    "EURO_MFI_HOUSE_PURCHASE_LOANS_AT": {
+      "path": "public_snapshot/euro/EURO_MFI_HOUSE_PURCHASE_LOANS_AT.jsonl",
+      "rows": 308,
+      "bytes": 24926,
+      "sha256": "c82f968b897cfd211413f8a1f07ae056816b549637eea5f7fa9d731456b91a25"
+    },
+    "EURO_MFI_REVOLVING_LOANS_CORPORATE_AT": {
+      "path": "public_snapshot/euro/EURO_MFI_REVOLVING_LOANS_CORPORATE_AT.jsonl",
+      "rows": 308,
+      "bytes": 26453,
+      "sha256": "bb9676e503d88b982afcd39dfe95cd0b38708d1062b73d1a4e7d0ce87e3e934d"
+    },
+    "EURO_MFI_REVOLVING_LOANS_HOUSEHOLDS_AT": {
+      "path": "public_snapshot/euro/EURO_MFI_REVOLVING_LOANS_HOUSEHOLDS_AT.jsonl",
+      "rows": 308,
+      "bytes": 26957,
+      "sha256": "bf7fbcb0d94bb2caace9c3f4e7c3fe68e6ec4cfad2f687814a93650dc87edcec"
+    },
+    "EURO_MFI_CORPORATE_DEPOSITS_AT": {
+      "path": "public_snapshot/euro/EURO_MFI_CORPORATE_DEPOSITS_AT.jsonl",
+      "rows": 308,
+      "bytes": 24323,
+      "sha256": "cdcd6a391ebf8706a239234b4097ada039056da9e8392fa41cd2a21ccf248219"
+    },
+    "EURO_MFI_HOUSEHOLD_DEPOSITS_AT": {
+      "path": "public_snapshot/euro/EURO_MFI_HOUSEHOLD_DEPOSITS_AT.jsonl",
+      "rows": 308,
+      "bytes": 24303,
+      "sha256": "ce6b41b0edef83977b768da157042c32083149ca2f9cf7817a5d3203b0815b07"
+    }
+  },
+  "events": {
+    "bitcoin_historical_events": {
+      "path": "public_snapshot/events/bitcoin_historical_events.jsonl",
+      "rows": 31,
+      "bytes": 10322,
+      "sha256": "12d108d31ff876fcb7a77a1234b0c3b309638032f458aac391086a8d6df9fd2b"
+    },
+    "world_historical_events": {
+      "path": "public_snapshot/events/world_historical_events.jsonl",
+      "rows": 35,
+      "bytes": 11017,
+      "sha256": "b4d75ab553b9ac9dc7ef9ecb56a5f5dce500d2d3f57ce8efa5eabea82c4ab9a2"
+    }
+  }
+}
